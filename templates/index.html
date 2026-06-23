@@ -92,7 +92,7 @@
   <div id="make">
     <div class="blks" id="blks"></div>
     <div class="days" id="days"></div>
-    <div class="legend"><b style="color:var(--ink)">予定（予算）</b>＝事前の計画 ／ <b style="color:var(--ink)">実績（作った数）</b>＝その場で打ち込み ／ 売れた＝エアレジ／Airメイト自動</div>
+    <div class="legend"><b style="color:var(--ink)">予算</b>＝事前の計画 ／ <b style="color:var(--ink)">実績（作った数）</b>＝その場で打ち込み ／ 売れた＝エアレジ／Airメイト自動</div>
     <div id="rows"></div>
     <div class="sum">
       <div class="card"><div class="l"><span id="totlbl">作った数</span> 合計</div><div class="n" id="tot">–</div></div>
@@ -111,7 +111,7 @@
   </div>
 
   <div id="sales" class="hide">
-    <div class="sec">この週の売上（予定 → 実績）</div>
+    <div class="sec">この週の製造実績（予算 → 実績）</div>
     <div id="salessum"></div>
     <div class="sec">日別（店舗・催事）</div>
     <div id="salesdays"></div>
@@ -130,14 +130,14 @@
 <div class="nav">
   <button id="nav-make" class="on" onclick="show('make')"><span class="ic">🍪</span>製造入力</button>
   <button id="nav-egg" onclick="show('egg')"><span class="ic">🥚</span>卵発注</button>
-  <button id="nav-sales" onclick="show('sales')"><span class="ic">💴</span>売上</button>
+  <button id="nav-sales" onclick="show('sales')"><span class="ic">💴</span>製造実績</button>
   <button id="nav-mat" onclick="show('mat')"><span class="ic">🧂</span>材料配送</button>
   <button id="nav-raw" onclick="show('raw')"><span class="ic">📋</span>全データ</button>
 </div>
 
 <script>
 let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
-const SC=['make','egg','sales','mat','raw'],TT={make:'製造入力',egg:'卵発注',sales:'売上',mat:'材料・配送',raw:'全データ'};
+const SC=['make','egg','sales','mat','raw'],TT={make:'製造入力',egg:'卵発注',sales:'製造実績',mat:'材料・配送',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
 async function fetchJSON(u){for(let i=0;i<3;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,400*(i+1)));}throw new Error('取得失敗: '+u);}
 async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return fetchJSON(u+t);}
@@ -199,7 +199,7 @@ function renderMake(){
   blk.products.forEach(p=>{
     const made=(p.made[sel]??p.sold[sel]??0),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=Number(made)||0;
     const r=document.createElement('div');r.className='row';
-    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予定（予算）<b>'+plan+'</b>　売れた '+(sold==null?'–':sold)+'</div></div>'+
+    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<b>'+plan+'</b>　売れた '+(sold==null?'–':sold)+'</div></div>'+
       '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
     const v=r.querySelector('.val'),bs=r.querySelectorAll('button');
     bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);
@@ -240,14 +240,17 @@ function renderSecs(secs){return (secs||[]).map(s=>{
   let h=(s.header&&!s.header.startsWith('📖'))?'<div class="rsh">'+esc(s.header)+'</div>':'';
   h+=(s.lines||[]).map(l=>'<div class="rsl">'+esc(l)+'</div>').join('');return h;}).join('');}
 function yen(n){return '¥'+Math.round(n||0).toLocaleString();}
-function scard(label,o){return '<div class="scard"><div class="sl">'+label+'</div><div class="sv"><span class="sp">予定 '+yen(o.plan)+'</span><span class="sa">実績 '+yen(o.actual)+'</span></div></div>';}
+function scard(label,o){return '<div class="scard"><div class="sl">'+label+'</div><div class="sv"><span class="sp">予算 '+yen(o.plan)+'</span><span class="sa">実績 '+yen(o.actual)+'</span></div></div>';}
 function renderSales(C){
-  document.getElementById('salessum').innerHTML=scard('🏪 店舗',C.store)+scard('🎪 催事',C.event)+scard('合計',C.total);
+  const laborDays=C.days.filter(d=>d.laborAir!=null);const laborSum=laborDays.reduce((a,d)=>a+(d.laborAir||0),0);
+  document.getElementById('salessum').innerHTML=scard('🏪 店舗',C.store)+scard('🎪 催事',C.event)+scard('合計',C.total)+
+    '<div class="scard"><div class="sl">👷 人件費</div><div class="sv"><span class="sp">エアシフト実績（'+laborDays.length+'日分）</span><span class="sa">'+yen(laborSum)+'</span></div></div>';
   const box=document.getElementById('salesdays');box.innerHTML='';
   C.days.forEach((d,i)=>{const el=document.createElement('div');el.className='ecard';
     el.innerHTML='<div class="eh">'+d.d+(i===sel?'<span class="chip ok" style="margin-left:8px;font-size:11px">今日</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400">回転 '+nz(d.kaiten)+'</span></div>'+
-      '<div class="erow"><div class="lbl">🏪店舗</div><div class="kv">予定 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
-      '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予定 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>';
+      '<div class="erow"><div class="lbl">🏪店舗</div><div class="kv">予算 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
+      '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
+      '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">エアシフト実績 <b>'+(d.laborAir!=null?yen(d.laborAir):'–')+'</b></div></div>';
     box.appendChild(el);});}
 function renderMat(M){const ml=document.getElementById('matlist');ml.innerHTML='';
   M.materials.forEach(m=>{const el=document.createElement('div');el.className='mat';
