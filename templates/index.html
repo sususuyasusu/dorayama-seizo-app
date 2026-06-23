@@ -117,9 +117,7 @@
   </div>
 
   <div id="raw" class="hide">
-    <div class="note">この週のシートを丸ごと表示・<b style="color:var(--ink)">直接編集</b>できます（どのセルもタップ→打ち込み→自動でシート本体に保存）。計算式のセル（回転数・金額・卵発注など）を打ち替えると式が消えるのでご注意。
-      <button id="rawrefresh" style="margin-left:4px;font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;">再計算を反映</button></div>
-    <div class="rawwrap"><div id="rawbox">読込中…</div></div>
+    <iframe id="sheetframe" title="製造表（本物・直接編集）" style="position:fixed;top:0;left:0;width:100vw;height:calc(100dvh - 54px);border:0;background:#fff;z-index:5;"></iframe>
   </div>
 </div>
 
@@ -134,7 +132,7 @@
 <script>
 let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
 const SC=['make','egg','sales','mat','raw'],TT={make:'製造入力',egg:'卵発注',sales:'売上',mat:'材料・配送',raw:'全データ'};
-function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];}
+function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
 async function fetchJSON(u){for(let i=0;i<3;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,400*(i+1)));}throw new Error('取得失敗: '+u);}
 async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return fetchJSON(u+t);}
 
@@ -149,8 +147,6 @@ async function init(){
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   J('/api/materials').then(renderMat);
-  J('/api/raw').then(renderRaw);
-  document.getElementById('rawrefresh').onclick=()=>J('/api/raw').then(renderRaw);
   stampSync();
 }
 async function loadWeek(){
@@ -158,7 +154,6 @@ async function loadWeek(){
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   J('/api/materials').then(renderMat);
-  J('/api/raw').then(renderRaw);
 }
 
 // === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
@@ -264,7 +259,7 @@ function saveCell(tab,r,c,v,td){td.style.background='#fff7d6';
   fetch('/api/cell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:tab,row:+r,col:+c,value:v})})
     .then(x=>x.json()).then(()=>{td.style.background='#e1f5ee';setTimeout(()=>td.style.background='',900);})
     .catch(()=>{td.style.background='#fcebeb';});}
-function renderRaw(R){curRawTab=R.tab;const box=document.getElementById('rawbox');box.innerHTML=editGrid(R.tab,R.values,1,1);bindEdit(box);}
+function setSheet(){const f=document.getElementById('sheetframe');if(!f||typeof W==='undefined'||!W||!W.sheetId)return;const gid=(W.gid!=null?String(W.gid):'');if(f.dataset.gid===gid)return;f.dataset.gid=gid;f.src='https://docs.google.com/spreadsheets/d/'+W.sheetId+'/edit?rm=minimal'+(gid?('#gid='+gid):'');}
 init();
 </script>
 </body>

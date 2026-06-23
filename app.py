@@ -33,7 +33,8 @@ def week_payload(tab=None):
                 "made": made.get(b["name"], {}).get(p["name"], [None] * 7),
             })
         blocks.append({"name": b["name"], "category": b["category"], "products": prods})
-    return {"tab": tab, "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"]}
+    return {"tab": tab, "gid": d.get("gid"), "sheetId": data_layer.SHEET_ID,
+            "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"]}
 
 
 class Handler(BaseHTTPRequestHandler):

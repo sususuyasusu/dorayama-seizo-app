@@ -207,7 +207,7 @@ def get_week_blocks(tab=None, today=None):
     days = [{"label": (f"{WEEKDAYS[i]}{daydates[i]}" if daydates and daydates[i] else WEEKDAYS[i]),
              "date": (daydates[i] if daydates else "")} for i in range(7)]
     kaiten = [num(cell(38, c)) for c in ACT_COLS]
-    return {"tab": ws.title, "days": days, "blocks": blocks, "kaiten": kaiten}
+    return {"tab": ws.title, "gid": ws.id, "days": days, "blocks": blocks, "kaiten": kaiten}
 
 
 if __name__ == "__main__":
