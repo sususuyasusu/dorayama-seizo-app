@@ -148,6 +148,7 @@ async function init(){
   J('/api/materials').then(renderMat);
   J('/api/raw').then(renderRaw);
   document.getElementById('rawrefresh').onclick=()=>J('/api/raw').then(renderRaw);
+  stampSync();
 }
 async function loadWeek(){
   W=await J('/api/week');sel=Math.min(sel,6);paintMake();
@@ -156,6 +157,24 @@ async function loadWeek(){
   J('/api/materials').then(renderMat);
   J('/api/raw').then(renderRaw);
 }
+
+// === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
+let lastAct=Date.now();
+['click','keydown','touchstart','input'].forEach(e=>document.addEventListener(e,()=>{lastAct=Date.now();},true));
+function isEditing(){const a=document.activeElement;return !!(a&&(a.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(a.tagName)));}
+function stampSync(){let b=document.getElementById('syncbadge');if(!b){b=document.createElement('div');b.id='syncbadge';b.style.cssText='position:fixed;right:8px;bottom:8px;font-size:11px;color:var(--info);background:var(--infobg);border:1px solid var(--line);border-radius:10px;padding:2px 8px;opacity:.9;z-index:50;';document.body.appendChild(b);}const n=new Date();b.textContent='🔄 大本と自動連携 ・ 最終 '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+async function syncAll(force){
+  if(isEditing())return;
+  if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
+  try{
+    W=await J('/api/week');sel=Math.min(sel,6);paintMake();
+    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/materials').then(renderMat);
+    stampSync();
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncAll(true);});
+window.addEventListener('focus',()=>syncAll(true));
+setInterval(()=>syncAll(false),60000);
 function paintMake(){
   selBlk=Math.max(0,W.blocks.findIndex(b=>b.name==='店舗用'));
   const bb=document.getElementById('blks');bb.innerHTML='';
