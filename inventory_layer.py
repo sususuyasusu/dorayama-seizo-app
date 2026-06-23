@@ -54,6 +54,7 @@ def get_inventory():
             "warehouse": wh, "store": store, "total": total,
             "min": mn, "need": need,
             "lead": g(r, C_LEAD).strip(),
+            "url": g(r, 11).strip(),
         })
 
     # 要発注を先頭に、その後カテゴリー→名前で並べる

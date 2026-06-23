@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>どら山 製造アプリ</title>
 <style>
-  :root{--line:#e7e3da;--muted:#8a8780;--ink:#2c2c2a;--info:#185fa5;--infobg:#e6f1fb;--bg:#f4f2ec;--warn:#854f0b;--warnbg:#faeeda;}
+  :root{--line:#e8e3d8;--muted:#8c887f;--ink:#2a2824;--info:#1565a6;--infobg:#e8f1fb;--bg:#f6f3ec;--warn:#8a5410;--warnbg:#fbeed6;--brand:#7a4a26;--shadow:0 1px 3px rgba(70,55,30,.07),0 1px 2px rgba(70,55,30,.04);}
+  .card,.scard,.ecard,.egg,.batch,.rules,.eggrule,.note{box-shadow:var(--shadow);}
+  .hd{box-shadow:0 1px 0 rgba(70,55,30,.05);}
+  .nav{box-shadow:0 -1px 10px rgba(70,55,30,.06);}
+  .blk.on,.day.on,.stp button{box-shadow:var(--shadow);}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--ink);}
   .wrap{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:66px;}
@@ -35,7 +39,10 @@
   .val{width:64px;text-align:center;font-size:22px;font-weight:600;border:none;border-bottom:2px solid var(--line);background:transparent;color:var(--ink);padding:3px 0;border-radius:0;}
   .val:focus{outline:none;border-bottom-color:var(--info);}
   #sheetbar{position:fixed;top:0;left:0;right:0;height:46px;display:flex;align-items:center;padding:0 12px;background:#fff;border-bottom:1px solid var(--line);z-index:6;}
-  #sheetweek{width:100%;height:36px;font-size:16px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  #sheetweek{flex:1;min-width:0;height:36px;font-size:16px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  #rawmode{height:36px;font-size:13px;font-weight:600;padding:0 12px;margin-left:8px;border:1px solid var(--info);border-radius:9px;background:var(--infobg);color:var(--info);white-space:nowrap;}
+  #rawgrid{position:fixed;top:46px;left:0;right:0;bottom:54px;overflow:auto;background:#fff;z-index:5;padding:4px;}
+  #rawgrid table.rawt td{min-width:46px;}
   #sheetwrap{position:fixed;top:46px;left:0;right:0;bottom:54px;overflow:hidden;background:#fff;z-index:5;}
   #sheetframe{width:100%;height:100%;border:0;display:block;}
   @media (max-width:640px){#sheetframe{width:154%;height:154%;transform:scale(.65);transform-origin:top left;}}
@@ -133,8 +140,9 @@
   </div>
 
   <div id="raw" class="hide">
-    <div id="sheetbar"><select id="sheetweek"></select></div>
+    <div id="sheetbar"><select id="sheetweek"></select><button id="rawmode" onclick="toggleRaw()">📝 表で編集</button></div>
     <div id="sheetwrap"><iframe id="sheetframe" title="製造表（本物・直接編集）"></iframe></div>
+    <div id="rawgrid" class="hide"></div>
   </div>
 </div>
 
@@ -285,7 +293,7 @@ function renderInv(V){
   (V.items||[]).forEach(it=>{const el=document.createElement('div');el.className='invrow'+(it.need?' need':'');
     el.innerHTML='<div class="invn"><div class="invt">'+esc(it.name)+'</div><div class="invs">'+esc(it.category||'')+(it.supplier?' ・ '+esc(it.supplier):'')+'</div></div>'+
       '<div class="invq"><div class="invnum">'+nz(it.total)+'</div><div class="invmin">最低 '+(it.min==null?'–':nz(it.min))+'</div></div>'+
-      (it.need?'<span class="chip bad">要発注</span>':'<span class="chip ok">OK</span>');
+      (it.need?((it.url&&/^https?:/.test(it.url))?'<a class="chip bad" href="'+esc(it.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>'):'<span class="chip ok">OK</span>');
     box.appendChild(el);});}
 function renderMat(M){const ml=document.getElementById('matlist');ml.innerHTML='';
   M.materials.forEach(m=>{const el=document.createElement('div');el.className='mat';
@@ -320,6 +328,9 @@ async function setSheet(){
 function setSheetGid(gid){const f=document.getElementById('sheetframe');if(!f||!W)return;gid=String(gid||'');
   if(f.dataset.gid===gid)return;f.dataset.gid=gid;
   f.src='https://docs.google.com/spreadsheets/d/'+W.sheetId+'/edit?rm=minimal'+(gid?('#gid='+gid):'');}
+let rawEdit=false;
+function toggleRaw(){rawEdit=!rawEdit;document.getElementById('sheetwrap').classList.toggle('hide',rawEdit);document.getElementById('rawgrid').classList.toggle('hide',!rawEdit);document.getElementById('rawmode').textContent=rawEdit?'🔳 シート表示':'📝 表で編集';if(rawEdit)loadRawGrid();}
+async function loadRawGrid(){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const r=await J('/api/raw');box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 init();
 </script>
 </body>
