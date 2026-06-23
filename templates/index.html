@@ -133,7 +133,7 @@
 let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
 const SC=['make','egg','sales','mat','raw'],TT={make:'製造入力',egg:'卵発注',sales:'売上',mat:'材料・配送',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];}
-async function fetchJSON(u){for(let i=0;i<5;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,350*(i+1)));}throw new Error('取得失敗: '+u);}
+async function fetchJSON(u){for(let i=0;i<3;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,400*(i+1)));}throw new Error('取得失敗: '+u);}
 async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return fetchJSON(u+t);}
 
 async function init(){

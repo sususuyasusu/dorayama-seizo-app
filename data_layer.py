@@ -5,6 +5,7 @@
 import os
 import json
 import re
+import time
 from datetime import date, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
@@ -41,6 +42,40 @@ def _client():
     return _GC
 
 
+# === 読み取り削減キャッシュ（Google Sheets APIの分間上限=429対策） ===
+_SH = None            # Spreadsheet object（メタ情報の読み直しを避ける）
+_VC = {}              # {タブ名: (取得時刻, 全セル値)}
+_VC_TTL = 8.0         # 秒。同一画面の複数取得や連打はこの間1回の読み取りを共有
+
+
+def _spreadsheet(refresh=False):
+    global _SH
+    if _SH is None or refresh:
+        _SH = _client().open_by_key(SHEET_ID)
+    return _SH
+
+
+def cached_values(ws):
+    """ワークシートの全セルを数秒キャッシュ。1画面で複数回・複数エンドポイントが
+    同じ週タブを読んでも、APIへの読み取りは1回で済む。"""
+    t = ws.title
+    now = time.time()
+    hit = _VC.get(t)
+    if hit and now - hit[0] < _VC_TTL:
+        return hit[1]
+    vals = ws.get_all_values()
+    _VC[t] = (now, vals)
+    return vals
+
+
+def invalidate(tab=None):
+    """書き込み後に呼ぶ＝次の読み取りで最新（再計算後）を取り直す。"""
+    if tab is None:
+        _VC.clear()
+    else:
+        _VC.pop(tab, None)
+
+
 def current_week_tab(today=None):
     today = today or date.today()
     monday = today - timedelta(days=today.weekday())
@@ -50,31 +85,27 @@ def current_week_tab(today=None):
 
 
 def open_ws(tab=None, today=None):
-    """指定タブ（週）を開く。未指定なら今週タブ。"""
-    gc = _client()
-    sh = gc.open_by_key(SHEET_ID)
-    if tab:
-        return sh.worksheet(tab)
-    _, cands = current_week_tab(today)
-    for c in cands:
-        try:
-            return sh.worksheet(c)
-        except gspread.WorksheetNotFound:
-            continue
-    raise RuntimeError(f"今週タブが見つからない（候補 {cands}）")
+    """指定タブ（週）を開く。未指定なら今週タブ。Spreadsheet objectは使い回す。"""
+    cands = [tab] if tab else current_week_tab(today)[1]
+    for attempt in (0, 1):
+        sh = _spreadsheet(refresh=(attempt == 1))
+        for c in cands:
+            try:
+                return sh.worksheet(c)
+            except gspread.WorksheetNotFound:
+                continue
+    raise RuntimeError(f"タブが見つからない（候補 {cands}）")
 
 
 def list_tabs():
     """週タブ名の一覧（古い順）。アプリ用の内部タブ _app_made は除く。"""
-    gc = _client()
-    sh = gc.open_by_key(SHEET_ID)
-    return [w.title for w in sh.worksheets() if w.title != "_app_made"]
+    return [w.title for w in _spreadsheet().worksheets() if w.title != "_app_made"]
 
 
 def get_raw(tab=None):
     """指定週タブの全セル（行×列）をそのまま返す＝もれなく全表示用。"""
     ws = open_ws(tab)
-    return {"tab": ws.title, "values": ws.get_all_values()}
+    return {"tab": ws.title, "values": cached_values(ws)}
 
 
 def set_cell(tab, row, col, value):
@@ -82,6 +113,7 @@ def set_cell(tab, row, col, value):
     ws = open_ws(tab)
     a1 = gspread.utils.rowcol_to_a1(int(row), int(col))
     ws.update(range_name=a1, values=[[value]], value_input_option="USER_ENTERED")
+    invalidate(ws.title)  # 次の読み取りで再計算後の最新を取り直す
     return {"ok": True, "tab": ws.title, "a1": a1}
 
 
@@ -138,7 +170,7 @@ def get_week_blocks(tab=None, today=None):
     """指定週タブの全ブロック（各催事＋店舗用）を、見出し（カテゴリー行）から動的に検出して返す。
     予定(B..H)と実績(V..AB)は同じ行に並ぶので、商品行ごとに両方読む。曜日ラベルはシートの日付から。"""
     ws = open_ws(tab, today)
-    vals = ws.get_all_values()
+    vals = cached_values(ws)
 
     def cell(r, c):
         return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""

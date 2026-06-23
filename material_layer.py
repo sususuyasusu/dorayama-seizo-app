@@ -9,7 +9,7 @@ def _ws(tab=None):
 
 def get_materials(tab=None):
     ws = _ws(tab)
-    v = ws.get_all_values()
+    v = data_layer.cached_values(ws)
 
     def g(r, c):
         return v[r - 1][c] if r - 1 < len(v) and c < len(v[r - 1]) else ""

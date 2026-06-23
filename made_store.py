@@ -12,13 +12,13 @@ HEADER = ["週", "ブロック", "商品", "月", "火", "水", "木", "金", "�
 
 
 def _ws():
-    gc = data_layer._client()
-    sh = gc.open_by_key(data_layer.SHEET_ID)
+    sh = data_layer._spreadsheet()
     try:
         return sh.worksheet(TAB)
     except Exception:
         ws = sh.add_worksheet(title=TAB, rows=400, cols=12)
         ws.update(range_name="A1", values=[HEADER])
+        data_layer._spreadsheet(refresh=True)  # メタ情報に新タブを反映
         return ws
 
 
@@ -31,7 +31,7 @@ def get_made(tab):
     """{ブロック名: {商品名: [7日分]}} を返す。"""
     ws = _ws()
     out = {}
-    for r in ws.get_all_values()[1:]:
+    for r in data_layer.cached_values(ws)[1:]:
         if len(r) >= 3 and r[0] == tab:
             block, product = r[1], r[2]
             vals = [(_to_int(r[i]) if i < len(r) else None) for i in range(3, 10)]
@@ -55,13 +55,14 @@ def set_made(tab, block, product, day_index, value):
         ws.append_row(row, value_input_option="RAW")
     else:
         ws.update_cell(target, 4 + di, v)  # D列=月 が 4列目
+    data_layer.invalidate(TAB)  # 書込を反映するためキャッシュ破棄
     return get_made(tab)
 
 
 def seed(tab, blocks):
     """今週タブの行がまだ無ければ、各ブロック×商品を実績値で初期登録する。"""
     ws = _ws()
-    rows = ws.get_all_values()
+    rows = data_layer.cached_values(ws)
     if any(len(r) >= 1 and r[0] == tab for r in rows[1:]):
         return
     new = []
@@ -72,3 +73,4 @@ def seed(tab, blocks):
             new.append([tab, b["name"], p["name"]] + vals)
     if new:
         ws.append_rows(new, value_input_option="RAW")
+        data_layer.invalidate(TAB)

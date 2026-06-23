@@ -64,7 +64,7 @@ def _sections(cells):
 
 def get_egg_nav(tab=None):
     ws = data_layer.open_ws(tab)
-    vals = ws.get_all_values()
+    vals = data_layer.cached_values(ws)
 
     def g(r, c):
         return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""
