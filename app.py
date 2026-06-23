@@ -28,6 +28,7 @@ def week_payload(tab=None):
         for p in b["products"]:
             prods.append({
                 "name": p["name"],
+                "row": p.get("row"),
                 "plan": p["plan"],
                 "sold": p["actual"],
                 "made": made.get(b["name"], {}).get(p["name"], [None] * 7),

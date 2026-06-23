@@ -204,6 +204,7 @@ def get_week_blocks(tab=None, today=None):
                 cur["category"] = "店舗用" if cur["name"] == "店舗用" else "催事用"
             cur["products"].append({
                 "name": a,
+                "row": r,   # シート上の行番号（予算の書き戻し先）
                 "plan": [num(cell(r, c)) for c in PLAN_COLS],
                 "actual": [num(cell(r, c)) for c in ACT_COLS],
             })

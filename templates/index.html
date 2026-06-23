@@ -60,6 +60,8 @@
   .chip.ok{background:#e1f5ee;color:#0f6e56;}.chip.warn{background:var(--warnbg);color:var(--warn);}
   .chip.bad{background:#fcebeb;color:#a32d2d;}.chip.na{background:#f1efe8;color:var(--muted);}
   .estock{display:inline-block;min-width:30px;text-align:center;border-bottom:1px dashed var(--info);color:var(--info);font-weight:600;padding:0 2px;}
+  .planedit{display:inline-block;min-width:24px;text-align:center;border-bottom:1px dashed var(--info);color:var(--ink);font-weight:600;padding:0 4px;}
+  .planedit:focus{outline:none;border-bottom-color:var(--info);background:#eef4fb;}
   .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
   .dot-w{background:#fff;border:1px solid #b9b4a6;}
   .dot-y{background:#f4c84a;border:1px solid #d3a838;}
@@ -203,10 +205,13 @@ function renderMake(){
   blk.products.forEach(p=>{
     const made=madeVal(p,sel),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=made;
     const r=document.createElement('div');r.className='row';
-    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<b>'+plan+'</b>　売れた '+(sold==null?'–':sold)+'</div></div>'+
+    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<span class="planedit" contenteditable="true" inputmode="numeric">'+plan+'</span>　売れた '+(sold==null?'–':sold)+'</div></div>'+
       '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
-    const v=r.querySelector('.val'),bs=r.querySelectorAll('button');
+    const v=r.querySelector('.val'),bs=r.querySelectorAll('button'),pe=r.querySelector('.planedit');
     bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);
+    pe.addEventListener('focus',()=>{pe.dataset.b=pe.textContent;});
+    pe.addEventListener('blur',()=>{if(pe.textContent!==(pe.dataset.b||''))savePlan(p,pe.textContent);});
+    pe.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pe.blur();}});
     v.addEventListener('focus',()=>v.select());
     v.addEventListener('change',()=>setMade(p,v.value,v));
     v.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.blur();}});
@@ -219,6 +224,9 @@ function setMade(p,raw,v){let cur=parseInt(String(raw).replace(/[^0-9]/g,''),10)
   let tot=0;W.blocks[selBlk].products.forEach(x=>tot+=(x===p?cur:madeVal(x,sel)));document.getElementById('tot').textContent=Math.round(tot);
   fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:cur})});}
 function chg(p,d,v){const cur=madeVal(p,sel)+d;setMade(p,cur<0?0:cur,v);}
+function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(val))val=0;p.plan[sel]=val;
+  if(p.row)fetch('/api/cell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,row:p.row,col:2+sel,value:val})});
+  renderMake();}
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
 function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
