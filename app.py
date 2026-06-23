@@ -37,6 +37,15 @@ def week_payload(tab=None):
 
 
 class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            self._route_get()
+        except Exception as e:
+            try:
+                self._send(500, json.dumps({"error": str(e)}))
+            except Exception:
+                pass
+
     def _send(self, code, body, ctype="application/json"):
         b = body.encode("utf-8") if isinstance(body, str) else body
         self.send_response(code)
@@ -45,7 +54,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
-    def do_GET(self):
+    def _route_get(self):
         u = urlparse(self.path)
         path = u.path
         tab = (parse_qs(u.query).get("tab") or [None])[0]
@@ -68,6 +77,15 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, "{}")
 
     def do_POST(self):
+        try:
+            self._route_post()
+        except Exception as e:
+            try:
+                self._send(500, json.dumps({"error": str(e)}))
+            except Exception:
+                pass
+
+    def _route_post(self):
         path = urlparse(self.path).path
         n = int(self.headers.get("Content-Length", 0) or 0)
         data = json.loads(self.rfile.read(n) or b"{}") if path.startswith("/api/") else {}
