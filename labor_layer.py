@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""日別の店舗人件費を予実シート(03_実績_店舗日次)から読む。店舗スタッフのみで
-ユーザーの概算規模とほぼ一致する正しい範囲。交通費列は無いため None。60秒キャッシュ。"""
+"""日別の人件費・交通費を製造表の _app_labor タブから読む（製造実績タブ用）。
+airshift_labor_sync.py が店舗スタッフのシフト表から日別集計（日付/人件費/交通費）。
+概算とほぼ一致する正しい範囲。60秒キャッシュ。"""
 import time
 import data_layer
 
-YOSAN_SHEET_ID = "1PxLrwb2x2ZDs0DaWgmGuwW-6IzRvqXYJhywsGzyLftY"
-TAB = "03_実績_店舗日次"
-DATE_COL = 0
-LABOR_COL = 19
-
+TAB = "_app_labor"
 _cache = {"t": 0.0, "map": {}}
 _TTL = 60.0
 
@@ -36,21 +33,21 @@ def daily_labor_map():
     if _cache["map"] and now - _cache["t"] < _TTL:
         return _cache["map"]
     try:
-        gc = data_layer._client()
-        ws = gc.open_by_key(YOSAN_SHEET_ID).worksheet(TAB)
-        vals = ws.get_all_values()
+        ws = data_layer._spreadsheet().worksheet(TAB)
+        vals = data_layer.cached_values(ws)
     except Exception:
         return _cache["map"]
     m = {}
-    for row in vals[3:]:
-        if len(row) <= LABOR_COL:
+    for row in vals[1:]:
+        if len(row) < 2:
             continue
-        md = _parse_md(row[DATE_COL])
+        md = _parse_md(row[0])
         if not md:
             continue
-        labor = _to_int(row[LABOR_COL])
+        labor = _to_int(row[1])
+        trans = _to_int(row[2]) if len(row) > 2 else None
         if labor is not None and labor > 0:
-            m[md] = {"labor": labor, "transport": None}
+            m[md] = {"labor": labor, "transport": trans or 0}
     _cache["t"] = now
     _cache["map"] = m
     return m

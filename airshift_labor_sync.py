@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""エアシフトのシフト表CSV（毎朝の自動取得物）から日別の人件費と交通費を集計し、
-製造表の専用タブ `_app_labor` に書き出す。アプリ(Render)はDropboxのCSVを読めないので、
-ここ(Mac)で集計してシートに置き、アプリはそのシートを読む。
-CSV列: 0氏名 1日付 ... 12通勤手当 14合計  → 日別: 人件費=Σ合計 / 交通費=Σ通勤手当"""
+"""エアシフトのシフト表CSVから日別の人件費・交通費を集計し製造表の _app_labor に書き出す。
+CSV列: 0氏名 1日付 ... 12通勤手当 14合計。月別ファイルが同じ人日を重複保持するため
+(氏名,日付) で一意化してから日別合計（しないと約6倍に膨らむ）。"""
 import csv
 import glob
 import data_layer
@@ -21,19 +20,23 @@ def _num(s):
 
 
 def collect():
-    daily = {}
+    ppd = {}
     for path in glob.glob(CSV_GLOB):
         with open(path, encoding="utf-8-sig") as f:
             rows = list(csv.reader(f))
-        for row in rows[1:]:
-            if len(row) < 15:
+        for r in rows[1:]:
+            if len(r) < 15:
                 continue
-            d = row[1].strip()
-            if not d or "/" not in d:
+            nm = r[0].strip()
+            d = r[1].strip()
+            if not nm or "/" not in d:
                 continue
-            cur = daily.setdefault(d, [0.0, 0.0])
-            cur[0] += _num(row[14])
-            cur[1] += _num(row[12])
+            ppd[(nm, d)] = (_num(r[14]), _num(r[12]))
+    daily = {}
+    for (nm, d), (tot, trn) in ppd.items():
+        cur = daily.setdefault(d, [0.0, 0.0])
+        cur[0] += tot
+        cur[1] += trn
     return daily
 
 
@@ -54,6 +57,6 @@ def write_sheet(daily):
 if __name__ == "__main__":
     daily = collect()
     n = write_sheet(daily)
-    print(f"_app_labor に {n} 日分を書き込みました")
-    for d in sorted(daily)[-7:]:
-        print(f"  {d}: 人件費 {round(daily[d][0]):,}円（うち交通費 {round(daily[d][1]):,}円）")
+    print("_app_labor " + str(n) + " days")
+    for d in sorted(daily)[-5:]:
+        print("  " + d + " " + format(round(daily[d][0]), ",") + " (kotsu " + format(round(daily[d][1]), ",") + ")")
