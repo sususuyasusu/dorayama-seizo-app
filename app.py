@@ -6,6 +6,7 @@ import os
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
 import data_layer
 import made_store
@@ -16,20 +17,23 @@ import material_layer
 BASE = Path(__file__).parent
 
 
-def week_payload():
-    d = data_layer.get_week_store_data()
+def week_payload(tab=None):
+    d = data_layer.get_week_blocks(tab)
     tab = d["tab"]
-    made_store.seed(tab, d["products"])
+    made_store.seed(tab, d["blocks"])
     made = made_store.get_made(tab)
-    prods = []
-    for p in d["products"]:
-        prods.append({
-            "name": p["name"],
-            "plan": p["plan"],
-            "sold": p["actual"],
-            "made": made.get(p["name"], [None] * 7),
-        })
-    return {"tab": tab, "days": d["days"], "products": prods, "kaiten": d["kaiten"]}
+    blocks = []
+    for b in d["blocks"]:
+        prods = []
+        for p in b["products"]:
+            prods.append({
+                "name": p["name"],
+                "plan": p["plan"],
+                "sold": p["actual"],
+                "made": made.get(b["name"], {}).get(p["name"], [None] * 7),
+            })
+        blocks.append({"name": b["name"], "category": b["category"], "products": prods})
+    return {"tab": tab, "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"]}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -42,26 +46,37 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b)
 
     def do_GET(self):
-        if self.path == "/" or self.path.startswith("/index"):
+        u = urlparse(self.path)
+        path = u.path
+        tab = (parse_qs(u.query).get("tab") or [None])[0]
+        if path == "/" or path.startswith("/index"):
             self._send(200, (BASE / "templates" / "index.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
-        elif self.path == "/api/week":
-            self._send(200, json.dumps(week_payload(), ensure_ascii=False))
-        elif self.path == "/api/eggs":
-            self._send(200, json.dumps(egg_layer.get_egg_nav(), ensure_ascii=False))
-        elif self.path == "/api/cost":
-            self._send(200, json.dumps(cost_layer.get_cost(), ensure_ascii=False))
-        elif self.path == "/api/materials":
-            self._send(200, json.dumps(material_layer.get_materials(), ensure_ascii=False))
+        elif path == "/api/tabs":
+            self._send(200, json.dumps(data_layer.list_tabs(), ensure_ascii=False))
+        elif path == "/api/week":
+            self._send(200, json.dumps(week_payload(tab), ensure_ascii=False))
+        elif path == "/api/eggs":
+            self._send(200, json.dumps(egg_layer.get_egg_nav(tab), ensure_ascii=False))
+        elif path == "/api/cost":
+            self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
+        elif path == "/api/materials":
+            self._send(200, json.dumps(material_layer.get_materials(tab), ensure_ascii=False))
+        elif path == "/api/raw":
+            self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
         else:
             self._send(404, "{}")
 
     def do_POST(self):
-        if self.path == "/api/made":
-            n = int(self.headers.get("Content-Length", 0) or 0)
-            data = json.loads(self.rfile.read(n) or b"{}")
-            made_store.set_made(data["tab"], data["product"], data["dayIndex"], data.get("value"))
+        path = urlparse(self.path).path
+        n = int(self.headers.get("Content-Length", 0) or 0)
+        data = json.loads(self.rfile.read(n) or b"{}") if path.startswith("/api/") else {}
+        if path == "/api/made":
+            made_store.set_made(data["tab"], data["block"], data["product"], data["dayIndex"], data.get("value"))
             self._send(200, json.dumps({"ok": True}))
+        elif path == "/api/cell":
+            r = data_layer.set_cell(data["tab"], data["row"], data["col"], data.get("value", ""))
+            self._send(200, json.dumps(r, ensure_ascii=False))
         else:
             self._send(404, "{}")
 

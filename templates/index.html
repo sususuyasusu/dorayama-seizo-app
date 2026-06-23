@@ -5,14 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>どら山 製造アプリ</title>
 <style>
-  :root{--line:#e7e3da;--muted:#8a8780;--ink:#2c2c2a;--info:#185fa5;--infobg:#e6f1fb;--bg:#f4f2ec;--warn:#854f0b;--warnbg:#faeeda;--ok:#0f6e56;--okbg:#e1f5ee;}
+  :root{--line:#e7e3da;--muted:#8a8780;--ink:#2c2c2a;--info:#185fa5;--infobg:#e6f1fb;--bg:#f4f2ec;--warn:#854f0b;--warnbg:#faeeda;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;background:var(--bg);color:var(--ink);}
   .wrap{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:66px;}
-  .hd{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5;}
-  .hd b{font-size:16px;font-weight:600;}.hd .tab{margin-left:auto;font-size:12px;color:var(--muted);}
-  .days{display:flex;gap:5px;padding:11px 12px 6px;justify-content:space-between;overflow-x:auto;}
-  .day{flex:0 0 auto;font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;border:0;background:none;}
+  .hd{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5;}
+  .hd b{font-size:15px;font-weight:600;}
+  .hd select{margin-left:auto;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);max-width:46%;}
+  .blks{display:flex;gap:6px;padding:10px 12px 2px;overflow-x:auto;}
+  .blk{flex:0 0 auto;font-size:12px;padding:6px 12px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--muted);white-space:nowrap;}
+  .blk.on{background:var(--info);border-color:var(--info);color:#fff;font-weight:600;}
+  .blk .cat{font-size:10px;opacity:.7;margin-left:4px;}
+  .days{display:flex;gap:5px;padding:9px 12px 6px;justify-content:space-between;overflow-x:auto;}
+  .day{flex:0 0 auto;font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;border:0;background:none;white-space:nowrap;}
   .day.on{color:var(--info);background:var(--infobg);font-weight:600;}
   .legend{margin:2px 14px 6px;padding:8px 10px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);}
   .row{display:flex;align-items:center;padding:11px 16px;border-top:1px solid var(--line);}
@@ -23,53 +28,96 @@
   .sum{display:flex;gap:10px;padding:14px 16px;background:#faf8f3;border-top:1px solid var(--line);flex-wrap:wrap;}
   .card{flex:1;min-width:120px;background:#fff;border-radius:8px;padding:10px 12px;}.card .l{font-size:12px;color:var(--muted);}.card .n{font-size:21px;font-weight:600;}
   .biz{display:flex;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line);gap:10px;}
-  .biz .wd{width:26px;font-weight:600;font-size:14px;}.biz .amt{font-size:17px;font-weight:600;flex:1;}
-  .biz .sub{font-size:11px;color:var(--muted);text-align:right;}
+  .biz .wd{width:42px;font-weight:600;font-size:13px;}.biz .amt{font-size:17px;font-weight:600;flex:1;}.biz .sub{font-size:11px;color:var(--muted);text-align:right;}
   .mat{display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--line);}
   .mat .nm2{flex:1;font-size:14px;}.mat .ord{font-size:16px;font-weight:600;}.mat .dt{font-size:11px;color:var(--muted);text-align:right;margin-top:2px;}
   .egg{margin:10px 14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
   .egg .top{display:flex;align-items:center;gap:8px;padding:10px 12px;}.egg.today .top{background:var(--infobg);}.egg.act{border-color:#e7c98a;}
   .egg .wd{font-size:14px;font-weight:600;}.egg .st{margin-left:auto;font-size:12px;color:var(--muted);}
+  .pbadge{margin-left:8px;font-size:12px;color:var(--info);font-weight:600;background:var(--infobg);border-radius:8px;padding:1px 7px;}
   .egg .todo{padding:4px 12px 10px;}.egg .ln{font-size:13px;line-height:1.5;padding:3px 0;}
   .egg .hdln{font-size:12px;font-weight:600;color:var(--warn);background:var(--warnbg);display:inline-block;padding:2px 8px;border-radius:6px;margin:2px 0 4px;}
   .sec{padding:12px 16px 4px;font-size:12px;font-weight:600;color:var(--muted);}
   .note{margin:10px 14px 4px;padding:9px 11px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;}
+  .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
+  table.rawt{border-collapse:collapse;font-size:11px;}
+  table.rawt td{border:1px solid var(--line);padding:2px 5px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+  table.rawt tr:first-child td{font-weight:600;background:#faf8f3;}
+  .ecard{margin:9px 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .ecard .eh{padding:8px 13px;background:#faf8f3;font-weight:600;font-size:14px;display:flex;align-items:center;}
+  .erow{display:flex;align-items:center;padding:9px 13px;border-top:1px solid var(--line);gap:8px;}
+  .erow .lbl{width:52px;font-size:13px;font-weight:600;}
+  .erow .kv{flex:1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);}
+  .erow .kv b{color:var(--ink);font-weight:600;}
+  .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap;}
+  .chip.ok{background:#e1f5ee;color:#0f6e56;}.chip.warn{background:var(--warnbg);color:var(--warn);}
+  .chip.bad{background:#fcebeb;color:#a32d2d;}.chip.na{background:#f1efe8;color:var(--muted);}
+  .estock{display:inline-block;min-width:30px;text-align:center;border-bottom:1px dashed var(--info);color:var(--info);font-weight:600;padding:0 2px;}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
+  .dot-w{background:#fff;border:1px solid #b9b4a6;}
+  .dot-y{background:#f4c84a;border:1px solid #d3a838;}
+  .todoln{font-size:12.5px;color:var(--info);padding:0 13px 9px 66px;line-height:1.45;font-weight:600;}
+  .eggrule{margin:0 14px 6px;padding:7px 11px;background:#eef4fb;border-radius:8px;font-size:11px;color:#185fa5;line-height:1.6;}
+  .scard{margin:8px 14px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;}
+  .scard .sl{font-weight:600;font-size:14px;width:62px;flex:0 0 auto;}
+  .scard .sv{flex:1;display:flex;justify-content:space-between;align-items:baseline;font-size:13px;}
+  .scard .sp{color:var(--muted);}.scard .sa{font-weight:600;font-size:15px;}
+  .stpwrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .stplbl{font-size:10px;color:var(--muted);}
+  .nm .s b{color:var(--ink);font-weight:600;}
+  .batch{margin:8px 14px;border:1px solid var(--line);border-radius:10px;padding:10px 13px;}
+  .batch .bn{font-weight:600;font-size:14px;margin-bottom:3px;}.batch .bd{font-size:12px;color:var(--muted);line-height:1.7;}
+  .rules{margin:8px 14px 16px;border:1px solid var(--line);border-radius:10px;}
+  .rules summary{font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;color:var(--ink);}
+  .rules .rl{font-size:12px;color:var(--ink);padding:6px 12px;border-top:1px solid var(--line);line-height:1.55;}
+  .rsh{font-size:12.5px;font-weight:600;color:var(--ink);padding:9px 12px 4px;background:#faf8f3;border-top:1px solid var(--line);}
+  .rsl{font-size:12px;color:var(--ink);padding:4px 12px 4px 18px;line-height:1.5;border-top:0.5px solid var(--line);}
   .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;display:flex;background:#fff;border-top:1px solid var(--line);}
-  .nav button{flex:1;border:0;background:none;padding:9px 0 7px;font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
-  .nav button .ic{font-size:19px;}.nav button.on{color:var(--info);}
+  .nav button{flex:1;border:0;background:none;padding:8px 0 6px;font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .nav button .ic{font-size:18px;}.nav button.on{color:var(--info);}
   .hide{display:none;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><b id="title">製造入力</b><span class="tab" id="tab"></span></div>
+  <div class="hd"><b id="title">製造入力</b><select id="wk"></select></div>
 
   <div id="make">
+    <div class="blks" id="blks"></div>
     <div class="days" id="days"></div>
-    <div class="legend">予定＝事前のだいたい ／ <b style="color:var(--ink)">作った数</b>＝当日その場で上書き ／ 売れた数＝エアレジ自動</div>
+    <div class="legend"><b style="color:var(--ink)">予定（予算）</b>＝事前の計画 ／ <b style="color:var(--ink)">実績（作った数）</b>＝その場で打ち込み ／ 売れた＝エアレジ／Airメイト自動</div>
     <div id="rows"></div>
     <div class="sum">
-      <div class="card"><div class="l">店舗 作った数 合計</div><div class="n" id="tot">–</div></div>
-      <div class="card"><div class="l">回転数（製造表 本日）</div><div class="n" id="kai">–</div></div>
+      <div class="card"><div class="l"><span id="totlbl">作った数</span> 合計</div><div class="n" id="tot">–</div></div>
+      <div class="card"><div class="l">回転数（製造表 当日）</div><div class="n" id="kai">–</div></div>
     </div>
   </div>
 
-  <div id="egg" class="hide"><div class="note" id="eggnote">読込中…</div><div id="eggdays"></div></div>
+  <div id="egg" class="hide">
+    <div class="note" id="eggnote">読込中…</div>
+    <div class="eggrule" id="eggrule"></div>
+    <div id="eggdaylist"></div>
+    <div class="sec">翌週の正味発注数（配送便別）</div>
+    <div id="eggbatches"></div>
+    <details class="rules"><summary>📖 この表の見方（こうなったら→こうする）</summary><div id="eggguide"></div></details>
+    <details class="rules"><summary>📋 卵発注ルール</summary><div id="eggruleslist"></div></details>
+  </div>
 
   <div id="sales" class="hide">
-    <div class="sum">
-      <div class="card"><div class="l">今週 売上（実績）</div><div class="n" id="wsa">–</div></div>
-      <div class="card"><div class="l">今週 売上（予定）</div><div class="n" id="wsp">–</div></div>
-    </div>
-    <div class="sec">日別 売上・回転・人件費</div>
+    <div class="sec">この週の売上（予定 → 実績）</div>
+    <div id="salessum"></div>
+    <div class="sec">日別（店舗・催事）</div>
     <div id="salesdays"></div>
   </div>
 
   <div id="mat" class="hide">
-    <div class="sec">材料 推奨発注量（実績ベース）</div>
-    <div id="matlist"></div>
-    <div class="sec">配送便別 卵まとめ</div>
-    <div id="delivlist"></div>
+    <div class="sec">材料 推奨発注量（卵は「卵発注」タブに集約）</div><div id="matlist"></div>
+  </div>
+
+  <div id="raw" class="hide">
+    <div class="note">この週のシートを丸ごと表示・<b style="color:var(--ink)">直接編集</b>できます（どのセルもタップ→打ち込み→自動でシート本体に保存）。計算式のセル（回転数・金額・卵発注など）を打ち替えると式が消えるのでご注意。
+      <button id="rawrefresh" style="margin-left:4px;font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;">再計算を反映</button></div>
+    <div class="rawwrap"><div id="rawbox">読込中…</div></div>
   </div>
 </div>
 
@@ -77,65 +125,119 @@
   <button id="nav-make" class="on" onclick="show('make')"><span class="ic">🍪</span>製造入力</button>
   <button id="nav-egg" onclick="show('egg')"><span class="ic">🥚</span>卵発注</button>
   <button id="nav-sales" onclick="show('sales')"><span class="ic">💴</span>売上</button>
-  <button id="nav-mat" onclick="show('mat')"><span class="ic">🧂</span>材料・配送</button>
+  <button id="nav-mat" onclick="show('mat')"><span class="ic">🧂</span>材料配送</button>
+  <button id="nav-raw" onclick="show('raw')"><span class="ic">📋</span>全データ</button>
 </div>
 
 <script>
-let W=null,sel=(new Date().getDay()+6)%7;
-const SC=['make','egg','sales','mat'],TT={make:'製造入力',egg:'卵発注',sales:'売上',mat:'材料・配送'};
+let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
+const SC=['make','egg','sales','mat','raw'],TT={make:'製造入力',egg:'卵発注',sales:'売上',mat:'材料・配送',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];}
-async function J(u){return (await fetch(u)).json();}
+async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return (await fetch(u+t)).json();}
 
-async function load(){
-  W=await J('/api/week');
-  document.getElementById('tab').textContent='店舗用 ・ '+W.tab;
+async function init(){
+  const tabs=await (await fetch('/api/tabs')).json();
+  W=await J('/api/week');           // tab未指定＝今週
+  curTab=W.tab;
+  const wk=document.getElementById('wk');wk.innerHTML='';
+  tabs.slice().reverse().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t+(t===curTab?'（今週）':'');if(t===curTab)o.selected=true;wk.appendChild(o);});
+  wk.onchange=()=>{curTab=wk.value;loadWeek();};
+  paintMake();
+  J('/api/eggs').then(renderEgg);
+  J('/api/cost').then(renderSales);
+  J('/api/materials').then(renderMat);
+  J('/api/raw').then(renderRaw);
+  document.getElementById('rawrefresh').onclick=()=>J('/api/raw').then(renderRaw);
+}
+async function loadWeek(){
+  W=await J('/api/week');sel=Math.min(sel,6);paintMake();
+  J('/api/eggs').then(renderEgg);
+  J('/api/cost').then(renderSales);
+  J('/api/materials').then(renderMat);
+  J('/api/raw').then(renderRaw);
+}
+function paintMake(){
+  selBlk=Math.max(0,W.blocks.findIndex(b=>b.name==='店舗用'));
+  const bb=document.getElementById('blks');bb.innerHTML='';
+  W.blocks.forEach((b,i)=>{const el=document.createElement('button');el.className='blk'+(i===selBlk?' on':'');
+    el.innerHTML=b.name+'<span class="cat">'+(b.category==='店舗用'?'店舗':'催事')+'</span>';
+    el.onclick=()=>{selBlk=i;renderMake();};bb.appendChild(el);});
   const dd=document.getElementById('days');dd.innerHTML='';
   W.days.forEach((d,i)=>{const b=document.createElement('button');b.className='day'+(i===sel?' on':'');b.textContent=d.label;b.onclick=()=>{sel=i;renderMake();};dd.appendChild(b);});
   renderMake();
-  renderEgg(await J('/api/eggs'));
-  renderSales(await J('/api/cost'));
-  renderMat(await J('/api/materials'));
 }
 function renderMake(){
+  document.querySelectorAll('.blk').forEach((b,i)=>b.classList.toggle('on',i===selBlk));
   document.querySelectorAll('.day').forEach((b,i)=>b.classList.toggle('on',i===sel));
+  const blk=W.blocks[selBlk];if(!blk){document.getElementById('rows').innerHTML='';return;}
+  document.getElementById('title').textContent='製造入力';
+  document.getElementById('totlbl').textContent=blk.name+' 実績';
   const box=document.getElementById('rows');box.innerHTML='';let tot=0;
-  W.products.forEach(p=>{
+  blk.products.forEach(p=>{
     const made=(p.made[sel]??p.sold[sel]??0),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=Number(made)||0;
     const r=document.createElement('div');r.className='row';
-    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予定 '+plan+' ／ 売れた数 '+(sold==null?'–':sold)+'</div></div>'+
-      '<div class="stp"><button>−</button><div class="val">'+made+'</div><button>＋</button></div>';
+    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予定（予算）<b>'+plan+'</b>　売れた '+(sold==null?'–':sold)+'</div></div>'+
+      '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><div class="val">'+made+'</div><button>＋</button></div></div>';
     const v=r.querySelector('.val'),bs=r.querySelectorAll('button');bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);box.appendChild(r);
   });
   document.getElementById('tot').textContent=Math.round(tot);
   const k=W.kaiten[sel];document.getElementById('kai').textContent=(k==null?'–':k);
 }
 function chg(p,d,v){let cur=Number(p.made[sel]??p.sold[sel]??0)+d;if(cur<0)cur=0;p.made[sel]=cur;v.textContent=cur;
-  let tot=0;W.products.forEach(x=>tot+=Number(x.made[sel]??x.sold[sel]??0));document.getElementById('tot').textContent=Math.round(tot);
-  fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,product:p.name,dayIndex:sel,value:cur})});}
+  let tot=0;W.blocks[selBlk].products.forEach(x=>tot+=Number(x.made[sel]??x.sold[sel]??0));document.getElementById('tot').textContent=Math.round(tot);
+  fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:cur})});}
+function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
+function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
+function eline(label,o,row,col,tab){
+  const stock=col>0?('<span class="estock" contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+row+'" data-c="'+col+'">'+esc(o.stock||'')+'</span>'):('<b>'+nz(o.stock)+'</b>');
+  let h='<div class="erow"><div class="lbl">'+label+'</div><div class="kv"><span>在庫 '+stock+'</span><span>必要 <b>'+nz(o.need)+'</b></span><span>届く <b>'+nz(o.incoming)+'</b></span></div>'+eChip(o.outlook)+'</div>';
+  if(o.todo&&o.todo.trim())h+='<div class="todoln">📢 やること：'+esc(o.todo)+'</div>';
+  return h;}
 function renderEgg(E){
   document.getElementById('eggnote').textContent=E.note||'';
-  const box=document.getElementById('eggdays');box.innerHTML='';
-  E.days.forEach((d,i)=>{const act=d.todo&&d.todo.length>0;const el=document.createElement('div');el.className='egg'+(i===sel?' today':'')+(act?' act':'');
-    let todo='';if(act){todo='<div class="todo">'+d.todo.map(t=>t.indexOf('📦')===0?'<div class="hdln">'+t+'</div>':'<div class="ln">'+t+'</div>').join('')+'</div>';}
-    el.innerHTML='<div class="top"><span class="wd">'+d.weekday+' '+(d.date||'').slice(5)+'</span><span class="st">卵黄残 '+(d.yolk||'–')+' ／ 卵白残 '+(d.white||'–')+'</span></div>'+todo;box.appendChild(el);});
-}
+  document.getElementById('eggrule').innerHTML=(E.ruleY?esc(E.ruleY):'')+(E.ruleW?'<br>'+esc(E.ruleW):'');
+  const dl=document.getElementById('eggdaylist');dl.innerHTML='';
+  E.days.forEach((d,i)=>{const card=document.createElement('div');card.className='ecard';
+    card.innerHTML='<div class="eh">'+d.wd+' '+(d.date||'').slice(5)+(i===sel?'<span class="chip ok" style="margin-left:8px;font-size:11px">今日</span>':'')+(d.prod?'<span class="pbadge">作る数 '+nz(d.prod)+'回転</span>':'')+'</div>'+
+      eline('<span class="dot dot-y"></span>卵黄',d.yolk,d.row,E.syCol,E.tab)+eline('<span class="dot dot-w"></span>卵白',d.white,d.row,E.swCol,E.tab);
+    dl.appendChild(card);});
+  bindEdit(dl);
+  const bl=document.getElementById('eggbatches');bl.innerHTML='';
+  E.batches.forEach(b=>{const el=document.createElement('div');el.className='batch';
+    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>';bl.appendChild(el);});
+  document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
+  document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
+function renderSecs(secs){return (secs||[]).map(s=>{
+  let h=(s.header&&!s.header.startsWith('📖'))?'<div class="rsh">'+esc(s.header)+'</div>':'';
+  h+=(s.lines||[]).map(l=>'<div class="rsl">'+esc(l)+'</div>').join('');return h;}).join('');}
+function yen(n){return '¥'+Math.round(n||0).toLocaleString();}
+function scard(label,o){return '<div class="scard"><div class="sl">'+label+'</div><div class="sv"><span class="sp">予定 '+yen(o.plan)+'</span><span class="sa">実績 '+yen(o.actual)+'</span></div></div>';}
 function renderSales(C){
-  document.getElementById('wsa').textContent=C.weekSalesActual||'–';
-  document.getElementById('wsp').textContent=C.weekSalesPlan||'–';
+  document.getElementById('salessum').innerHTML=scard('🏪 店舗',C.store)+scard('🎪 催事',C.event)+scard('合計',C.total);
   const box=document.getElementById('salesdays');box.innerHTML='';
-  C.days.forEach((d,i)=>{const el=document.createElement('div');el.className='biz';if(i===sel)el.style.background='var(--infobg)';
-    el.innerHTML='<span class="wd">'+d.d+'</span><span class="amt">'+(d.salesActual||'–')+'</span>'+
-      '<span class="sub">回転 '+(d.kaiten||'–')+'<br>人件費 '+(d.labor||'–')+'</span>';box.appendChild(el);});
-}
-function renderMat(M){
-  const ml=document.getElementById('matlist');ml.innerHTML='';
+  C.days.forEach((d,i)=>{const el=document.createElement('div');el.className='ecard';
+    el.innerHTML='<div class="eh">'+d.d+(i===sel?'<span class="chip ok" style="margin-left:8px;font-size:11px">今日</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400">回転 '+nz(d.kaiten)+'</span></div>'+
+      '<div class="erow"><div class="lbl">🏪店舗</div><div class="kv">予定 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
+      '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予定 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>';
+    box.appendChild(el);});}
+function renderMat(M){const ml=document.getElementById('matlist');ml.innerHTML='';
   M.materials.forEach(m=>{const el=document.createElement('div');el.className='mat';
-    el.innerHTML='<div class="nm2">'+m.name+'</div><div style="text-align:right"><div class="ord">'+(m.order||'–')+' '+(m.unit||'')+'</div><div class="dt">入荷 '+(m.arrive||'–')+'</div></div>';ml.appendChild(el);});
-  const dl=document.getElementById('delivlist');dl.innerHTML='';
-  M.delivery.forEach(d=>{const el=document.createElement('div');el.className='egg';
-    el.innerHTML='<div class="top"><span class="wd">'+d.name+'</span></div><div class="todo"><div class="ln">卵黄 '+(d.yolkKai||'–')+'回転（'+(d.yolkG||'–')+'g）</div><div class="ln">卵白 '+(d.whiteKai||'–')+'回転（'+(d.whiteG||'–')+'g）</div></div>';dl.appendChild(el);});
-}
-load();
+    el.innerHTML='<div class="nm2">'+m.name+'</div><div style="text-align:right"><div class="ord">'+(m.order||'–')+' '+(m.unit||'')+'</div><div class="dt">入荷 '+(m.arrive||'–')+'</div></div>';ml.appendChild(el);});}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function editGrid(tab,rows,topRow,leftCol){if(!rows||!rows.length)return '';
+  const mx=rows.reduce((a,r)=>Math.max(a,r.length),0);let h='<table class="rawt">';
+  rows.forEach((r,ri)=>{h+='<tr>';for(let c=0;c<mx;c++){h+='<td contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+(topRow+ri)+'" data-c="'+(leftCol+c)+'">'+esc(r[c]||'')+'</td>';}h+='</tr>';});
+  return h+'</table>';}
+function bindEdit(box){box.querySelectorAll('td').forEach(td=>{
+  td.addEventListener('focus',()=>{td.dataset.before=td.textContent;});
+  td.addEventListener('blur',()=>{const nv=td.textContent;if(nv!==(td.dataset.before||''))saveCell(td.dataset.tab,td.dataset.r,td.dataset.c,nv,td);});
+  td.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();td.blur();}});});}
+function saveCell(tab,r,c,v,td){td.style.background='#fff7d6';
+  fetch('/api/cell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:tab,row:+r,col:+c,value:v})})
+    .then(x=>x.json()).then(()=>{td.style.background='#e1f5ee';setTimeout(()=>td.style.background='',900);})
+    .catch(()=>{td.style.background='#fcebeb';});}
+function renderRaw(R){curRawTab=R.tab;const box=document.getElementById('rawbox');box.innerHTML=editGrid(R.tab,R.values,1,1);bindEdit(box);}
+init();
 </script>
 </body>
 </html>

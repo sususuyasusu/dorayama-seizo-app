@@ -3,20 +3,12 @@
 import data_layer
 
 
-def _ws():
-    gc = data_layer._client()
-    sh = gc.open_by_key(data_layer.SHEET_ID)
-    _, cands = data_layer.current_week_tab()
-    for c in cands:
-        try:
-            return sh.worksheet(c)
-        except Exception:
-            continue
-    raise RuntimeError("今週タブが見つからない")
+def _ws(tab=None):
+    return data_layer.open_ws(tab)
 
 
-def get_materials():
-    ws = _ws()
+def get_materials(tab=None):
+    ws = _ws(tab)
     v = ws.get_all_values()
 
     def g(r, c):
@@ -27,6 +19,8 @@ def get_materials():
         name = g(r, 20)
         if not name.strip():
             continue
+        if name.strip() in ("卵黄", "卵白"):
+            continue  # 卵は「卵発注」タブに集約
         mats.append({
             "name": name, "unit": g(r, 21),
             "order": g(r, 26),       # AA 推奨発注量

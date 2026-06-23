@@ -4,6 +4,7 @@
 裏の計算はスプレッドシートに任せ、アプリはここ経由で読み書きする。"""
 import os
 import json
+import re
 from datetime import date, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
@@ -48,6 +49,47 @@ def current_week_tab(today=None):
     return monday, cands
 
 
+def open_ws(tab=None, today=None):
+    """指定タブ（週）を開く。未指定なら今週タブ。"""
+    gc = _client()
+    sh = gc.open_by_key(SHEET_ID)
+    if tab:
+        return sh.worksheet(tab)
+    _, cands = current_week_tab(today)
+    for c in cands:
+        try:
+            return sh.worksheet(c)
+        except gspread.WorksheetNotFound:
+            continue
+    raise RuntimeError(f"今週タブが見つからない（候補 {cands}）")
+
+
+def list_tabs():
+    """週タブ名の一覧（古い順）。アプリ用の内部タブ _app_made は除く。"""
+    gc = _client()
+    sh = gc.open_by_key(SHEET_ID)
+    return [w.title for w in sh.worksheets() if w.title != "_app_made"]
+
+
+def get_raw(tab=None):
+    """指定週タブの全セル（行×列）をそのまま返す＝もれなく全表示用。"""
+    ws = open_ws(tab)
+    return {"tab": ws.title, "values": ws.get_all_values()}
+
+
+def set_cell(tab, row, col, value):
+    """全データ画面の手打ち保存：指定セルにそのまま書き込む（USER_ENTERED＝シートに打つのと同じ挙動）。"""
+    ws = open_ws(tab)
+    a1 = gspread.utils.rowcol_to_a1(int(row), int(col))
+    ws.update(range_name=a1, values=[[value]], value_input_option="USER_ENTERED")
+    return {"ok": True, "tab": ws.title, "a1": a1}
+
+
+def _md(s):
+    m = re.findall(r"\d+", str(s))
+    return f"{int(m[0])}/{int(m[1])}" if len(m) >= 2 else ""
+
+
 def get_week_store_data(today=None):
     gc = _client()
     sh = gc.open_by_key(SHEET_ID)
@@ -87,6 +129,53 @@ def get_week_store_data(today=None):
 
     return {"tab": ws.title, "monday": monday.isoformat(), "days": days,
             "products": products, "kaiten": kaiten}
+
+
+PRODUCTS_SET = ["黒どら", "あんバター", "白どら", "旬どら", "生", "生どら", "皮4枚セット", "皮だけ（パック）"]
+
+
+def get_week_blocks(tab=None, today=None):
+    """指定週タブの全ブロック（各催事＋店舗用）を、見出し（カテゴリー行）から動的に検出して返す。
+    予定(B..H)と実績(V..AB)は同じ行に並ぶので、商品行ごとに両方読む。曜日ラベルはシートの日付から。"""
+    ws = open_ws(tab, today)
+    vals = ws.get_all_values()
+
+    def cell(r, c):
+        return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""
+
+    def num(s):
+        s = str(s).replace(",", "").strip()
+        try:
+            return float(s) if s not in ("", "-") else None
+        except ValueError:
+            return None
+
+    daydates = None
+    blocks = []
+    cur = None
+    for r in range(1, 35):
+        a = cell(r, 0).strip()
+        s = cell(r, 18).strip()
+        if s == "カテゴリー" and a:
+            if daydates is None:
+                daydates = [_md(cell(r, c)) for c in PLAN_COLS]
+            cur = {"name": a, "category": "", "products": []}
+            blocks.append(cur)
+            continue
+        if cur is not None and a in PRODUCTS_SET:
+            if not cur["category"]:
+                cur["category"] = "店舗用" if cur["name"] == "店舗用" else "催事用"
+            cur["products"].append({
+                "name": a,
+                "plan": [num(cell(r, c)) for c in PLAN_COLS],
+                "actual": [num(cell(r, c)) for c in ACT_COLS],
+            })
+    blocks = [b for b in blocks if b["products"]]
+
+    days = [{"label": (f"{WEEKDAYS[i]}{daydates[i]}" if daydates and daydates[i] else WEEKDAYS[i]),
+             "date": (daydates[i] if daydates else "")} for i in range(7)]
+    kaiten = [num(cell(38, c)) for c in ACT_COLS]
+    return {"tab": ws.title, "days": days, "blocks": blocks, "kaiten": kaiten}
 
 
 if __name__ == "__main__":
