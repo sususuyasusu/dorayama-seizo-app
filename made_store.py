@@ -60,17 +60,7 @@ def set_made(tab, block, product, day_index, value):
 
 
 def seed(tab, blocks):
-    """今週タブの行がまだ無ければ、各ブロック×商品を実績値で初期登録する。"""
-    ws = _ws()
-    rows = data_layer.cached_values(ws)
-    if any(len(r) >= 1 and r[0] == tab for r in rows[1:]):
-        return
-    new = []
-    for b in blocks:
-        for p in b["products"]:
-            vals = [("" if v is None else int(v)) for v in p["actual"]]
-            vals = (vals + [""] * 7)[:7]
-            new.append([tab, b["name"], p["name"]] + vals)
-    if new:
-        ws.append_rows(new, value_input_option="RAW")
-        data_layer.invalidate(TAB)
+    """旧版は「週を開いた瞬間の実売スナップショット」で作った数を初期登録していたが、
+    それだと過去日に古い早朝時点の数字が固定されてしまう。表示は madeVal 側で
+    （本日以降＝予算／昨日以前＝ライブ実売）算出するので、ここでは何もしない（手入力のみ保存）。"""
+    return
