@@ -24,7 +24,9 @@
   .nm{flex:1;min-width:0;}.nm .t{font-size:15px;font-weight:600;}.nm .s{font-size:11px;color:var(--muted);margin-top:2px;}
   .stp{display:flex;align-items:center;gap:9px;}
   .stp button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;color:var(--ink);}
-  .stp button:active{transform:scale(.95);}.val{width:48px;text-align:center;font-size:21px;font-weight:600;}
+  .stp button:active{transform:scale(.95);}
+  .val{width:64px;text-align:center;font-size:22px;font-weight:600;border:none;border-bottom:2px solid var(--line);background:transparent;color:var(--ink);padding:3px 0;border-radius:0;}
+  .val:focus{outline:none;border-bottom-color:var(--info);}
   .sum{display:flex;gap:10px;padding:14px 16px;background:#faf8f3;border-top:1px solid var(--line);flex-wrap:wrap;}
   .card{flex:1;min-width:120px;background:#fff;border-radius:8px;padding:10px 12px;}.card .l{font-size:12px;color:var(--muted);}.card .n{font-size:21px;font-weight:600;}
   .biz{display:flex;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line);gap:10px;}
@@ -197,15 +199,21 @@ function renderMake(){
     const made=(p.made[sel]??p.sold[sel]??0),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=Number(made)||0;
     const r=document.createElement('div');r.className='row';
     r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予定（予算）<b>'+plan+'</b>　売れた '+(sold==null?'–':sold)+'</div></div>'+
-      '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><div class="val">'+made+'</div><button>＋</button></div></div>';
-    const v=r.querySelector('.val'),bs=r.querySelectorAll('button');bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);box.appendChild(r);
+      '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
+    const v=r.querySelector('.val'),bs=r.querySelectorAll('button');
+    bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);
+    v.addEventListener('focus',()=>v.select());
+    v.addEventListener('change',()=>setMade(p,v.value,v));
+    v.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.blur();}});
+    box.appendChild(r);
   });
   document.getElementById('tot').textContent=Math.round(tot);
   const k=W.kaiten[sel];document.getElementById('kai').textContent=(k==null?'–':k);
 }
-function chg(p,d,v){let cur=Number(p.made[sel]??p.sold[sel]??0)+d;if(cur<0)cur=0;p.made[sel]=cur;v.textContent=cur;
+function setMade(p,raw,v){let cur=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(cur))cur=0;p.made[sel]=cur;v.value=cur;
   let tot=0;W.blocks[selBlk].products.forEach(x=>tot+=Number(x.made[sel]??x.sold[sel]??0));document.getElementById('tot').textContent=Math.round(tot);
   fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:cur})});}
+function chg(p,d,v){const cur=Number(p.made[sel]??p.sold[sel]??0)+d;setMade(p,cur<0?0:cur,v);}
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
 function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
