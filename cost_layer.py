@@ -50,19 +50,26 @@ def get_cost(tab=None):
                 tgt["plan"][i] += m(g(r, 11 + i))    # L..R 予定金額
                 tgt["actual"][i] += m(g(r, 31 + i))  # AF..AL 実績金額
 
-    lmap = labor_layer.daily_labor_map()   # エアシフト由来の日次人件費 {(月,日):合計}
+    lmap = labor_layer.daily_labor_map()
     days = []
     for i in range(7):
         sp, sa = store["plan"][i], store["actual"][i]
         ep, ea = event["plan"][i], event["actual"][i]
+        rec = lmap.get(daymd[i]) or {}
+        lab = rec.get("labor")
+        ts = round(sa + ea)
+        pct = round(lab / ts * 100, 1) if (lab and ts > 0) else None
         days.append({
             "d": DAYS[i],
             "storePlan": round(sp), "storeActual": round(sa),
             "eventPlan": round(ep), "eventActual": round(ea),
             "totalPlan": round(sp + ep), "totalActual": round(sa + ea),
-            "kaiten": g(38, 21 + i),     # 回転数（実数）
-            "labor": g(36, 31 + i),      # 製造人件費（製造表の手入力）
-            "laborAir": lmap.get(daymd[i]),  # エアシフト由来の人件費合計（無い日はNone）
+            "kaiten": g(38, 21 + i),
+            "labor": g(36, 31 + i),
+            "laborAir": lab,
+            "transportAir": rec.get("transport"),
+            "laborPct": pct,
+            "laborAlert": (pct is not None and pct > 20),
         })
 
     def tot(d):
