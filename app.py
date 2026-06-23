@@ -64,6 +64,8 @@ class Handler(BaseHTTPRequestHandler):
                        "text/html; charset=utf-8")
         elif path == "/api/tabs":
             self._send(200, json.dumps(data_layer.list_tabs(), ensure_ascii=False))
+        elif path == "/api/gids":
+            self._send(200, json.dumps(data_layer.list_gids(), ensure_ascii=False))
         elif path == "/api/week":
             self._send(200, json.dumps(week_payload(tab), ensure_ascii=False))
         elif path == "/api/eggs":

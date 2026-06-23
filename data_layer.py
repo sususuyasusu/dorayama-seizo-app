@@ -102,6 +102,11 @@ def list_tabs():
     return [w.title for w in _spreadsheet().worksheets() if w.title != "_app_made"]
 
 
+def list_gids():
+    """週タブ名→シート内部番号(gid) の一覧。全データ画面の週切替で使う。"""
+    return [[w.title, w.id] for w in _spreadsheet().worksheets() if w.title != "_app_made"]
+
+
 def get_raw(tab=None):
     """指定週タブの全セル（行×列）をそのまま返す＝もれなく全表示用。"""
     ws = open_ws(tab)
