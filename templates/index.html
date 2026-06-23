@@ -19,6 +19,13 @@
   .days{display:flex;gap:5px;padding:9px 12px 6px;justify-content:space-between;overflow-x:auto;}
   .day{flex:0 0 auto;font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;border:0;background:none;white-space:nowrap;}
   .day.on{color:var(--info);background:var(--infobg);font-weight:600;}
+  .dayw{font-size:10px;display:block;margin-top:1px;font-weight:400;}
+  .wxline{margin:4px 14px 0;padding:7px 11px;background:#eef4fb;border-radius:8px;font-size:12px;color:#185fa5;font-weight:600;}
+  .wxline:empty{display:none;}
+  .invrow{display:flex;align-items:center;padding:9px 16px;border-top:1px solid var(--line);gap:10px;}
+  .invrow.need{background:#fff7f3;}
+  .invn{flex:1;min-width:0;}.invt{font-size:14px;font-weight:600;}.invs{font-size:11px;color:var(--muted);margin-top:2px;}
+  .invq{text-align:right;min-width:60px;}.invnum{font-size:16px;font-weight:600;}.invmin{font-size:11px;color:var(--muted);}
   .legend{margin:2px 14px 6px;padding:8px 10px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);}
   .row{display:flex;align-items:center;padding:11px 16px;border-top:1px solid var(--line);}
   .nm{flex:1;min-width:0;}.nm .t{font-size:15px;font-weight:600;}.nm .s{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -95,6 +102,7 @@
     <div class="blks" id="blks"></div>
     <div class="days" id="days"></div>
     <div class="legend"><b style="color:var(--ink)">予算</b>＝事前の計画 ／ <b style="color:var(--ink)">実績（作った数）</b>＝本日以降は予算を表示（手入力で調整可）、昨日以前は実売（エアレジ/Airメイト）を自動反映 ／ <b style="color:var(--ink)">売れた</b>＝実際に売れた数（エアレジ/Airメイト）</div>
+    <div class="wxline" id="wxline"></div>
     <div id="rows"></div>
     <div class="sum">
       <div class="card"><div class="l"><span id="totlbl">作った数</span> 合計</div><div class="n" id="tot">–</div></div>
@@ -121,6 +129,7 @@
 
   <div id="mat" class="hide">
     <div class="sec">材料 推奨発注量（卵は「卵発注」タブに集約）</div><div id="matlist"></div>
+    <div class="sec">📦 在庫（在庫管理アプリと連携）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
 
   <div id="raw" class="hide">
@@ -155,6 +164,7 @@ async function init(){
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   J('/api/materials').then(renderMat);
+  fetchJSON('/api/inventory').then(renderInv).catch(()=>{});
   stampSync();
 }
 async function loadWeek(){
@@ -175,6 +185,7 @@ async function syncAll(force){
   try{
     W=await J('/api/week');sel=Math.min(sel,6);paintMake();
     J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/materials').then(renderMat);
+    fetchJSON('/api/inventory').then(renderInv).catch(()=>{});
     stampSync();
   }catch(e){}
 }
@@ -188,7 +199,7 @@ function paintMake(){
     el.innerHTML=b.name+'<span class="cat">'+(b.category==='店舗用'?'店舗':'催事')+'</span>';
     el.onclick=()=>{selBlk=i;renderMake();};bb.appendChild(el);});
   const dd=document.getElementById('days');dd.innerHTML='';
-  W.days.forEach((d,i)=>{const b=document.createElement('button');b.className='day'+(i===sel?' on':'');b.textContent=d.label;b.onclick=()=>{sel=i;renderMake();};dd.appendChild(b);});
+  W.days.forEach((d,i)=>{const b=document.createElement('button');b.className='day'+(i===sel?' on':'');const w=(W.weather||[])[i];b.innerHTML=d.label+(w&&w.emoji?'<br><span class="dayw">'+w.emoji+(w.tmax!=null?Math.round(w.tmax)+'°':'')+'</span>':'');b.onclick=()=>{sel=i;renderMake();};dd.appendChild(b);});
   renderMake();
 }
 // その日が「昨日以前(過去)」か判定。過去＝実売(エアレジ/Airメイト)、本日以降＝予算を既定値にする
@@ -200,6 +211,7 @@ function renderMake(){
   document.querySelectorAll('.day').forEach((b,i)=>b.classList.toggle('on',i===sel));
   const blk=W.blocks[selBlk];if(!blk){document.getElementById('rows').innerHTML='';return;}
   document.getElementById('title').textContent='製造計画';
+  const _w=(W.weather||[])[sel];document.getElementById('wxline').innerHTML=_w&&_w.emoji?(_w.emoji+' '+_w.label+'　最高'+Math.round(_w.tmax)+'° 最低'+Math.round(_w.tmin)+'°　降水'+(_w.pop==null?'–':_w.pop+'%')):'';
   document.getElementById('totlbl').textContent=blk.name+' 実績';
   const box=document.getElementById('rows');box.innerHTML='';let tot=0;
   blk.products.forEach(p=>{
@@ -263,6 +275,14 @@ function renderSales(C){
       '<div class="erow"><div class="lbl">🏪店舗</div><div class="kv">予算 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
       '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
       '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">エアシフト実績 <b>'+(d.laborAir!=null?yen(d.laborAir):'–')+'</b></div></div>';
+    box.appendChild(el);});}
+function renderInv(V){
+  const nd=document.getElementById('invneed');nd.textContent=V.needCount?('　要発注 '+V.needCount+'件'):'';nd.style.color='var(--warn)';
+  const box=document.getElementById('invlist');box.innerHTML='';
+  (V.items||[]).forEach(it=>{const el=document.createElement('div');el.className='invrow'+(it.need?' need':'');
+    el.innerHTML='<div class="invn"><div class="invt">'+esc(it.name)+'</div><div class="invs">'+esc(it.category||'')+(it.supplier?' ・ '+esc(it.supplier):'')+'</div></div>'+
+      '<div class="invq"><div class="invnum">'+nz(it.total)+'</div><div class="invmin">最低 '+(it.min==null?'–':nz(it.min))+'</div></div>'+
+      (it.need?'<span class="chip bad">要発注</span>':'<span class="chip ok">OK</span>');
     box.appendChild(el);});}
 function renderMat(M){const ml=document.getElementById('matlist');ml.innerHTML='';
   M.materials.forEach(m=>{const el=document.createElement('div');el.className='mat';

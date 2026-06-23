@@ -13,6 +13,8 @@ import made_store
 import egg_layer
 import cost_layer
 import material_layer
+import weather_layer
+import inventory_layer
 
 BASE = Path(__file__).parent
 
@@ -35,7 +37,8 @@ def week_payload(tab=None):
             })
         blocks.append({"name": b["name"], "category": b["category"], "products": prods})
     return {"tab": tab, "gid": d.get("gid"), "sheetId": data_layer.SHEET_ID,
-            "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"]}
+            "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"],
+            "weather": weather_layer.week_weather(d["days"])}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -75,6 +78,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
         elif path == "/api/materials":
             self._send(200, json.dumps(material_layer.get_materials(tab), ensure_ascii=False))
+        elif path == "/api/inventory":
+            self._send(200, json.dumps(inventory_layer.get_inventory(), ensure_ascii=False))
         elif path == "/api/raw":
             self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
         else:
