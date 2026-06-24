@@ -32,6 +32,22 @@ def _keyword_for(name):
     return None
 
 
+def _num(s):
+    try:
+        return float(str(s).replace(",", "").strip())
+    except (ValueError, AttributeError):
+        return None
+
+
+def _unit_word(inv_name):
+    """在庫商品名から発注単位の語を拾う。なければ『袋』。"""
+    n = inv_name or ""
+    for w in ("ケース", "缶", "束", "本", "箱", "袋"):
+        if w in n:
+            return w
+    return "袋"
+
+
 def get_material_inventory(tab=None):
     mats = material_layer.get_materials(tab)
     inv = inventory_layer.get_inventory()
@@ -60,6 +76,15 @@ def get_material_inventory(tab=None):
             })
         else:
             row.update({"invName": None, "linked": False, "need": False})
+        # 推奨発注量(g) ÷ 発注単位(g) = 発注袋数（例: 砂糖 60000g ÷ 30000g = 2袋）
+        og = _num(m.get("order"))
+        ou = _num(m.get("orderUnit"))
+        if og is not None and ou and ou > 0:
+            b = og / ou
+            row["orderBags"] = int(round(b)) if abs(b - round(b)) < 0.05 else round(b, 1)
+            row["orderUnitWord"] = _unit_word(match["name"] if match else "")
+        else:
+            row["orderBags"] = None
         rows.append(row)
 
     others = [it for it in items if it["name"] not in used]

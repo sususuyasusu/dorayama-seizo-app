@@ -24,6 +24,7 @@ def get_materials(tab=None):
         mats.append({
             "name": name, "unit": g(r, 21),
             "order": g(r, 26),       # AA 推奨発注量
+            "orderUnit": g(r, 24),   # Y  発注単位(g/ml) … 推奨発注量÷発注単位=発注袋数
             "arrive": g(r, 27),      # AB 入荷予定日
             "deliverBy": g(r, 29),   # AD 推奨納品日
             "needUnits": g(r, 28),   # AC 発注必要数

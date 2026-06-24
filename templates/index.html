@@ -297,7 +297,8 @@ function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
   const ml=document.getElementById('matlist');ml.innerHTML='';
   (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow'+(r.need?' need':'');
-    const sub='推奨発注 '+(r.order||'–')+(r.unit||'')+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
+    const bags=(r.orderBags!=null)?('（'+r.orderBags+(r.orderUnitWord||'袋')+'）'):'';
+    const sub='推奨発注 '+(r.order||'–')+(r.unit||'')+bags+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
     const chip=!r.linked?'<span class="chip na">未連携</span>':(r.need?invChip(r):'<span class="chip ok">OK</span>');
     el.innerHTML='<div class="invn"><div class="invt">'+esc(r.name)+'</div><div class="invs">'+sub+'</div></div>'+
       '<div class="invq"><div class="invnum">'+(r.linked?nz(r.stock):'–')+'</div><div class="invmin">在庫 ・ 最低 '+(r.min==null?'–':nz(r.min))+'</div></div>'+chip;
