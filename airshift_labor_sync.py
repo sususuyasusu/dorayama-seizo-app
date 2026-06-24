@@ -56,6 +56,11 @@ def write_sheet(daily):
 
 if __name__ == "__main__":
     daily = collect()
+    if not daily:
+        # CSVが1件も読めなかった日（取得失敗・ファイル欠落）。空で上書きすると
+        # 製造アプリの人件費が全消えするので、書き込まず既存データを保持する。
+        print("_app_labor SKIP: CSVから集計0件のため書き込み中止（既存データを保持）")
+        raise SystemExit(0)
     n = write_sheet(daily)
     print("_app_labor " + str(n) + " days")
     for d in sorted(daily)[-5:]:
