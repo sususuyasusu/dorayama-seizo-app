@@ -140,9 +140,9 @@
   </div>
 
   <div id="raw" class="hide">
-    <div id="sheetbar"><select id="sheetweek"></select><button id="rawmode" onclick="toggleRaw()">📝 表で編集</button></div>
-    <div id="sheetwrap"><iframe id="sheetframe" title="製造表（本物・直接編集）"></iframe></div>
-    <div id="rawgrid" class="hide"></div>
+    <div id="sheetbar"><select id="sheetweek"></select><button id="rawmode" onclick="toggleRaw()">🔳 シート表示</button></div>
+    <div id="sheetwrap" class="hide"><iframe id="sheetframe" title="製造表（本物・直接編集）"></iframe></div>
+    <div id="rawgrid"></div>
   </div>
 </div>
 
@@ -318,19 +318,19 @@ async function setSheet(){
   if(!sheetWeeksLoaded){
     try{const gids=await fetchJSON('/api/gids');sw.innerHTML='';
       gids.slice().reverse().forEach(g=>{const o=document.createElement('option');o.value=String(g[1]);o.textContent=g[0];sw.appendChild(o);});
-      sw.onchange=()=>setSheetGid(sw.value);sheetWeeksLoaded=true;
+      sw.onchange=()=>{if(rawEdit){loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:'');}else{setSheetGid(sw.value);}};sheetWeeksLoaded=true;
     }catch(e){}
   }
   const gid=(W.gid!=null?String(W.gid):'');
   if(gid)sw.value=gid;
-  setSheetGid(sw.value||gid);
+  if(rawEdit){loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:(W.tab||''));}else{setSheetGid(sw.value||gid);}
 }
 function setSheetGid(gid){const f=document.getElementById('sheetframe');if(!f||!W)return;gid=String(gid||'');
   if(f.dataset.gid===gid)return;f.dataset.gid=gid;
   f.src='https://docs.google.com/spreadsheets/d/'+W.sheetId+'/edit?rm=minimal'+(gid?('#gid='+gid):'');}
-let rawEdit=false;
-function toggleRaw(){rawEdit=!rawEdit;document.getElementById('sheetwrap').classList.toggle('hide',rawEdit);document.getElementById('rawgrid').classList.toggle('hide',!rawEdit);document.getElementById('rawmode').textContent=rawEdit?'🔳 シート表示':'📝 表で編集';if(rawEdit)loadRawGrid();}
-async function loadRawGrid(){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const r=await J('/api/raw');box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
+let rawEdit=true;
+function toggleRaw(){rawEdit=!rawEdit;document.getElementById('sheetwrap').classList.toggle('hide',rawEdit);document.getElementById('rawgrid').classList.toggle('hide',!rawEdit);document.getElementById('rawmode').textContent=rawEdit?'🔳 シート表示':'📝 表で編集';const sw=document.getElementById('sheetweek');if(rawEdit){loadRawGrid(sw&&sw.selectedIndex>=0?sw.options[sw.selectedIndex].text:'');}else{setSheetGid(sw?sw.value:'');}}
+async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw'+q);box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 init();
 </script>
 </body>
