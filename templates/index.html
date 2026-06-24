@@ -292,13 +292,16 @@ function renderSales(C){
       '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
       '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">'+(d.laborAir!=null?('<b>'+yen(d.laborAir)+'</b>（うち交通費 '+yen(d.transportAir||0)+'）　人件費率 '+(d.laborPct!=null?d.laborPct+'%':'–')):'–')+'</div>'+(d.laborAlert?'<span class="chip bad">⚠20%超</span>':(d.laborPct!=null?'<span class="chip ok">OK</span>':''))+'</div>';
     box.appendChild(el);});}
+function numfmt(v){const s=(v==null?'':String(v)).trim();if(s==='')return '';const n=Number(s.replace(/,/g,''));return isFinite(n)?n.toLocaleString('ja-JP'):s;}
 function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
 function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
   const ml=document.getElementById('matlist');ml.innerHTML='';
   (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow'+(r.need?' need':'');
-    const bags=(r.orderBags!=null)?('（'+r.orderBags+(r.orderUnitWord||'袋')+'）'):'';
-    const sub='推奨発注 '+(r.order||'–')+(r.unit||'')+bags+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
+    const uw=r.orderUnitWord||'袋';
+    const perPack=(r.orderUnit!=null&&String(r.orderUnit).trim()!=='')?(' ・ 1'+uw+numfmt(r.orderUnit)+(r.unit||'')):'';
+    const bags=(r.orderBags!=null)?('（'+r.orderBags+uw+perPack+'）'):'';
+    const sub='推奨発注 '+numfmt(r.order)+(r.unit||'')+bags+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
     const chip=!r.linked?'<span class="chip na">未連携</span>':(r.need?invChip(r):'<span class="chip ok">OK</span>');
     el.innerHTML='<div class="invn"><div class="invt">'+esc(r.name)+'</div><div class="invs">'+sub+'</div></div>'+
       '<div class="invq"><div class="invnum">'+(r.linked?nz(r.stock):'–')+'</div><div class="invmin">在庫 ・ 最低 '+(r.min==null?'–':nz(r.min))+'</div></div>'+chip;
