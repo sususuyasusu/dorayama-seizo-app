@@ -15,6 +15,7 @@ import cost_layer
 import material_layer
 import weather_layer
 import inventory_layer
+import matlink_layer
 
 BASE = Path(__file__).parent
 
@@ -80,6 +81,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(material_layer.get_materials(tab), ensure_ascii=False))
         elif path == "/api/inventory":
             self._send(200, json.dumps(inventory_layer.get_inventory(), ensure_ascii=False))
+        elif path == "/api/matstock":
+            self._send(200, json.dumps(matlink_layer.get_material_inventory(tab), ensure_ascii=False))
         elif path == "/api/raw":
             self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
         else:

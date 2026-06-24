@@ -142,8 +142,8 @@
   </div>
 
   <div id="mat" class="hide">
-    <div class="sec">材料 推奨発注量（卵は「卵発注」タブに集約）</div><div id="matlist"></div>
-    <div class="sec">📦 在庫（在庫管理アプリと連携）<span id="invneed"></span></div><div id="invlist"></div>
+    <div class="sec">材料（必要量 × 在庫）<span id="matneed"></span></div><div id="matlist"></div>
+    <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
 
   <div id="raw" class="hide">
@@ -178,15 +178,14 @@ async function init(){
   paintMake();
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
-  J('/api/materials').then(renderMat);
-  fetchJSON('/api/inventory').then(renderInv).catch(()=>{});
+  fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
   stampSync();
 }
 async function loadWeek(){
   W=await J('/api/week');sel=Math.min(sel,6);paintMake();
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
-  J('/api/materials').then(renderMat);
+  fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
 }
 
 // === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
@@ -199,8 +198,7 @@ async function syncAll(force){
   if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
   try{
     W=await J('/api/week');sel=Math.min(sel,6);paintMake();
-    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/materials').then(renderMat);
-    fetchJSON('/api/inventory').then(renderInv).catch(()=>{});
+    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
     stampSync();
   }catch(e){}
 }
@@ -294,17 +292,24 @@ function renderSales(C){
       '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
       '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">'+(d.laborAir!=null?('<b>'+yen(d.laborAir)+'</b>（うち交通費 '+yen(d.transportAir||0)+'）　人件費率 '+(d.laborPct!=null?d.laborPct+'%':'–')):'–')+'</div>'+(d.laborAlert?'<span class="chip bad">⚠20%超</span>':(d.laborPct!=null?'<span class="chip ok">OK</span>':''))+'</div>';
     box.appendChild(el);});}
-function renderInv(V){
-  const nd=document.getElementById('invneed');nd.textContent=V.needCount?('　要発注 '+V.needCount+'件'):'';nd.style.color='var(--warn)';
-  const box=document.getElementById('invlist');box.innerHTML='';
-  (V.items||[]).forEach(it=>{const el=document.createElement('div');el.className='invrow'+(it.need?' need':'');
-    el.innerHTML='<div class="invn"><div class="invt">'+esc(it.name)+'</div><div class="invs">'+esc(it.category||'')+(it.supplier?' ・ '+esc(it.supplier):'')+'</div></div>'+
-      '<div class="invq"><div class="invnum">'+nz(it.total)+'</div><div class="invmin">最低 '+(it.min==null?'–':nz(it.min))+'</div></div>'+
-      (it.need?((it.url&&/^https?:/.test(it.url))?'<a class="chip bad" href="'+esc(it.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>'):'<span class="chip ok">OK</span>');
-    box.appendChild(el);});}
-function renderMat(M){const ml=document.getElementById('matlist');ml.innerHTML='';
-  M.materials.forEach(m=>{const el=document.createElement('div');el.className='mat';
-    el.innerHTML='<div class="nm2">'+m.name+'</div><div style="text-align:right"><div class="ord">'+(m.order||'–')+' '+(m.unit||'')+'</div><div class="dt">入荷 '+(m.arrive||'–')+'</div></div>';ml.appendChild(el);});}
+function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
+function renderMatStock(V){
+  const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
+  const ml=document.getElementById('matlist');ml.innerHTML='';
+  (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow'+(r.need?' need':'');
+    const sub='推奨発注 '+(r.order||'–')+(r.unit||'')+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
+    const chip=!r.linked?'<span class="chip na">未連携</span>':(r.need?invChip(r):'<span class="chip ok">OK</span>');
+    el.innerHTML='<div class="invn"><div class="invt">'+esc(r.name)+'</div><div class="invs">'+sub+'</div></div>'+
+      '<div class="invq"><div class="invnum">'+(r.linked?nz(r.stock):'–')+'</div><div class="invmin">在庫 ・ 最低 '+(r.min==null?'–':nz(r.min))+'</div></div>'+chip;
+    ml.appendChild(el);});
+  const nd=document.getElementById('invneed');if(nd){nd.textContent=V.othersNeed?('　要発注 '+V.othersNeed+'件'):'';nd.style.color='var(--warn)';}
+  const box=document.getElementById('invlist');if(box){box.innerHTML='';
+    (V.others||[]).forEach(it=>{const el=document.createElement('div');el.className='invrow'+(it.need?' need':'');
+      el.innerHTML='<div class="invn"><div class="invt">'+esc(it.name)+'</div><div class="invs">'+esc(it.category||'')+(it.supplier?' ・ '+esc(it.supplier):'')+'</div></div>'+
+        '<div class="invq"><div class="invnum">'+nz(it.total)+'</div><div class="invmin">最低 '+(it.min==null?'–':nz(it.min))+'</div></div>'+
+        (it.need?invChip(it):'<span class="chip ok">OK</span>');
+      box.appendChild(el);});}
+}
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function editGrid(tab,rows,topRow,leftCol){if(!rows||!rows.length)return '';
   const mx=rows.reduce((a,r)=>Math.max(a,r.length),0);let h='<table class="rawt">';
