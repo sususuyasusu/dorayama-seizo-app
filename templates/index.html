@@ -41,6 +41,8 @@
   #sheetbar{position:fixed;top:0;left:0;right:0;max-width:var(--appw);margin:0 auto;height:46px;display:flex;align-items:center;padding:0 12px;background:#fff;border-bottom:1px solid var(--line);z-index:6;}
   #sheetweek{flex:1;min-width:0;height:36px;font-size:16px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
   #rawmode{height:36px;font-size:13px;font-weight:600;padding:0 12px;margin-left:8px;border:1px solid var(--info);border-radius:9px;background:var(--infobg);color:var(--info);white-space:nowrap;}
+  .zbtn{height:36px;width:34px;flex:0 0 auto;font-size:19px;font-weight:600;line-height:1;margin-left:6px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  .zbtn:active{transform:scale(.95);}
   #rawgrid{position:fixed;top:46px;left:0;right:0;max-width:var(--appw);margin:0 auto;bottom:54px;overflow:auto;background:#fff;z-index:5;padding:4px;}
   #rawgrid table.rawt td{min-width:46px;}
   #sheetwrap{position:fixed;top:46px;left:0;right:0;max-width:var(--appw);margin:0 auto;bottom:54px;overflow:hidden;background:#fff;z-index:5;}
@@ -61,7 +63,7 @@
   .sec{padding:12px 16px 4px;font-size:12px;font-weight:600;color:var(--muted);}
   .note{margin:10px 14px 4px;padding:9px 11px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;}
   .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
-  table.rawt{border-collapse:collapse;font-size:11px;}
+  table.rawt{border-collapse:collapse;font-size:var(--rawfs,11px);}
   table.rawt td{border:1px solid var(--line);padding:2px 5px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
   table.rawt tr:first-child td{font-weight:600;background:#faf8f3;}
   .ecard{margin:9px 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
@@ -145,7 +147,7 @@
   </div>
 
   <div id="raw" class="hide">
-    <div id="sheetbar"><select id="sheetweek"></select><button id="rawmode" onclick="toggleRaw()">🔳 シート表示</button></div>
+    <div id="sheetbar"><select id="sheetweek"></select><button class="zbtn" onclick="zoomStep(-1)" aria-label="小さく表示" title="小さく">－</button><button class="zbtn" onclick="zoomStep(1)" aria-label="大きく表示" title="大きく">＋</button><button id="rawmode" onclick="toggleRaw()">🔳 シート表示</button></div>
     <div id="sheetwrap" class="hide"><iframe id="sheetframe" title="製造表（本物・直接編集）"></iframe></div>
     <div id="rawgrid"></div>
   </div>
@@ -335,7 +337,10 @@ function setSheetGid(gid){const f=document.getElementById('sheetframe');if(!f||!
   f.src='https://docs.google.com/spreadsheets/d/'+W.sheetId+'/edit?rm=minimal'+(gid?('#gid='+gid):'');}
 let rawEdit=true;
 function toggleRaw(){rawEdit=!rawEdit;document.getElementById('sheetwrap').classList.toggle('hide',rawEdit);document.getElementById('rawgrid').classList.toggle('hide',!rawEdit);document.getElementById('rawmode').textContent=rawEdit?'🔳 シート表示':'📝 表で編集';const sw=document.getElementById('sheetweek');if(rawEdit){loadRawGrid(sw&&sw.selectedIndex>=0?sw.options[sw.selectedIndex].text:'');}else{setSheetGid(sw?sw.value:'');}}
-async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw'+q);box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
+async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw'+q);box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
+let zoom=1;
+function applyZoom(){document.documentElement.style.setProperty('--rawfs',(11*zoom).toFixed(1)+'px');const f=document.getElementById('sheetframe');if(f){if(Math.abs(zoom-1)<0.001){f.style.transform='';f.style.width='';f.style.height='';}else{const inv=(100/zoom).toFixed(1);f.style.transformOrigin='top left';f.style.transform='scale('+zoom+')';f.style.width=inv+'%';f.style.height=inv+'%';}}}
+function zoomStep(d){zoom=Math.max(0.6,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}
 init();
 </script>
 </body>
