@@ -111,6 +111,6 @@ def get_anko_order(tab=None):
     }
 
 
-def set_jun_rate(value):
+def set_jun_rate(value, tab=None):
     config_store.set_config(JUN_KEY, _num(value))
-    return get_anko_order()
+    return get_anko_order(tab)

@@ -190,16 +190,16 @@ async function init(){
   paintMake();
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
-  fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
-  fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
+  J('/api/matstock').then(renderMatStock).catch(()=>{});
+  J('/api/anko').then(renderAnko).catch(()=>{});
   stampSync();
 }
 async function loadWeek(){
   W=await J('/api/week');sel=Math.min(sel,6);paintMake();
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
-  fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
-  fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
+  J('/api/matstock').then(renderMatStock).catch(()=>{});
+  J('/api/anko').then(renderAnko).catch(()=>{});
 }
 
 // === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
@@ -212,7 +212,7 @@ async function syncAll(force){
   if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
   try{
     W=await J('/api/week');sel=Math.min(sel,6);paintMake();
-    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
+    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/matstock').then(renderMatStock).catch(()=>{});J('/api/anko').then(renderAnko).catch(()=>{});
     stampSync();
   }catch(e){}
 }
@@ -263,9 +263,18 @@ function setMade(p,raw,v){let cur=parseInt(String(raw).replace(/[^0-9]/g,''),10)
   let tot=0;W.blocks[selBlk].products.forEach(x=>tot+=(x===p?cur:madeVal(x,sel)));document.getElementById('tot').textContent=Math.round(tot);
   fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:cur})});}
 function chg(p,d,v){const cur=madeVal(p,sel)+d;setMade(p,cur<0?0:cur,v);}
-function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(val))val=0;p.plan[sel]=val;
-  if(p.row)fetch('/api/cell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,row:p.row,col:2+sel,value:val})});
-  renderMake();}
+async function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(val))val=0;p.plan[sel]=val;
+  renderMake();
+  if(!p.row)return;
+  try{
+    const r=await fetch('/api/cell',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,row:p.row,col:2+sel,value:val})});
+    if(!r.ok)throw new Error('保存失敗');
+    W=await J('/api/week');paintMake();
+    J('/api/anko').then(renderAnko).catch(()=>{});
+    J('/api/matstock').then(renderMatStock).catch(()=>{});
+  }catch(e){
+    W=await J('/api/week');paintMake();
+  }}
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
 function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
@@ -325,7 +334,11 @@ function renderAnko(A){
   const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　来週 '+A.nextTab):'　来週タブなし';
   wrap.innerHTML=ankoCard(A.tsubu,A,false)+ankoCard(A.shiro,A,true);
   const inp=document.getElementById('junrate');
-  if(inp)inp.addEventListener('change',function(){inp.disabled=true;fetch('/api/anko_rate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:inp.value})}).then(x=>x.json()).then(renderAnko).catch(()=>{inp.disabled=false;});});
+  if(inp){
+    const saveRate=()=>{inp.disabled=true;fetch('/api/anko_rate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:inp.value,tab:curTab})}).then(x=>x.json()).then(renderAnko).catch(()=>{inp.disabled=false;});};
+    inp.addEventListener('change',saveRate);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  }
 }
 function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
 function renderMatStock(V){

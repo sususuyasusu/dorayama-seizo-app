@@ -111,7 +111,10 @@ class Handler(BaseHTTPRequestHandler):
             r = data_layer.set_cell(data["tab"], data["row"], data["col"], data.get("value", ""))
             self._send(200, json.dumps(r, ensure_ascii=False))
         elif path == "/api/anko_rate":
-            self._send(200, json.dumps(anko_layer.set_jun_rate(data.get("value", 0)), ensure_ascii=False))
+            self._send(200, json.dumps(
+                anko_layer.set_jun_rate(data.get("value", 0), data.get("tab")),
+                ensure_ascii=False,
+            ))
         else:
             self._send(404, "{}")
 
