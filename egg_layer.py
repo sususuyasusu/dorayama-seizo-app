@@ -6,8 +6,99 @@
  - rules: 見方・ルール（締切ルール、記号の意味、LINE報告フォーマット 等）
 週ごとに列構成が違っても、見出し語からマッピングして拾う。"""
 import datetime
+import math as _math
+import re as _re
 
 import data_layer
+
+# 曜日文字→回転数配列インデックス（月=0…日=6）
+_DAY_IDX = {"月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6}
+
+
+def _next_week_kaiten(cur_tab):
+    """cur_tab（例: '0622'）の翌週タブから行39の回転数を予定・実績で返す。
+    見つからなければ (None, None)。
+    スプレッドシートのバッチ発注数式は row39_予定 − 繰り越し在庫 で計算している。
+    Python側で row39_実績 に差し替えるため、両方を返す。"""
+    from datetime import date, timedelta
+    m = _re.match(r'^(\d{1,2})(\d{2})$', str(cur_tab))
+    if not m:
+        return None, None
+    mon_month, mon_day = int(m.group(1)), int(m.group(2))
+    today = date.today()
+    for year in [today.year, today.year - 1]:
+        try:
+            cur_monday = date(year, mon_month, mon_day)
+            break
+        except ValueError:
+            continue
+    else:
+        return None, None
+    next_mon = cur_monday + timedelta(days=7)
+    cands = [f"{next_mon.month:02d}{next_mon.day:02d}", f"{next_mon.month}{next_mon.day:02d}"]
+    sh = data_layer._spreadsheet()
+    tab_map = {w.title: w for w in sh.worksheets()}
+    next_ws = next((tab_map[c] for c in cands if c in tab_map), None)
+    if not next_ws:
+        return None, None
+    vals = data_layer.cached_values(next_ws)
+
+    def gv(r, c):
+        try:
+            return float(str(vals[r - 1][c]).replace(",", "").strip())
+        except Exception:
+            return 0.0
+
+    kp = [gv(39, c) for c in range(1, 8)]    # 予定 B-H → 月火水木金土日
+    ka = [gv(39, c) for c in range(21, 28)]   # 実績 V-AB → 月火水木金土日
+    return kp, ka
+
+
+def _batch_day_indices(name):
+    """'木曜便 (金・土)' → [4, 5] のように配送便の担当曜日インデックスを返す"""
+    m = _re.search(r'\(([^)]+)\)', name)
+    if not m:
+        return []
+    return [_DAY_IDX[d] for d in m.group(1).split("・") if d in _DAY_IDX]
+
+
+def _apply_actual_kaiten(batches, cur_tab):
+    """バッチリストの回転・kg・袋を翌週実績回転数ベースに補正する。
+    計算式: 実績ベース発注 = スプレッドシート値 + (実績合計 − 予定合計)
+    これにより繰り越し在庫はスプレッドシートの計算をそのまま継承する。"""
+    kp, ka = _next_week_kaiten(cur_tab)
+    if not kp or not ka:
+        return  # 翌週タブがなければ補正しない
+
+    def _n(s):
+        try:
+            return float(str(s).replace(",", "").strip())
+        except Exception:
+            return 0.0
+
+    def _fmt(v):
+        return str(int(v)) if v == int(v) else f"{v:.1f}"
+
+    for b in batches:
+        idxs = _batch_day_indices(b["name"])
+        if not idxs:
+            continue
+        plan_sum = sum(kp[i] for i in idxs)
+        act_sum = sum(ka[i] for i in idxs)
+        if act_sum == 0:
+            continue  # 実績未入力の便はそのまま（予定ベースを維持）
+        delta = act_sum - plan_sum
+
+        yk = max(0.0, _n(b["yolkKai"]) + delta)
+        wk = max(0.0, _n(b["whiteKai"]) + delta)
+        ykg = yk * 0.4
+        wkg = wk * 0.75
+        b["yolkKai"] = _fmt(yk)
+        b["yolkKg"] = _fmt(ykg)
+        b["yolkBags"] = str(_math.ceil(ykg / 5)) if ykg > 0 else "0"
+        b["whiteKai"] = _fmt(wk)
+        b["whiteKg"] = _fmt(wkg)
+        b["whiteBags"] = str(_math.ceil(wkg / 5)) if wkg > 0 else "0"
 
 # 過不足の判断を表す行頭記号（🔴追加/🔵減量/🟢/✅変更不要/🛒新規/🚨⚠️在庫切れ警告）
 _ACTION_PREFIXES = ("🔴", "🔵", "🟢", "🚨", "⚠️", "✅", "🛒")
@@ -159,6 +250,9 @@ def get_egg_nav(tab=None):
                 "yolkKai": g(r, 41), "yolkKg": g(r, 42), "yolkBags": g(r, 43),
                 "whiteKai": g(r, 44), "whiteKg": g(r, 45), "whiteBags": g(r, 46),
             })
+
+    # スプレッドシートのバッチ数式は予定ベース → 実績回転数で上書き補正
+    _apply_actual_kaiten(batches, ws.title)
 
     # この表の見方（AW/AX列）= 各行 AW→AX の順に読むと表示順になる
     guide_cells = []
