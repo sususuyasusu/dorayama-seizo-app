@@ -98,13 +98,13 @@ def open_ws(tab=None, today=None):
 
 
 def list_tabs():
-    """週タブ名の一覧（古い順）。アプリ用の内部タブ _app_made は除く。"""
-    return [w.title for w in _spreadsheet().worksheets() if w.title != "_app_made"]
+    """週タブ名の一覧（古い順）。アプリ用の内部タブ(_app_made/_app_labor/_app_config 等)は除く。"""
+    return [w.title for w in _spreadsheet().worksheets() if not w.title.startswith("_")]
 
 
 def list_gids():
     """週タブ名→シート内部番号(gid) の一覧。全データ画面の週切替で使う。"""
-    return [[w.title, w.id] for w in _spreadsheet().worksheets() if w.title != "_app_made"]
+    return [[w.title, w.id] for w in _spreadsheet().worksheets() if not w.title.startswith("_")]
 
 
 def get_raw(tab=None):

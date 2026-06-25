@@ -16,6 +16,7 @@ import material_layer
 import weather_layer
 import inventory_layer
 import matlink_layer
+import anko_layer
 
 BASE = Path(__file__).parent
 
@@ -83,6 +84,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(inventory_layer.get_inventory(), ensure_ascii=False))
         elif path == "/api/matstock":
             self._send(200, json.dumps(matlink_layer.get_material_inventory(tab), ensure_ascii=False))
+        elif path == "/api/anko":
+            self._send(200, json.dumps(anko_layer.get_anko_order(tab), ensure_ascii=False))
         elif path == "/api/raw":
             self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
         else:
@@ -107,6 +110,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/cell":
             r = data_layer.set_cell(data["tab"], data["row"], data["col"], data.get("value", ""))
             self._send(200, json.dumps(r, ensure_ascii=False))
+        elif path == "/api/anko_rate":
+            self._send(200, json.dumps(anko_layer.set_jun_rate(data.get("value", 0)), ensure_ascii=False))
         else:
             self._send(404, "{}")
 

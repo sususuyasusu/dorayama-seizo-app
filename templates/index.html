@@ -100,6 +100,17 @@
   .nav{position:fixed;bottom:0;left:0;right:0;max-width:var(--appw);margin:0 auto;display:flex;background:#fff;border-top:1px solid var(--line);}
   .nav button{flex:1;border:0;background:none;padding:8px 0 6px;font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;}
   .nav button .ic{font-size:18px;}.nav button.on{color:var(--info);}
+  .ankocard{margin:8px 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+  .ankocard .ah{padding:9px 13px;background:#faf8f3;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between;}
+  .ankocard .ah .sup{font-size:11px;color:var(--muted);font-weight:400;}
+  .arow{display:flex;align-items:baseline;padding:7px 13px;border-top:1px solid var(--line);gap:8px;font-size:13px;}
+  .arow .lb{color:var(--muted);width:68px;flex:0 0 auto;}
+  .arow b{font-size:15px;font-weight:600;}
+  .arow .sub{color:var(--muted);font-size:11px;margin-left:auto;}
+  .aorder{padding:10px 13px;border-top:1px solid var(--line);background:var(--infobg);font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;}
+  .aorder b{font-size:21px;color:var(--info);}
+  .junin{display:flex;align-items:center;gap:6px;padding:9px 13px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);flex-wrap:wrap;background:#fffdf7;}
+  .junin input{width:66px;height:30px;text-align:center;font-size:15px;font-weight:600;border:1px solid var(--info);border-radius:8px;background:#fff;color:var(--ink);}
   .hide{display:none;}
   @media (min-width:768px){
     :root{--appw:720px;}
@@ -142,6 +153,7 @@
   </div>
 
   <div id="mat" class="hide">
+    <div class="sec">🫘 あん発注（来週分・在庫連動）<span id="ankonext"></span></div><div id="ankolist"></div>
     <div class="sec">材料（必要量 × 在庫）<span id="matneed"></span></div><div id="matlist"></div>
     <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
@@ -179,6 +191,7 @@ async function init(){
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
+  fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
   stampSync();
 }
 async function loadWeek(){
@@ -186,6 +199,7 @@ async function loadWeek(){
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
+  fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
 }
 
 // === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
@@ -198,7 +212,7 @@ async function syncAll(force){
   if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
   try{
     W=await J('/api/week');sel=Math.min(sel,6);paintMake();
-    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});
+    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);fetchJSON('/api/matstock').then(renderMatStock).catch(()=>{});fetchJSON('/api/anko').then(renderAnko).catch(()=>{});
     stampSync();
   }catch(e){}
 }
@@ -293,6 +307,26 @@ function renderSales(C){
       '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">'+(d.laborAir!=null?('<b>'+yen(d.laborAir)+'</b>（うち交通費 '+yen(d.transportAir||0)+'）　人件費率 '+(d.laborPct!=null?d.laborPct+'%':'–')):'–')+'</div>'+(d.laborAlert?'<span class="chip bad">⚠20%超</span>':(d.laborPct!=null?'<span class="chip ok">OK</span>':''))+'</div>';
     box.appendChild(el);});}
 function numfmt(v){const s=(v==null?'':String(v)).trim();if(s==='')return '';const n=Number(s.replace(/,/g,''));return isFinite(n)?n.toLocaleString('ja-JP'):s;}
+function ankoCard(c,A,isShiro){
+  if(!c)return '';
+  const linked=c.url&&/^https?:/.test(c.url);
+  const sup=c.supplier?('<span class="sup">'+esc(c.supplier)+(linked?' ↗':'')+'</span>'):'';
+  const head=linked?('<a href="'+esc(c.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;width:100%">'+esc(c.name)+sup+'</a>'):('<span>'+esc(c.name)+'</span>'+sup);
+  const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（旬どら来週'+numfmt(A.junCountNext)+'個を加算）</span></div>'):'';
+  return '<div class="ankocard"><div class="ah">'+head+'</div>'+
+    '<div class="arow"><span class="lb">今週必要</span><b>'+numfmt(c.thisG)+'g</b><span class="sub">'+c.thisBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">在庫</span><b>'+c.stockBags+'袋</b><span class="sub">'+numfmt(c.stockG)+'g</span></div>'+
+    '<div class="arow"><span class="lb">来週必要</span><b>'+numfmt(c.nextG)+'g</b><span class="sub">'+c.nextBags+'袋</span></div>'+
+    jun+
+    '<div class="aorder">来週の発注 <b>'+c.orderBags+'袋</b></div></div>';
+}
+function renderAnko(A){
+  const wrap=document.getElementById('ankolist');if(!wrap)return;
+  const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　来週 '+A.nextTab):'　来週タブなし';
+  wrap.innerHTML=ankoCard(A.tsubu,A,false)+ankoCard(A.shiro,A,true);
+  const inp=document.getElementById('junrate');
+  if(inp)inp.addEventListener('change',function(){inp.disabled=true;fetch('/api/anko_rate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:inp.value})}).then(x=>x.json()).then(renderAnko).catch(()=>{inp.disabled=false;});});
+}
 function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
 function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
