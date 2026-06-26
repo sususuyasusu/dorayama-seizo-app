@@ -115,6 +115,11 @@ class Handler(BaseHTTPRequestHandler):
                 anko_layer.set_jun_rate(data.get("value", 0), data.get("tab")),
                 ensure_ascii=False,
             ))
+        elif path == "/api/anko_config":
+            self._send(200, json.dumps(
+                anko_layer.set_anko_config(data, data.get("tab")),
+                ensure_ascii=False,
+            ))
         else:
             self._send(404, "{}")
 
