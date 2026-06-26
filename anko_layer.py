@@ -6,7 +6,7 @@
  - 粒あん  = 35g × (黒どら + あんバター) の個数
  - 上白あん = 35g × 白どら の個数  ＋  (旬どら原単位/100) × 旬どら の個数
    ※旬どらの白あん消費は製造表に無いので、係数を _app_config に入力して加算する。
-個数は各週タブの予算(B〜H, 3ブロック分 行5-34, I列『はい』のみ)を合計。
+個数は各週タブの実績側製造表(V〜AB, 3ブロック分 行5-34, I列『はい』のみ)を合計。
 発注対象は選択週の金土日＋翌週の月火水木。必要袋数に予備1袋を加える。"""
 import datetime
 import math
@@ -33,7 +33,7 @@ def _num(s):
 
 
 def _daily_counts(tab):
-    """その週タブの予算個数を商品・曜日別に合計（3ブロック・I列はい のみ）。"""
+    """その週タブの実績側製造数を商品・曜日別に合計（3ブロック・I列はい のみ）。"""
     ws = data_layer.open_ws(tab)
     V = data_layer.cached_values(ws)
 
@@ -44,7 +44,7 @@ def _daily_counts(tab):
     for r in range(5, 35):
         nm = str(g(r, 0)).strip()
         if nm in s and str(g(r, 8)).strip() == "はい":
-            for i, c in enumerate(range(1, 8)):  # B..H 予算
+            for i, c in enumerate(range(21, 28)):  # V..AB 実績側製造表
                 s[nm][i] += _num(g(r, c))
     return ws.title, s
 
