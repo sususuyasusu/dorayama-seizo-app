@@ -325,17 +325,19 @@ function ankoCard(c,A,isShiro){
   const linked=c.url&&/^https?:/.test(c.url);
   const sup=c.supplier?('<span class="sup">'+esc(c.supplier)+(linked?' ↗':'')+'</span>'):'';
   const head=linked?('<a href="'+esc(c.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;width:100%">'+esc(c.name)+sup+'</a>'):('<span>'+esc(c.name)+'</span>'+sup);
-  const prevId=isShiro?'prevshiro':'prevtsubu';
-  const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（対象7日間の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
+  const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：翌木曜までに '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
+  const carry=c.emergencyBags>0?'不足':('余り '+numfmt(c.carryoverG)+'g');
+  const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（通常発注対象の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
     '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g</div>'):'';
   return '<div class="ankocard"><div class="ah">'+head+'</div>'+
-    '<div class="arow"><span class="lb">使用予定</span><b>'+numfmt(c.orderPeriodG)+'g</b><span class="sub">金〜翌木・'+c.orderPeriodBags+'袋</span></div>'+
+    warn+
+    '<div class="arow"><span class="lb">翌木まで使用</span><b>'+numfmt(c.coverPeriodG)+'g</b><span class="sub">'+A.coverPeriodLabel+'・'+c.coverPeriodBags+'袋</span></div>'+
     '<div class="arow"><span class="lb">現在庫</span><b>'+numfmt(c.stockBags)+'袋</b><span class="sub">'+numfmt(c.stockG)+'g</span></div>'+
-    '<div class="junin">先週木曜に発注した分 <input id="'+prevId+'" type="number" inputmode="decimal" value="'+(c.prevOrderBags||0)+'"> 袋 <span>'+numfmt(c.prevOrderG)+'g</span></div>'+
-    '<div class="arow"><span class="lb">引当合計</span><b>'+numfmt(c.availableBags)+'袋</b><span class="sub">現在庫＋先週発注分 '+numfmt(c.availableG)+'g</span></div>'+
-    '<div class="arow"><span class="lb">不足分</span><b>'+numfmt(c.shortageG)+'g</b><span class="sub">5kg袋で切り上げ</span></div>'+
+    '<div class="arow"><span class="lb">翌木時点</span><b>'+carry+'</b><span class="sub">通常発注の調整に使う</span></div>'+
+    '<div class="arow"><span class="lb">通常発注対象</span><b>'+numfmt(c.orderPeriodG)+'g</b><span class="sub">'+A.orderPeriodLabel+'・'+c.orderPeriodBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">発注計算</span><b>'+numfmt(c.regularOrderG)+'g</b><span class="sub">対象量−翌木時点の余り</span></div>'+
     jun+
-    '<div class="aorder">発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
+    '<div class="aorder">木曜通常発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
 }
 function renderAnko(A){
   const wrap=document.getElementById('ankolist');if(!wrap)return;
@@ -349,8 +351,6 @@ function renderAnko(A){
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
   };
   bindAnkoInput('junrate','junRatePer100');
-  bindAnkoInput('prevtsubu','prevTsubuBags');
-  bindAnkoInput('prevshiro','prevShiroBags');
 }
 function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
 function renderMatStock(V){

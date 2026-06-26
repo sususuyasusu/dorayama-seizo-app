@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """あん(粒あん=あんこ／上白あん=白あん)の木曜締め発注計算。
-現在庫と先週木曜発注分を引き当て、金曜〜翌木曜の7日分を一括発注する。
+現在庫で翌木曜まで足りるかを確認し、木曜通常発注は翌金曜〜翌々木曜分を計算する。
 
 レシピ(製造表の数式に準拠):
  - 粒あん  = 35g × (黒どら + あんバター) の個数
  - 上白あん = 35g × 白どら の個数  ＋  (旬どら原単位/100) × 旬どら の個数
    ※旬どらの白あん消費は製造表に無いので、係数を _app_config に入力して加算する。
 個数は各週タブの実績側製造表(V〜AB, 3ブロック分 行5-34, I列『はい』のみ)を合計。
-発注対象は選択週の金土日＋翌週の月火水木。必要量から現在庫と先週木曜発注分を引く。"""
+現在庫は翌木曜までの消費に引き当てる。翌木曜時点で余る分だけ、通常発注から差し引く。"""
 import datetime
 import math
 
@@ -19,8 +19,6 @@ G_PER = 35           # 1個あたりのあん(g)。製造表の数式と同じ
 BAG_G = 5000         # 粒あん・上白あん とも 5kg/袋
 BUSINESS_CLOSE_HOUR = 17
 JUN_KEY = "旬どら_白あん_g_per_100個"   # 旬どら100個あたりの白あん(g)
-PREV_TSUBU_KEY = "先週木曜発注_粒あん_袋"
-PREV_SHIRO_KEY = "先週木曜発注_白あん_袋"
 TSUBU_PRODUCTS = ("黒どら", "あんバター")
 SHIRO_PRODUCTS = ("白どら",)
 JUN_PRODUCTS = ("旬どら",)
@@ -50,15 +48,19 @@ def _daily_counts(tab):
     return ws.title, s
 
 
-def _next_tab(cur):
+def _tab_after(cur, days):
     try:
         mm, dd = int(cur[:2]), int(cur[2:])
         base = datetime.date(datetime.date.today().year, mm, dd)
-        nd = base + datetime.timedelta(days=7)
+        nd = base + datetime.timedelta(days=days)
         name = "%02d%02d" % (nd.month, nd.day)
         return name if name in data_layer.list_tabs() else None
     except Exception:
         return None
+
+
+def _next_tab(cur):
+    return _tab_after(cur, 7)
 
 
 def _sum_days(counts, indexes):
@@ -109,58 +111,67 @@ def _stock_bags():
 
 def get_anko_order(tab=None):
     jun_rate = _num(config_store.get_config(JUN_KEY, 0))
-    prev_tsubu_bags = _num(config_store.get_config(PREV_TSUBU_KEY, 0))
-    prev_shiro_bags = _num(config_store.get_config(PREV_SHIRO_KEY, 0))
     cur_title, cur_daily = _daily_counts(tab)
     nxt = _next_tab(cur_title)
+    nxt2 = _tab_after(cur_title, 14)
     empty = {name: [0.0] * 7 for name in ("黒どら", "あんバター", "白どら", "旬どら")}
     nxt_title, nxt_daily = _daily_counts(nxt) if nxt else (None, empty)
+    nxt2_title, nxt2_daily = _daily_counts(nxt2) if nxt2 else (None, empty)
 
-    # 発注対象=金土日＋翌週月火水木。画面では7日分を合算して表示する。
-    this_remain = _sum_days(cur_daily, range(4, 7))
-    next_first = _sum_days(nxt_daily, range(0, 4))
-    order_counts = {name: this_remain[name] + next_first[name] for name in this_remain}
+    # 現在庫でカバーする期間=金土日＋翌週月火水木。
+    cover_cur = _sum_days(cur_daily, range(4, 7))
+    cover_next = _sum_days(nxt_daily, range(0, 4))
+    cover_counts = {name: cover_cur[name] + cover_next[name] for name in cover_cur}
+    d_cover = _demand(cover_counts, jun_rate)
+
+    # 木曜通常発注の対象=翌週金土日＋翌々週月火水木。
+    order_next = _sum_days(nxt_daily, range(4, 7))
+    order_nxt2 = _sum_days(nxt2_daily, range(0, 4))
+    order_counts = {name: order_next[name] + order_nxt2[name] for name in order_next}
     d_order = _demand(order_counts, jun_rate)
 
     tsubu_inv, shiro_inv = _stock_bags()
     t_stock_bags = (tsubu_inv["total"] if tsubu_inv else 0) or 0
     s_stock_bags = (shiro_inv["total"] if shiro_inv else 0) or 0
 
-    def required_bags(need_g, stock_bags, prev_order_bags):
-        available_g = (stock_bags + prev_order_bags) * BAG_G
-        return max(0, math.ceil((need_g - available_g) / BAG_G))
-
-    def card(name, inv, key, stock_bags, prev_order_bags):
-        available_g = (stock_bags + prev_order_bags) * BAG_G
-        base = required_bags(d_order[key], stock_bags, prev_order_bags)
+    def card(name, inv, key, stock_bags):
+        stock_g = stock_bags * BAG_G
+        carryover_g = max(0, stock_g - d_cover[key])
+        emergency_g = max(0, d_cover[key] - stock_g)
+        regular_g = max(0, d_order[key] - carryover_g)
+        regular_bags = max(0, math.ceil(regular_g / BAG_G))
         return {
             "name": name,
             "invName": inv["name"] if inv else None,
             "supplier": inv["supplier"] if inv else "",
             "url": inv["url"] if inv else "",
             "bagG": BAG_G,
+            "coverPeriodG": round(d_cover[key]), "coverPeriodBags": round(d_cover[key] / BAG_G, 1),
+            "stockBags": stock_bags, "stockG": round(stock_g),
+            "carryoverG": round(carryover_g), "carryoverBags": round(carryover_g / BAG_G, 1),
+            "emergencyG": round(emergency_g),
+            "emergencyBags": max(0, math.ceil(emergency_g / BAG_G)),
             "orderPeriodG": round(d_order[key]), "orderPeriodBags": round(d_order[key] / BAG_G, 1),
-            "stockBags": stock_bags, "stockG": round(stock_bags * BAG_G),
-            "prevOrderBags": prev_order_bags, "prevOrderG": round(prev_order_bags * BAG_G),
-            "availableBags": stock_bags + prev_order_bags, "availableG": round(available_g),
-            "shortageG": max(0, round(d_order[key] - available_g)),
-            "requiredOrderBags": base,
-            "totalOrderBags": base,
+            "regularOrderG": round(regular_g),
+            "regularOrderBags": regular_bags,
+            "totalOrderBags": regular_bags,
         }
 
     return {
-        "tab": cur_title, "nextTab": nxt_title,
-        "periodLabel": "金曜〜翌木曜",
+        "tab": cur_title, "nextTab": nxt_title, "next2Tab": nxt2_title,
+        "coverPeriodLabel": "金曜〜翌木曜",
+        "orderPeriodLabel": "翌金曜〜翌々木曜",
         "alert": _alert(cur_title),
         "junRatePer100": jun_rate,
+        "junCountCover": round(cover_counts["旬どら"]),
         "junCountPeriod": round(order_counts["旬どら"]),
         "shiroBreakdown": {
             "shiroDoraG": round(d_order["shiroDora"]),
             "shunDoraG": round(d_order["shunDora"]),
         },
         "gPer": G_PER,
-        "tsubu": card("あんこ（粒あん）", tsubu_inv, "tsubu", t_stock_bags, prev_tsubu_bags),
-        "shiro": card("白あん（上白あん）", shiro_inv, "shiro", s_stock_bags, prev_shiro_bags),
+        "tsubu": card("あんこ（粒あん）", tsubu_inv, "tsubu", t_stock_bags),
+        "shiro": card("白あん（上白あん）", shiro_inv, "shiro", s_stock_bags),
     }
 
 
@@ -172,8 +183,4 @@ def set_jun_rate(value, tab=None):
 def set_anko_config(values, tab=None):
     if "junRatePer100" in values:
         config_store.set_config(JUN_KEY, _num(values.get("junRatePer100")))
-    if "prevTsubuBags" in values:
-        config_store.set_config(PREV_TSUBU_KEY, _num(values.get("prevTsubuBags")))
-    if "prevShiroBags" in values:
-        config_store.set_config(PREV_SHIRO_KEY, _num(values.get("prevShiroBags")))
     return get_anko_order(tab)
