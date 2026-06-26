@@ -109,6 +109,10 @@
   .arow .sub{color:var(--muted);font-size:11px;margin-left:auto;}
   .aorder{padding:10px 13px;border-top:1px solid var(--line);background:var(--infobg);font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;}
   .aorder b{font-size:21px;color:var(--info);}
+  .aalert{margin:8px 14px;padding:10px 13px;border-radius:10px;font-size:13px;font-weight:600;background:#f3f0e8;color:var(--ink);}
+  .aalert.confirm,.aalert.late{background:#fcebeb;color:#a32d2d;border:1px solid #efc4c4;}
+  .aalert.today{background:#fff7d6;color:#805d00;border:1px solid #ead889;}
+  .abreak{padding:7px 13px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);background:#fafafa;}
   .junin{display:flex;align-items:center;gap:6px;padding:9px 13px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);flex-wrap:wrap;background:#fffdf7;}
   .junin input{width:66px;height:30px;text-align:center;font-size:15px;font-weight:600;border:1px solid var(--info);border-radius:8px;background:#fff;color:var(--ink);}
   .hide{display:none;}
@@ -153,7 +157,7 @@
   </div>
 
   <div id="mat" class="hide">
-    <div class="sec">🫘 あん発注（来週分・在庫連動）<span id="ankonext"></span></div><div id="ankolist"></div>
+    <div class="sec">🫘 あん発注（木曜締め・7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
     <div class="sec">材料（必要量 × 在庫）<span id="matneed"></span></div><div id="matlist"></div>
     <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
@@ -321,17 +325,20 @@ function ankoCard(c,A,isShiro){
   const linked=c.url&&/^https?:/.test(c.url);
   const sup=c.supplier?('<span class="sup">'+esc(c.supplier)+(linked?' ↗':'')+'</span>'):'';
   const head=linked?('<a href="'+esc(c.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;width:100%">'+esc(c.name)+sup+'</a>'):('<span>'+esc(c.name)+'</span>'+sup);
-  const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（旬どら来週'+numfmt(A.junCountNext)+'個を加算）</span></div>'):'';
+  const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（対象7日間の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
+    '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g</div>'):'';
   return '<div class="ankocard"><div class="ah">'+head+'</div>'+
-    '<div class="arow"><span class="lb">今週必要</span><b>'+numfmt(c.thisG)+'g</b><span class="sub">'+c.thisBags+'袋</span></div>'+
-    '<div class="arow"><span class="lb">在庫</span><b>'+c.stockBags+'袋</b><span class="sub">'+numfmt(c.stockG)+'g</span></div>'+
-    '<div class="arow"><span class="lb">来週必要</span><b>'+numfmt(c.nextG)+'g</b><span class="sub">'+c.nextBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">今週残り</span><b>'+numfmt(c.remainG)+'g</b><span class="sub">金〜日・'+c.remainBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">来週前半</span><b>'+numfmt(c.nextFirstG)+'g</b><span class="sub">月〜木・'+c.nextFirstBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">対象7日分</span><b>'+numfmt(c.orderPeriodG)+'g</b><span class="sub">'+c.orderPeriodBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">木曜終了後</span><b>在庫 '+c.stockBags+'袋</b><span class="sub">'+numfmt(c.stockG)+'g</span></div>'+
     jun+
-    '<div class="aorder">来週の発注 <b>'+c.orderBags+'袋</b></div></div>';
+    '<div class="aorder">発注 <b>'+c.requiredOrderBags+'袋 ＋ 予備1袋 ＝ '+c.totalOrderBags+'袋</b></div></div>';
 }
 function renderAnko(A){
   const wrap=document.getElementById('ankolist');if(!wrap)return;
-  const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　来週 '+A.nextTab):'　来週タブなし';
+  const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　'+A.periodLabel+'（'+A.tab+'→'+A.nextTab+'）'):'　翌週タブなし';
+  const al=document.getElementById('ankoalert');if(al){al.className='aalert '+(A.alert.level||'next');al.textContent=A.alert.text||'';}
   wrap.innerHTML=ankoCard(A.tsubu,A,false)+ankoCard(A.shiro,A,true);
   const inp=document.getElementById('junrate');
   if(inp){
