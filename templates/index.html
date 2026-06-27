@@ -75,6 +75,9 @@
   .note{margin:10px 14px 4px;padding:9px 11px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;}
   .loaderr{margin:14px;padding:13px;border-radius:10px;background:#fcebeb;color:#8f2424;font-size:13px;line-height:1.6;font-weight:600;}
   .loaderr a{color:#1565a6;text-decoration:none;}
+  .reloadbtn{margin-top:10px;background:#1565a6;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;}
+  .loadwarm{margin:24px 14px;padding:18px;border-radius:12px;background:var(--infobg,#eef4fb);color:var(--info,#1565a6);font-size:15px;line-height:1.7;font-weight:600;text-align:center;}
+  .loadwarm .lw2{font-size:12px;color:var(--muted);font-weight:400;}
   .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
   table.rawt{border-collapse:collapse;font-size:var(--rawfs,11px);}
   table.rawt td{border:1px solid var(--line);padding:2px 5px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
@@ -211,11 +214,14 @@
 let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
 const SC=['make','sales','egg','anko','mat','raw'],TT={make:'製造計画',sales:'製造実績',egg:'卵発注',anko:'あんこ発注',mat:'その他材料',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
-async function fetchJSON(u){for(let i=0;i<3;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,400*(i+1)));}throw new Error('取得失敗: '+u);}
+// 無料サーバーは無操作が続くと眠る。起こすのに最大1分ほどかかるので、
+// 各回25秒まで待ち×最大6回（合計90秒超）粘ってから初めて失敗にする。
+async function fetchJSON(u){let last;for(let i=0;i<6;i++){try{const ac=new AbortController();const to=setTimeout(()=>ac.abort(),25000);const r=await fetch(u,{cache:'no-store',signal:ac.signal});clearTimeout(to);const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){last=e;}await new Promise(s=>setTimeout(s,800*(i+1)));}throw new Error('取得失敗: '+u);}
 async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return fetchJSON(u+t);}
 
 async function init(){
-  if(location.protocol==='file:'){showLoadError('アプリ本体のファイルを直接開いています。製造表データを読むには、ローカルサーバーのURLで開いてください。');return;}
+  if(location.protocol==='file:'){showLoadError('アプリ本体のファイルを直接開いています。製造表データを読むには、サーバーのURL（https://dorayama-seizo-app-1.onrender.com/）で開いてください。',true);return;}
+  showWarming();
   try{
     const tabs=await fetchJSON('/api/tabs');
     W=await J('/api/week');           // tab未指定＝今週
@@ -230,12 +236,18 @@ async function init(){
     fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});
     J('/api/anko').then(renderAnko).catch(()=>{});
     stampSync();
-  }catch(e){showLoadError('製造表データを読み込めませんでした。アプリのローカルサーバーが起動しているか確認してください。');}
+  }catch(e){showLoadError('サーバーの起動に時間がかかっています（無料プランは無操作が続くと一時停止します）。下のボタンでもう一度開いてください。30秒〜1分ほどで起き上がります。',false);}
 }
-function showLoadError(msg){
+function showWarming(){
+  document.getElementById('title').textContent='起動中…';
+  const box=document.getElementById('rows');
+  if(box)box.innerHTML='<div class="loadwarm">⏳ サーバーを起動しています…<br><span class="lw2">無料プランは少し休むと眠ります。30秒〜1分ほどお待ちください（自動で表示されます）。</span></div>';
+}
+function showLoadError(msg,isFile){
   document.getElementById('title').textContent='読み込みエラー';
   const box=document.getElementById('rows');
-  if(box)box.innerHTML='<div class="loaderr">'+esc(msg)+'<br><a href="http://127.0.0.1:8788/">http://127.0.0.1:8788/ を開く</a></div>';
+  const btn=isFile?'':'<button class="reloadbtn" onclick="location.reload()">🔄 もう一度開く</button>';
+  if(box)box.innerHTML='<div class="loaderr">'+esc(msg)+'<br>'+btn+'</div>';
   const n=document.getElementById('eggnote');if(n)n.textContent=msg;
 }
 async function loadWeek(){
