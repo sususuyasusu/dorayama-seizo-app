@@ -334,6 +334,8 @@ async function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''
   }}
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
 function numOnly(x){const n=parseInt(String(x||'').replace(/[^0-9]/g,''),10);return isNaN(n)?0:n;}
+// 回転→発注kg(1kg単位)。卵黄1回転=400g/卵白1回転=750g。閾値(卵黄7回転以上・卵白4回転以上)未満は発注しない=0。
+function eggKg(kai,perRot,thr){const k=parseFloat(kai)||0;return k>=thr?Math.round(k*perRot):0;}
 function escAttr(s){return esc(String(s||'')).replace(/"/g,'&quot;');}
 function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
@@ -355,16 +357,16 @@ function renderEgg(E){
   bulk.innerHTML='<div class="boh">木曜一括発注（翌週 火・木・土便）</div><div class="bos">木曜日はこのボタンで3便分をまとめて発注。下の各便ボタンは、締切までの数量変更に使う。</div><div class="boa"><a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button></div><div class="smsbody bulkBody"></div>';
   bl.appendChild(bulk);
   E.batches.forEach(b=>{const el=document.createElement('div');el.className='batch';
-    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+
-      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+numOnly(b.yolkBags)+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+numOnly(b.whiteBags)+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';bl.appendChild(el);});
+    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転 ≒ '+nz(b.yolkKg)+'kg<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転 ≒ '+nz(b.whiteKg)+'kg</div>'+
+      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+eggKg(b.yolkKai,0.4,7)+'">kg</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+eggKg(b.whiteKai,0.75,4)+'">kg</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';bl.appendChild(el);});
   bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
 function amadaText(batch,y,w){
   const lines=['アマダ東京様','どら山です。',batch+'分の液卵をお願いします。'];
-  if(y>0)lines.push('卵黄400g：'+y+'袋');
-  if(w>0)lines.push('卵白750g：'+w+'袋');
-  if(y<=0&&w<=0)lines.push('卵黄400g：0袋','卵白750g：0袋');
+  if(y>0)lines.push('卵黄：'+y+'kg');
+  if(w>0)lines.push('卵白：'+w+'kg');
+  if(y<=0&&w<=0)lines.push('発注なし');
   lines.push('よろしくお願いいたします。');
   return lines.join('\n');
 }
@@ -373,8 +375,8 @@ function amadaBulkText(root){
   root.querySelectorAll('.eggorder').forEach(box=>{
     const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
     const parts=[];
-    if(y>0)parts.push('卵黄400g '+y+'袋');
-    if(w>0)parts.push('卵白750g '+w+'袋');
+    if(y>0)parts.push('卵黄 '+y+'kg');
+    if(w>0)parts.push('卵白 '+w+'kg');
     if(parts.length)lines.push('・'+batch+'：'+parts.join(' / '));
   });
   if(lines.length===3)lines.push('・発注数なし');
