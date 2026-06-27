@@ -362,9 +362,9 @@ function renderEgg(E){
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
 function amadaText(batch,y,w){
   const lines=['アマダ東京様','どら山です。',batch+'分の液卵をお願いします。'];
-  if(y>0)lines.push('卵黄400g：'+y+'袋');
-  if(w>0)lines.push('卵白750g：'+w+'袋');
-  if(y<=0&&w<=0)lines.push('卵黄400g：0袋','卵白750g：0袋');
+  if(y>0)lines.push('卵黄5kg：'+y+'袋');
+  if(w>0)lines.push('卵白5kg：'+w+'袋');
+  if(y<=0&&w<=0)lines.push('卵黄5kg：0袋','卵白5kg：0袋');
   lines.push('よろしくお願いいたします。');
   return lines.join('\n');
 }
@@ -373,8 +373,8 @@ function amadaBulkText(root){
   root.querySelectorAll('.eggorder').forEach(box=>{
     const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
     const parts=[];
-    if(y>0)parts.push('卵黄400g '+y+'袋');
-    if(w>0)parts.push('卵白750g '+w+'袋');
+    if(y>0)parts.push('卵黄5kg '+y+'袋');
+    if(w>0)parts.push('卵白5kg '+w+'袋');
     if(parts.length)lines.push('・'+batch+'：'+parts.join(' / '));
   });
   if(lines.length===3)lines.push('・発注数なし');
