@@ -30,6 +30,17 @@
   .invrow.need{background:#fff7f3;}
   .invn{flex:1;min-width:0;}.invt{font-size:14px;font-weight:600;}.invs{font-size:11px;color:var(--muted);margin-top:2px;}
   .invq{text-align:right;min-width:60px;}.invnum{font-size:16px;font-weight:600;}.invmin{font-size:11px;color:var(--muted);}
+  .ordergrp{margin:8px 14px 10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+  .ordergrp .ogh{padding:9px 12px;background:#faf8f3;font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px;}
+  .orderrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:#fff;}
+  .orderrow.wait{background:#fafafa;}
+  .orderrow .omain{flex:1;min-width:0;}
+  .orderrow .ot{font-size:14px;font-weight:600;}
+  .orderrow .os{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45;}
+  .orderrow .oq{text-align:right;min-width:72px;}
+  .orderrow .oq b{display:block;font-size:16px;}
+  .orderrow a.obtn{font-size:12px;font-weight:600;text-decoration:none;border-radius:12px;padding:5px 10px;background:#fcebeb;color:#a32d2d;white-space:nowrap;}
+  .orderempty{margin:8px 14px 10px;padding:10px 12px;border-radius:10px;background:#e1f5ee;color:#0f6e56;font-size:13px;font-weight:600;}
   .legend{margin:2px 14px 6px;padding:8px 10px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);}
   .row{display:flex;align-items:center;padding:11px 16px;border-top:1px solid var(--line);}
   .nm{flex:1;min-width:0;}.nm .t{font-size:15px;font-weight:600;}.nm .s{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -62,6 +73,8 @@
   .egg .hdln{font-size:12px;font-weight:600;color:var(--warn);background:var(--warnbg);display:inline-block;padding:2px 8px;border-radius:6px;margin:2px 0 4px;}
   .sec{padding:12px 16px 4px;font-size:12px;font-weight:600;color:var(--muted);}
   .note{margin:10px 14px 4px;padding:9px 11px;background:#faf8f3;border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;}
+  .loaderr{margin:14px;padding:13px;border-radius:10px;background:#fcebeb;color:#8f2424;font-size:13px;line-height:1.6;font-weight:600;}
+  .loaderr a{color:#1565a6;text-decoration:none;}
   .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
   table.rawt{border-collapse:collapse;font-size:var(--rawfs,11px);}
   table.rawt td{border:1px solid var(--line);padding:2px 5px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
@@ -92,6 +105,18 @@
   .nm .s b{color:var(--ink);font-weight:600;}
   .batch{margin:8px 14px;border:1px solid var(--line);border-radius:10px;padding:10px 13px;}
   .batch .bn{font-weight:600;font-size:14px;margin-bottom:3px;}.batch .bd{font-size:12px;color:var(--muted);line-height:1.7;}
+  .eggorder{margin-top:9px;border-top:1px solid var(--line);padding-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .eggorder label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+  .eggorder input{width:54px;height:32px;text-align:center;font-size:16px;font-weight:600;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .smsbtn,.copybtn{min-height:34px;text-decoration:none;font-size:12px;font-weight:600;border-radius:12px;padding:8px 11px;border:0;white-space:nowrap;}
+  .smsbtn{margin-left:auto;background:var(--infobg);color:var(--info);}
+  .copybtn{background:#f1efe8;color:var(--ink);}
+  .smsbody{flex:0 0 100%;font-size:11px;color:var(--muted);line-height:1.45;background:#faf8f3;border-radius:8px;padding:7px 9px;white-space:pre-wrap;}
+  .bulkorder{margin:8px 14px;border:1px solid #d4e5f7;border-radius:10px;padding:11px 13px;background:#f7fbff;box-shadow:var(--shadow);}
+  .bulkorder .boh{font-size:14px;font-weight:600;margin-bottom:5px;color:var(--info);}
+  .bulkorder .bos{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:9px;}
+  .bulkorder .boa{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .bulkorder .smsbtn{margin-left:0;}
   .rules{margin:8px 14px 16px;border:1px solid var(--line);border-radius:10px;}
   .rules summary{font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;color:var(--ink);}
   .rules .rl{font-size:12px;color:var(--ink);padding:6px 12px;border-top:1px solid var(--line);line-height:1.55;}
@@ -156,8 +181,12 @@
     <div id="salesdays"></div>
   </div>
 
-  <div id="mat" class="hide">
+  <div id="anko" class="hide">
     <div class="sec">🫘 あん発注（実績ベース・木曜締め7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
+  </div>
+
+  <div id="mat" class="hide">
+    <div class="sec">🛒 発注リスト<span id="ordneed"></span></div><div id="orderlist"></div>
     <div class="sec">材料（必要量 × 在庫）<span id="matneed"></span></div><div id="matlist"></div>
     <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
@@ -171,38 +200,50 @@
 
 <div class="nav">
   <button id="nav-make" class="on" onclick="show('make')"><span class="ic"><svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block" aria-label="どらやき" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 12 Q12 3.2 20.6 12 Q12 20.8 3.4 12 Z" fill="#D89A4A" stroke="#B9792F" stroke-width="0.8"/><path d="M3.8 12 Q12 4 20.2 12 Z" fill="#EAB76C"/><ellipse cx="12" cy="12.1" rx="8" ry="1.35" fill="#6B3A2A"/></svg></span>製造計画</button>
-  <button id="nav-egg" onclick="show('egg')"><span class="ic">🥚</span>卵発注</button>
   <button id="nav-sales" onclick="show('sales')"><span class="ic">💴</span>製造実績</button>
-  <button id="nav-mat" onclick="show('mat')"><span class="ic"><svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block" aria-label="段ボール" xmlns="http://www.w3.org/2000/svg"><path d="M3.6 9 L3.6 5.4 L12 5.4 L12 9 Z" fill="#E0B36F" stroke="#9C6B2C" stroke-width="0.8" stroke-linejoin="round"/><path d="M12 9 L12 5.4 L20.4 5.4 L20.4 9 Z" fill="#C68E45" stroke="#9C6B2C" stroke-width="0.8" stroke-linejoin="round"/><rect x="3.6" y="9" width="16.8" height="10.8" rx="1.1" fill="#D3A05C" stroke="#9C6B2C" stroke-width="0.8"/><line x1="12" y1="9" x2="12" y2="19.8" stroke="#9C6B2C" stroke-width="0.9"/></svg></span>材料配送</button>
+  <button id="nav-egg" onclick="show('egg')"><span class="ic">🥚</span>卵発注</button>
+  <button id="nav-anko" onclick="show('anko')"><span class="ic">🫘</span>あんこ発注</button>
+  <button id="nav-mat" onclick="show('mat')"><span class="ic"><svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block" aria-label="段ボール" xmlns="http://www.w3.org/2000/svg"><path d="M3.6 9 L3.6 5.4 L12 5.4 L12 9 Z" fill="#E0B36F" stroke="#9C6B2C" stroke-width="0.8" stroke-linejoin="round"/><path d="M12 9 L12 5.4 L20.4 5.4 L20.4 9 Z" fill="#C68E45" stroke="#9C6B2C" stroke-width="0.8" stroke-linejoin="round"/><rect x="3.6" y="9" width="16.8" height="10.8" rx="1.1" fill="#D3A05C" stroke="#9C6B2C" stroke-width="0.8"/><line x1="12" y1="9" x2="12" y2="19.8" stroke="#9C6B2C" stroke-width="0.9"/></svg></span>その他材料</button>
   <button id="nav-raw" onclick="show('raw')"><span class="ic">📋</span>全データ</button>
 </div>
 
 <script>
 let W=null,sel=(new Date().getDay()+6)%7,selBlk=0,curTab='',curRawTab='';
-const SC=['make','egg','sales','mat','raw'],TT={make:'製造計画',egg:'卵発注',sales:'製造実績',mat:'材料・配送',raw:'全データ'};
+const SC=['make','sales','egg','anko','mat','raw'],TT={make:'製造計画',sales:'製造実績',egg:'卵発注',anko:'あんこ発注',mat:'その他材料',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
 async function fetchJSON(u){for(let i=0;i<3;i++){try{const r=await fetch(u,{cache:'no-store'});const x=await r.text();if(x&&x.trim())return JSON.parse(x);}catch(e){}await new Promise(s=>setTimeout(s,400*(i+1)));}throw new Error('取得失敗: '+u);}
 async function J(u){const sep=u.includes('?')?'&':'?';const t=curTab?(sep+'tab='+encodeURIComponent(curTab)):'';return fetchJSON(u+t);}
 
 async function init(){
-  const tabs=await fetchJSON('/api/tabs');
-  W=await J('/api/week');           // tab未指定＝今週
-  curTab=W.tab;
-  const wk=document.getElementById('wk');wk.innerHTML='';
-  tabs.slice().reverse().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t+(t===curTab?'（今週）':'');if(t===curTab)o.selected=true;wk.appendChild(o);});
-  wk.onchange=()=>{curTab=wk.value;loadWeek();};
-  paintMake();
-  J('/api/eggs').then(renderEgg);
-  J('/api/cost').then(renderSales);
-  J('/api/matstock').then(renderMatStock).catch(()=>{});
-  J('/api/anko').then(renderAnko).catch(()=>{});
-  stampSync();
+  if(location.protocol==='file:'){showLoadError('アプリ本体のファイルを直接開いています。製造表データを読むには、ローカルサーバーのURLで開いてください。');return;}
+  try{
+    const tabs=await fetchJSON('/api/tabs');
+    W=await J('/api/week');           // tab未指定＝今週
+    curTab=W.tab;
+    const wk=document.getElementById('wk');wk.innerHTML='';
+    tabs.slice().reverse().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t+(t===curTab?'（今週）':'');if(t===curTab)o.selected=true;wk.appendChild(o);});
+    wk.onchange=()=>{curTab=wk.value;loadWeek();};
+    paintMake();
+    J('/api/eggs').then(renderEgg);
+    J('/api/cost').then(renderSales);
+    J('/api/matstock').then(renderMatStock).catch(()=>{});
+    fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});
+    J('/api/anko').then(renderAnko).catch(()=>{});
+    stampSync();
+  }catch(e){showLoadError('製造表データを読み込めませんでした。アプリのローカルサーバーが起動しているか確認してください。');}
+}
+function showLoadError(msg){
+  document.getElementById('title').textContent='読み込みエラー';
+  const box=document.getElementById('rows');
+  if(box)box.innerHTML='<div class="loaderr">'+esc(msg)+'<br><a href="http://127.0.0.1:8788/">http://127.0.0.1:8788/ を開く</a></div>';
+  const n=document.getElementById('eggnote');if(n)n.textContent=msg;
 }
 async function loadWeek(){
   W=await J('/api/week');sel=Math.min(sel,6);paintMake();
   J('/api/eggs').then(renderEgg);
   J('/api/cost').then(renderSales);
   J('/api/matstock').then(renderMatStock).catch(()=>{});
+  fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});
   J('/api/anko').then(renderAnko).catch(()=>{});
 }
 
@@ -216,7 +257,7 @@ async function syncAll(force){
   if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
   try{
     W=await J('/api/week');sel=Math.min(sel,6);paintMake();
-    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/matstock').then(renderMatStock).catch(()=>{});J('/api/anko').then(renderAnko).catch(()=>{});
+    J('/api/eggs').then(renderEgg);J('/api/cost').then(renderSales);J('/api/matstock').then(renderMatStock).catch(()=>{});fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});J('/api/anko').then(renderAnko).catch(()=>{});
     stampSync();
   }catch(e){}
 }
@@ -241,7 +282,7 @@ function renderMake(){
   document.querySelectorAll('.blk').forEach((b,i)=>b.classList.toggle('on',i===selBlk));
   document.querySelectorAll('.day').forEach((b,i)=>b.classList.toggle('on',i===sel));
   const blk=W.blocks[selBlk];if(!blk){document.getElementById('rows').innerHTML='';return;}
-  document.getElementById('title').textContent='製造計画';
+  if(!document.getElementById('make').classList.contains('hide'))document.getElementById('title').textContent='製造計画';
   const _w=(W.weather||[])[sel];document.getElementById('wxline').innerHTML=_w&&_w.emoji?(_w.emoji+' '+_w.label+'　最高'+Math.round(_w.tmax)+'° 最低'+Math.round(_w.tmin)+'°　降水'+(_w.pop==null?'–':_w.pop+'%')):'';
   document.getElementById('totlbl').textContent=blk.name+' 実績';
   const box=document.getElementById('rows');box.innerHTML='';let tot=0;
@@ -280,6 +321,8 @@ async function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''
     W=await J('/api/week');paintMake();
   }}
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
+function numOnly(x){const n=parseInt(String(x||'').replace(/[^0-9]/g,''),10);return isNaN(n)?0:n;}
+function escAttr(s){return esc(String(s||'')).replace(/"/g,'&quot;');}
 function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
   const stock=col>0?('<span class="estock" contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+row+'" data-c="'+col+'">'+esc(o.stock||'')+'</span>'):('<b>'+nz(o.stock)+'</b>');
@@ -296,10 +339,63 @@ function renderEgg(E){
     dl.appendChild(card);});
   bindEdit(dl);
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
+  const bulk=document.createElement('div');bulk.className='bulkorder';
+  bulk.innerHTML='<div class="boh">木曜一括発注（翌週 火・木・土便）</div><div class="bos">木曜日はこのボタンで3便分をまとめて発注。下の各便ボタンは、締切までの数量変更に使う。</div><div class="boa"><a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button></div><div class="smsbody bulkBody"></div>';
+  bl.appendChild(bulk);
   E.batches.forEach(b=>{const el=document.createElement('div');el.className='batch';
-    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>';bl.appendChild(el);});
+    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+
+      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+numOnly(b.yolkBags)+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+numOnly(b.whiteBags)+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';bl.appendChild(el);});
+  bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
+function amadaText(batch,y,w){
+  const lines=['アマダ東京様','どら山です。',batch+'分の液卵をお願いします。'];
+  if(y>0)lines.push('卵黄400g：'+y+'袋');
+  if(w>0)lines.push('卵白750g：'+w+'袋');
+  if(y<=0&&w<=0)lines.push('卵黄400g：0袋','卵白750g：0袋');
+  lines.push('よろしくお願いいたします。');
+  return lines.join('\n');
+}
+function amadaBulkText(root){
+  const lines=['アマダ東京様','どら山です。','翌週分の液卵を下記でお願いします。'];
+  root.querySelectorAll('.eggorder').forEach(box=>{
+    const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
+    const parts=[];
+    if(y>0)parts.push('卵黄400g '+y+'袋');
+    if(w>0)parts.push('卵白750g '+w+'袋');
+    if(parts.length)lines.push('・'+batch+'：'+parts.join(' / '));
+  });
+  if(lines.length===3)lines.push('・発注数なし');
+  lines.push('よろしくお願いいたします。');
+  return lines.join('\n');
+}
+function refreshEggSms(box){
+  const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
+  const body=amadaText(batch,y,w),btn=box.querySelector('.smsbtn'),prev=box.querySelector('.smsbody');
+  btn.href='sms:08043565441&body='+encodeURIComponent(body);
+  btn.dataset.body=body;
+  prev.textContent=body;
+  refreshBulkEggSms(box.closest('#eggbatches')||document);
+}
+function refreshBulkEggSms(root){
+  const body=amadaBulkText(root),btn=root.querySelector('.bulkSms'),prev=root.querySelector('.bulkBody');
+  if(!btn||!prev)return;
+  btn.href='sms:08043565441&body='+encodeURIComponent(body);
+  btn.dataset.body=body;
+  prev.textContent=body;
+}
+function bindEggSms(root){
+  root.querySelectorAll('.eggorder').forEach(box=>{
+    box.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>refreshEggSms(box)));
+    const copy=box.querySelector('.copybtn');
+    if(copy)copy.onclick=async()=>{refreshEggSms(box);const body=box.querySelector('.smsbtn').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='本文コピー',1200);}catch(e){box.querySelector('.smsbody').focus&&box.querySelector('.smsbody').focus();copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='本文コピー',1800);}};
+    refreshEggSms(box);
+  });
+}
+function bindBulkEggSms(root){
+  const copy=root.querySelector('.bulkCopy');
+  if(copy)copy.onclick=async()=>{refreshBulkEggSms(root);const body=root.querySelector('.bulkSms').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='一括本文コピー',1200);}catch(e){copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='一括本文コピー',1800);}};
+}
 function renderSecs(secs){return (secs||[]).map(s=>{
   let h=(s.header&&!s.header.startsWith('📖'))?'<div class="rsh">'+esc(s.header)+'</div>':'';
   h+=(s.lines||[]).map(l=>'<div class="rsl">'+esc(l)+'</div>').join('');return h;}).join('');}
@@ -353,6 +449,34 @@ function renderAnko(A){
   bindAnkoInput('junrate','junRatePer100');
 }
 function invChip(o){return (o.url&&/^https?:/.test(o.url))?'<a class="chip bad" href="'+esc(o.url)+'" target="_blank" rel="noopener" style="text-decoration:none">要発注 ↗</a>':'<span class="chip bad">要発注</span>';}
+function orderButton(o){
+  return (o.url&&/^https?:/.test(o.url))?'<a class="obtn" href="'+esc(o.url)+'" target="_blank" rel="noopener">開く</a>':'<span class="chip bad">手動</span>';
+}
+function orderRow(o,wait){
+  const shortage=(o.shortage!=null&&o.shortage>0)?('不足 '+nz(o.shortage)):'不足あり';
+  const lot=o.lot?(' ・ ロット '+esc(o.lot)):'';
+  const note=o.note?(' ・ '+esc(o.note)):'';
+  const st=wait?(o.status||'発注済'):(o.supplier||'発注先未設定');
+  return '<div class="orderrow '+(wait?'wait':'')+'"><div class="omain"><div class="ot">'+esc(o.name)+'</div>'+
+    '<div class="os">'+esc(st)+' ・ 在庫 '+nz(o.total)+' / 最低 '+(o.min==null?'–':nz(o.min))+' ・ '+shortage+lot+note+'</div></div>'+
+    '<div class="oq"><b>'+nz(o.total)+'</b><span class="invmin">現在庫</span></div>'+(wait?'<span class="chip warn">待ち</span>':orderButton(o))+'</div>';
+}
+function renderOrderList(O){
+  const n=document.getElementById('ordneed');if(n){n.textContent=O.orderCount?('　今発注 '+O.orderCount+'件'):(O.pendingCount?('　発注待ち '+O.pendingCount+'件'):'　なし');n.style.color=O.orderCount?'var(--warn)':'var(--muted)';}
+  const box=document.getElementById('orderlist');if(!box)return;
+  if(!O.orderCount&&!O.pendingCount){box.innerHTML='<div class="orderempty">今すぐ発注するものはありません</div>';return;}
+  let html='';
+  if(O.orderCount){
+    const groups={};(O.items||[]).forEach(x=>{const k=x.supplier||'発注先未設定';(groups[k]=groups[k]||[]).push(x);});
+    Object.keys(groups).sort().forEach(k=>{html+='<div class="ordergrp"><div class="ogh"><span>'+esc(k)+'</span><span>'+groups[k].length+'件</span></div>'+groups[k].map(x=>orderRow(x,false)).join('')+'</div>';});
+  }else{
+    html+='<div class="orderempty">今すぐ発注するものはありません</div>';
+  }
+  if(O.pendingCount){
+    html+='<details class="rules"><summary>発注済みで待っているもの '+O.pendingCount+'件</summary>'+(O.pending||[]).map(x=>orderRow(x,true)).join('')+'</details>';
+  }
+  box.innerHTML=html;
+}
 function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
   const ml=document.getElementById('matlist');ml.innerHTML='';
