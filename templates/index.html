@@ -121,6 +121,7 @@
   .bulkorder{margin:8px 14px;border:1px solid #d4e5f7;border-radius:10px;padding:11px 13px;background:#f7fbff;box-shadow:var(--shadow);}
   .bulkorder .boh{font-size:14px;font-weight:600;margin-bottom:5px;color:var(--info);}
   .bulkorder .bos{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:9px;}
+  .bulkorder .bbrow{margin:8px 0 0;background:#fff;}
   .bulkorder .boa{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .bulkorder .smsbtn{margin-left:0;}
   .rules{margin:8px 14px 16px;border:1px solid var(--line);border-radius:10px;}
@@ -355,25 +356,53 @@ function renderEgg(E){
   bindEdit(dl);
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
   const findB=kw=>E.batches.find(b=>(b.name||'').indexOf(kw)===0);
-  function batchBox(b,dayLabel,todo){
-    if(!b)return;
+  const findDay=wd=>(E.days||[]).find(d=>d.wd===wd);
+  function orderInput(batch,yb,wb,kind2){
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yb+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wb+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+  }
+  // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
+  function changeBlock(dayChar,hint,day){
+    const yc=parseTodoChange(day&&day.yolk&&day.yolk.todo),wc=parseTodoChange(day&&day.white&&day.white.todo);
+    const delivery=yc.delivery||wc.delivery||hint;
     const el=document.createElement('div');el.className='batch';
-    el.innerHTML='<div class="bn"><span class="daytag">'+esc(dayLabel)+'</span>'+esc(b.name)+'</div>'+
-      (todo?'<div class="bos">'+esc(todo)+'</div>':'')+
-      '<div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+
-      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+numOnly(b.yolkBags)+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+numOnly(b.whiteBags)+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+    if(!(yc.has||wc.has)){
+      el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bd">✅ そのまま（変更不要）</div>';
+      bl.appendChild(el);return;
+    }
+    const yb=yc.kg!=null?bagsFromKg(yc.kg,0.4,7):0,wb=wc.kg!=null?bagsFromKg(wc.kg,0.75,4):0;
+    const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
+    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true);
     bl.appendChild(el);
   }
-  // やること順（月→水→木→土）で並べる
-  batchBox(findB('木曜便'),'月：木便を変更','月曜が木便（金・土着）の最終変更日。変える時だけ下の数で変更SMSを送る。');
-  batchBox(findB('土曜便'),'水：土便を変更','水曜が土便（日・月・火着）の最終変更日。');
+  changeBlock('月','木便',findDay('月'));
+  changeBlock('水','土便',findDay('水'));
+  // 木：翌週分を新規発注（火・木・土便まとめて）。一括SMSはこの3便を読む。
   const bulk=document.createElement('div');bulk.className='bulkorder';
-  bulk.innerHTML='<div class="boh"><span class="daytag daytag-main">木：来週便を発注</span>来週分まとめて（火・木・土便）</div><div class="bos">木曜が新規発注の締切。このボタンで3便分を一括SMS。</div><div class="boa"><a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button></div><div class="smsbody bulkBody"></div>';
+  bulk.innerHTML='<div class="boh"><span class="daytag daytag-main">木</span>翌週分を新規発注（火・木・土便まとめて）</div><div class="bos">木曜が新規発注の締切。下の3便を確認して一括SMSで発注。各便は締切までの変更にも使える。</div>';
+  E.batches.forEach(b=>{const row=document.createElement('div');row.className='batch bbrow';
+    row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false);
+    bulk.appendChild(row);});
+  const boa=document.createElement('div');boa.className='boa';boa.style.marginTop='9px';
+  boa.innerHTML='<a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button>';
+  bulk.appendChild(boa);
+  const bbody=document.createElement('div');bbody.className='smsbody bulkBody';bulk.appendChild(bbody);
   bl.appendChild(bulk);
-  batchBox(findB('火曜便'),'土：翌火便を変更','土曜が翌週の火便（水・木着）の最終変更日。');
+  // 土：翌週の火便を変更（変更なければそのまま）
+  const fb=findB('火曜便');
+  if(fb){const sat=document.createElement('div');sat.className='batch';
+    sat.innerHTML='<div class="bn"><span class="daytag">土</span>翌週の火便を変更（'+esc(fb.name)+'）</div><div class="bos">土曜が翌火便の最終変更日。変更があれば下の数でSMS、なければそのまま。</div>'+orderInput('翌週の火便',numOnly(fb.yolkBags),numOnly(fb.whiteBags),true);
+    bl.appendChild(sat);}
   bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
+function bagsFromKg(kg,perRot,thr){if(!(kg>0))return 0;const full=Math.floor(kg/5);const rem=(kg-full*5)/perRot;return full+(rem>=thr-1e-9?1:0);}
+function parseTodoChange(todo){
+  if(!todo)return {has:false,kg:null,delivery:''};
+  const has=/🔴|🔵/.test(todo);
+  const mkg=todo.match(/合計[\d.]+回転（([\d.]+)\s*kg）/);
+  const md=todo.match(/(\d+\/\d+)\s*([^\s　の]*便)/);
+  return {has, kg:mkg?parseFloat(mkg[1]):null, delivery:md?(md[1]+' '+md[2]):''};
+}
 function amadaText(batch,y,w){
   const lines=['アマダ東京様','どら山です。',batch+'分の液卵をお願いします。'];
   if(y>0)lines.push('卵黄5kg：'+y+'袋');
@@ -382,12 +411,19 @@ function amadaText(batch,y,w){
   lines.push('よろしくお願いいたします。');
   return lines.join('\n');
 }
+function amadaChangeText(delivery,y,w){
+  const lines=['アマダ東京様','どら山です。',delivery+'を下記に変更でお願いします。'];
+  lines.push('卵黄5kg：'+y+'袋');
+  lines.push('卵白5kg：'+w+'袋');
+  lines.push('よろしくお願いいたします。');
+  return lines.join('\n');
+}
 function amadaBulkText(root){
   const lines=['アマダ東京様','どら山です。','翌週分の液卵を下記でお願いします。'];
   const ord={'火曜便':1,'木曜便':2,'土曜便':3};
   const ordKey=n=>{for(const k in ord){if((n||'').indexOf(k)===0)return ord[k];}return 9;};
-  // 画面の並びは「やること順」だが、一括SMSは配送順(火→木→土)で読ませる
-  [...root.querySelectorAll('.eggorder')].sort((a,b)=>ordKey(a.dataset.batch)-ordKey(b.dataset.batch)).forEach(box=>{
+  // 一括SMSは「翌週分まとめて」の3便(火→木→土)だけを配送順で読む（今週分の変更ブロックは除外）
+  [...root.querySelectorAll('.bulkorder .eggorder')].sort((a,b)=>ordKey(a.dataset.batch)-ordKey(b.dataset.batch)).forEach(box=>{
     const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
     const parts=[];
     if(y>0)parts.push('卵黄5kg '+y+'袋');
@@ -400,11 +436,13 @@ function amadaBulkText(root){
 }
 function refreshEggSms(box){
   const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
-  const body=amadaText(batch,y,w),btn=box.querySelector('.smsbtn'),prev=box.querySelector('.smsbody');
+  const isChange=box.dataset.kind2==='change';
+  const body=isChange?amadaChangeText(batch,y,w):amadaText(batch,y,w);
+  const btn=box.querySelector('.smsbtn'),prev=box.querySelector('.smsbody');
   btn.href='sms:08043565441&body='+encodeURIComponent(body);
   btn.dataset.body=body;
   prev.textContent=body;
-  refreshBulkEggSms(box.closest('#eggbatches')||document);
+  if(!isChange)refreshBulkEggSms(document.getElementById('eggbatches')||document);
 }
 function refreshBulkEggSms(root){
   const body=amadaBulkText(root),btn=root.querySelector('.bulkSms'),prev=root.querySelector('.bulkBody');
