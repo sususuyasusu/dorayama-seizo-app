@@ -175,7 +175,7 @@
     <div class="note" id="eggnote">読込中…</div>
     <div class="eggrule" id="eggrule"></div>
     <div id="eggdaylist"></div>
-    <div class="sec">翌週の正味発注数（配送便別）</div>
+    <div class="sec">今週の発注作業</div>
     <div id="eggbatches"></div>
     <details class="rules"><summary>📖 この表の見方（こうなったら→こうする）</summary><div id="eggguide"></div></details>
     <details class="rules"><summary>📋 卵発注ルール</summary><div id="eggruleslist"></div></details>
@@ -357,8 +357,10 @@ function renderEgg(E){
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
   const findB=kw=>E.batches.find(b=>(b.name||'').indexOf(kw)===0);
   const findDay=wd=>(E.days||[]).find(d=>d.wd===wd);
-  function orderInput(batch,yb,wb,kind2){
-    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yb+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wb+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+  function orderInput(batch,yb,wb,kind2,oy,ow){
+    // kind2(変更)のときは先週の一括発注数(before)をdata属性に保持し、SMSで before→after を出す
+    const od=kind2?(' data-orig-y="'+(oy==null?yb:oy)+'" data-orig-w="'+(ow==null?wb:ow)+'"'):'';
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yb+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wb+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
   }
   // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
   function changeBlock(dayChar,hint,day){
@@ -370,8 +372,11 @@ function renderEgg(E){
       bl.appendChild(el);return;
     }
     const yb=yc.kg!=null?bagsFromKg(yc.kg,0.4,7):0,wb=wc.kg!=null?bagsFromKg(wc.kg,0.75,4):0;
+    // 先週の一括発注数(before) = 今回の合計回転 − 増減回転 を袋換算
+    const yOrig=(yc.rot!=null&&yc.delta!=null)?bagsFromKg((yc.rot-yc.delta)*0.4,0.4,7):yb;
+    const wOrig=(wc.rot!=null&&wc.delta!=null)?bagsFromKg((wc.rot-wc.delta)*0.75,0.75,4):wb;
     const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
-    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true);
+    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true,yOrig,wOrig);
     bl.appendChild(el);
   }
   changeBlock('月','木便',findDay('月'));
@@ -397,11 +402,14 @@ function renderEgg(E){
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
 function bagsFromKg(kg,perRot,thr){if(!(kg>0))return 0;const full=Math.floor(kg/5);const rem=(kg-full*5)/perRot;return full+(rem>=thr-1e-9?1:0);}
 function parseTodoChange(todo){
-  if(!todo)return {has:false,kg:null,delivery:''};
+  if(!todo)return {has:false,kg:null,rot:null,delta:null,delivery:''};
   const has=/🔴|🔵/.test(todo);
-  const mkg=todo.match(/合計[\d.]+回転（([\d.]+)\s*kg）/);
+  const mtot=todo.match(/合計([\d.]+)回転（([\d.]+)\s*kg）/);   // 今回の合計（回転・kg）
+  const mdelta=todo.match(/を\s*([+\-−＋]?\s*[\d.]+)\s*回転/);  // 増減（先頭の「○○を ±N回転」）
   const md=todo.match(/(\d+\/\d+)\s*([^\s　の]*便)/);
-  return {has, kg:mkg?parseFloat(mkg[1]):null, delivery:md?(md[1]+' '+md[2]):''};
+  let delta=null;
+  if(mdelta){delta=parseFloat(mdelta[1].replace(/\s/g,'').replace('−','-').replace('＋','+'));}
+  return {has, rot:mtot?parseFloat(mtot[1]):null, kg:mtot?parseFloat(mtot[2]):null, delta, delivery:md?(md[1]+' '+md[2]):''};
 }
 function amadaText(batch,y,w){
   const lines=['アマダ東京様','どら山です。',batch+'分の液卵をお願いします。'];
@@ -411,11 +419,10 @@ function amadaText(batch,y,w){
   lines.push('よろしくお願いいたします。');
   return lines.join('\n');
 }
-function amadaChangeText(delivery,y,w){
-  const lines=['アマダ東京様','どら山です。',delivery+'を下記に変更でお願いします。'];
-  lines.push('卵黄5kg：'+y+'袋');
-  lines.push('卵白5kg：'+w+'袋');
-  lines.push('よろしくお願いいたします。');
+function amadaChangeText(delivery,oy,y,ow,w){
+  // 先週の一括発注数(before)→今回(after)を明記。変わらない側は「（変更なし）」。
+  const line=(label,o,n)=> (o===n? label+'：'+n+'袋（変更なし）' : label+'：'+o+'→'+n+'袋');
+  const lines=['アマダ東京様','どら山です。',delivery+'を下記に変更でお願いします。',line('卵黄5kg',oy,y),line('卵白5kg',ow,w),'よろしくお願いいたします。'];
   return lines.join('\n');
 }
 function amadaBulkText(root){
@@ -437,7 +444,8 @@ function amadaBulkText(root){
 function refreshEggSms(box){
   const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
   const isChange=box.dataset.kind2==='change';
-  const body=isChange?amadaChangeText(batch,y,w):amadaText(batch,y,w);
+  const oy=numOnly(box.dataset.origY),ow=numOnly(box.dataset.origW);
+  const body=isChange?amadaChangeText(batch,oy,y,ow,w):amadaText(batch,y,w);
   const btn=box.querySelector('.smsbtn'),prev=box.querySelector('.smsbody');
   btn.href='sms:08043565441&body='+encodeURIComponent(body);
   btn.dataset.body=body;
