@@ -108,6 +108,9 @@
   .nm .s b{color:var(--ink);font-weight:600;}
   .batch{margin:8px 14px;border:1px solid var(--line);border-radius:10px;padding:10px 13px;}
   .batch .bn{font-weight:600;font-size:14px;margin-bottom:3px;}.batch .bd{font-size:12px;color:var(--muted);line-height:1.7;}
+  .batch .bos{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:7px;}
+  .daytag{display:inline-block;font-size:11px;font-weight:600;color:var(--warn);background:var(--warnbg);border-radius:7px;padding:2px 8px;margin-right:7px;}
+  .daytag-main{color:#fff;background:var(--info);}
   .eggorder{margin-top:9px;border-top:1px solid var(--line);padding-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .eggorder label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;}
   .eggorder input{width:54px;height:32px;text-align:center;font-size:16px;font-weight:600;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
@@ -351,12 +354,23 @@ function renderEgg(E){
     dl.appendChild(card);});
   bindEdit(dl);
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
+  const findB=kw=>E.batches.find(b=>(b.name||'').indexOf(kw)===0);
+  function batchBox(b,dayLabel,todo){
+    if(!b)return;
+    const el=document.createElement('div');el.className='batch';
+    el.innerHTML='<div class="bn"><span class="daytag">'+esc(dayLabel)+'</span>'+esc(b.name)+'</div>'+
+      (todo?'<div class="bos">'+esc(todo)+'</div>':'')+
+      '<div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+
+      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+numOnly(b.yolkBags)+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+numOnly(b.whiteBags)+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+    bl.appendChild(el);
+  }
+  // やること順（月→水→木→土）で並べる
+  batchBox(findB('木曜便'),'月：木便を変更','月曜が木便（金・土着）の最終変更日。変える時だけ下の数で変更SMSを送る。');
+  batchBox(findB('土曜便'),'水：土便を変更','水曜が土便（日・月・火着）の最終変更日。');
   const bulk=document.createElement('div');bulk.className='bulkorder';
-  bulk.innerHTML='<div class="boh">木曜一括発注（翌週 火・木・土便）</div><div class="bos">木曜日はこのボタンで3便分をまとめて発注。下の各便ボタンは、締切までの数量変更に使う。</div><div class="boa"><a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button></div><div class="smsbody bulkBody"></div>';
+  bulk.innerHTML='<div class="boh"><span class="daytag daytag-main">木：来週便を発注</span>来週分まとめて（火・木・土便）</div><div class="bos">木曜が新規発注の締切。このボタンで3便分を一括SMS。</div><div class="boa"><a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button></div><div class="smsbody bulkBody"></div>';
   bl.appendChild(bulk);
-  E.batches.forEach(b=>{const el=document.createElement('div');el.className='batch';
-    el.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+
-      '<div class="eggorder" data-batch="'+escAttr(b.name)+'"><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+numOnly(b.yolkBags)+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+numOnly(b.whiteBags)+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';bl.appendChild(el);});
+  batchBox(findB('火曜便'),'土：翌火便を変更','土曜が翌週の火便（水・木着）の最終変更日。');
   bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
@@ -370,7 +384,10 @@ function amadaText(batch,y,w){
 }
 function amadaBulkText(root){
   const lines=['アマダ東京様','どら山です。','翌週分の液卵を下記でお願いします。'];
-  root.querySelectorAll('.eggorder').forEach(box=>{
+  const ord={'火曜便':1,'木曜便':2,'土曜便':3};
+  const ordKey=n=>{for(const k in ord){if((n||'').indexOf(k)===0)return ord[k];}return 9;};
+  // 画面の並びは「やること順」だが、一括SMSは配送順(火→木→土)で読ませる
+  [...root.querySelectorAll('.eggorder')].sort((a,b)=>ordKey(a.dataset.batch)-ordKey(b.dataset.batch)).forEach(box=>{
     const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value),batch=box.dataset.batch||'';
     const parts=[];
     if(y>0)parts.push('卵黄5kg '+y+'袋');
