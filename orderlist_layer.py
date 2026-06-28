@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """在庫管理の商品マスタと発注履歴から、今発注すべき品だけを作る。
 在庫不足でも直近発注が未受領なら除外し、発注作業の重複を避ける。"""
+import re
 from datetime import datetime, timedelta
 
 import data_layer
@@ -8,12 +9,19 @@ import inventory_layer
 
 HISTORY_TAB = "発注履歴"
 OPEN_ORDER_DAYS = 7
+DELIVERY_GRACE_DAYS = 7
 
 
 def _num(s):
+    s = str(s or "").replace(",", "").strip()
+    if s in ("", "-"):
+        return None
     try:
-        return float(str(s).replace(",", "").strip())
-    except (TypeError, ValueError):
+        return float(s)
+    except ValueError:
+        m = re.search(r"-?\d+(?:\.\d+)?", s)
+        if m:
+            return float(m.group(0))
         return None
 
 
@@ -49,6 +57,15 @@ def _status_text(last_order, lead):
     if left == 0:
         return f"発注済・本日納品予定 {md}"
     return f"発注済・納品予定 {md}"
+
+
+def _pending_until(last_order, lead):
+    if not last_order:
+        return None
+    lead_num = _num(lead)
+    if lead_num and lead_num > 0:
+        return last_order + timedelta(days=lead_num + DELIVERY_GRACE_DAYS)
+    return last_order + timedelta(days=OPEN_ORDER_DAYS)
 
 
 def _history():
@@ -126,13 +143,15 @@ def get_orderlist():
         last_received = item.get("lastReceived")
         closed_by_receive = last_receive and last_order and last_receive >= last_order
         closed_by_stock_edit = last_received and last_order and last_received >= last_order
-        still_recent = last_order and (last_order + timedelta(days=OPEN_ORDER_DAYS) >= datetime.now())
+        pending_until = _pending_until(last_order, item["lead"])
+        still_recent = pending_until and pending_until >= datetime.now()
         is_pending = bool(last_order and still_recent and not closed_by_receive and not closed_by_stock_edit)
         row = dict(item)
         row.update({
             "lastOrder": last_order.strftime("%Y/%m/%d %H:%M") if last_order else "",
             "lastReceive": last_receive.strftime("%Y/%m/%d %H:%M") if last_receive else "",
             "pending": is_pending,
+            "pendingUntil": pending_until.strftime("%Y/%m/%d") if pending_until else "",
             "status": _status_text(last_order, row["lead"]) if is_pending else "未発注",
         })
         row["lastReceived"] = last_received.strftime("%Y/%m/%d %H:%M") if last_received else ""
@@ -151,4 +170,5 @@ def get_orderlist():
         "pendingCount": len(pending),
         "suppliers": suppliers,
         "openOrderDays": OPEN_ORDER_DAYS,
+        "deliveryGraceDays": DELIVERY_GRACE_DAYS,
     }
