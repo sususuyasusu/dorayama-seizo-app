@@ -267,7 +267,7 @@ async function loadWeek(){
 let lastAct=Date.now();
 ['click','keydown','touchstart','input'].forEach(e=>document.addEventListener(e,()=>{lastAct=Date.now();},true));
 function isEditing(){const a=document.activeElement;return !!(a&&(a.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(a.tagName)));}
-function stampSync(){let b=document.getElementById('syncbadge');if(!b){b=document.createElement('div');b.id='syncbadge';b.style.cssText='position:fixed;right:8px;bottom:62px;font-size:11px;color:var(--info);background:var(--infobg);border:1px solid var(--line);border-radius:10px;padding:2px 8px;opacity:.85;z-index:4;';document.body.appendChild(b);}const n=new Date();b.textContent='🔄 大本と自動連携 ・ 最終 '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+function stampSync(){let b=document.getElementById('syncbadge');if(!b){b=document.createElement('div');b.id='syncbadge';b.style.cssText='position:fixed;right:8px;bottom:calc(68px + env(safe-area-inset-bottom,0));font-size:11px;color:var(--info);background:var(--infobg);border:1px solid var(--line);border-radius:10px;padding:2px 8px;opacity:.85;z-index:4;';document.body.appendChild(b);}const n=new Date();b.textContent='🔄 大本と自動連携 ・ 最終 '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 async function syncAll(force){
   if(isEditing())return;
   if(!force&&(document.visibilityState!=='visible'||Date.now()-lastAct<4000))return;
