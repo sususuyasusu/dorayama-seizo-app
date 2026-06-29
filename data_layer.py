@@ -200,14 +200,17 @@ def get_week_blocks(tab=None, today=None):
             blocks.append(cur)
             continue
         if cur is not None and a in PRODUCTS_SET:
+            plan = [num(cell(r, c)) for c in PLAN_COLS]
+            actual = [num(cell(r, c)) for c in ACT_COLS]
+            # 予算が全て空/0 かつ 実績が全て空の行は、空の重複テンプレ行なので取り込まない
+            empty_plan = all(v is None or v == 0 for v in plan)
+            empty_actual = all(v is None for v in actual)
+            existing = {p["name"] for p in cur["products"]}
+            if (empty_plan and empty_actual) or (a in existing):
+                continue
             if not cur["category"]:
                 cur["category"] = "店舗用" if cur["name"] == "店舗用" else "催事用"
-            cur["products"].append({
-                "name": a,
-                "row": r,   # シート上の行番号（予算の書き戻し先）
-                "plan": [num(cell(r, c)) for c in PLAN_COLS],
-                "actual": [num(cell(r, c)) for c in ACT_COLS],
-            })
+            cur["products"].append({"name": a, "row": r, "plan": plan, "actual": actual})
     blocks = [b for b in blocks if b["products"]]
 
     days = [{"label": (f"{WEEKDAYS[i]}{daydates[i]}" if daydates and daydates[i] else WEEKDAYS[i]),

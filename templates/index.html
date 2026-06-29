@@ -16,6 +16,11 @@
   .wrap{max-width:var(--appw);margin:0 auto;background:#fff;min-height:100vh;padding-bottom:calc(74px + env(safe-area-inset-bottom,0));}
   .hd{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5;}
   .hd b{font-size:15px;font-weight:600;}
+  .hd #logo{height:30px;width:auto;flex:0 0 auto;display:block;}
+  #refreshbtn{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:9px;height:32px;width:34px;font-size:16px;line-height:1;padding:0;}
+  #refreshbtn:active{transform:scale(.95);}
+  #refreshbtn.spin{animation:spin .7s linear;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .hd select{margin-left:auto;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);max-width:46%;}
   .blks{display:flex;gap:6px;padding:10px 12px 2px;overflow-x:auto;}
   .blk{flex:0 0 auto;font-size:12px;padding:6px 12px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--muted);white-space:nowrap;}
@@ -167,7 +172,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><b id="title">製造計画</b><select id="wk"></select></div>
+  <div class="hd"><img id="logo" src="/static/logo.png" alt="どら山"><b id="title">製造計画</b><button id="refreshbtn" onclick="manualRefresh()" title="最新に更新">🔄</button><select id="wk"></select></div>
 
   <div id="make">
     <div class="blks" id="blks"></div>
@@ -274,6 +279,8 @@ async function loadWeek(){
   fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});
   J('/api/anko').then(renderAnko).catch(()=>{});
 }
+// ヘッダーの更新ボタン：今見ている週のデータを取り直す（全データの表も）
+function manualRefresh(){const b=document.getElementById('refreshbtn');if(b){b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');}loadWeek();const raw=document.getElementById('raw');if(raw&&!raw.classList.contains('hide')){const sw=document.getElementById('sheetweek');loadRawGrid(sw&&sw.selectedIndex>=0?sw.options[sw.selectedIndex].text:(W&&W.tab||''));}}
 
 // === 大本シートとの自動連携（編集中・操作直後・非表示中は避ける／全データは手動のまま） ===
 let lastAct=Date.now();
