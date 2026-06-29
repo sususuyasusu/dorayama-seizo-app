@@ -595,9 +595,17 @@ function renderMatStock(V){
       box.appendChild(el);});}
 }
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
-function editGrid(tab,rows,topRow,leftCol){if(!rows||!rows.length)return '';
+function cellStyle(f){if(!f)return '';let s='';
+  if(f.bg)s+='background:'+f.bg+';';
+  if(f.fg)s+='color:'+f.fg+';';
+  if(f.fs)s+='font-size:'+f.fs+'px;';
+  if(f.b)s+='font-weight:700;';
+  if(f.a)s+='text-align:'+f.a+';';
+  if(f.bd){if(f.bd.t)s+='border-top:1px solid '+f.bd.t+';';if(f.bd.b)s+='border-bottom:1px solid '+f.bd.b+';';if(f.bd.l)s+='border-left:1px solid '+f.bd.l+';';if(f.bd.r)s+='border-right:1px solid '+f.bd.r+';';}
+  return s;}
+function editGrid(tab,rows,fmts,topRow,leftCol){if(!rows||!rows.length)return '';
   const mx=rows.reduce((a,r)=>Math.max(a,r.length),0);let h='<table class="rawt">';
-  rows.forEach((r,ri)=>{h+='<tr>';for(let c=0;c<mx;c++){h+='<td contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+(topRow+ri)+'" data-c="'+(leftCol+c)+'">'+esc(r[c]||'')+'</td>';}h+='</tr>';});
+  rows.forEach((r,ri)=>{h+='<tr>';const fr=(fmts&&fmts[ri])||[];for(let c=0;c<mx;c++){const st=cellStyle(fr[c]);h+='<td contenteditable="true"'+(st?(' style="'+st+'"'):'')+' data-tab="'+esc(tab)+'" data-r="'+(topRow+ri)+'" data-c="'+(leftCol+c)+'">'+esc(r[c]||'')+'</td>';}h+='</tr>';});
   return h+'</table>';}
 function bindEdit(box){box.querySelectorAll('td').forEach(td=>{
   td.addEventListener('focus',()=>{td.dataset.before=td.textContent;});
@@ -621,7 +629,7 @@ async function setSheet(){
   if(gid)sw.value=gid;
   loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:(W.tab||''));
 }
-async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw'+q);box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
+async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw_styled'+q);box.innerHTML=editGrid(r.tab,r.values,r.fmts,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 let zoom=1;
 function applyZoom(){document.documentElement.style.setProperty('--rawfs',(11*zoom).toFixed(1)+'px');}
 function zoomStep(d){zoom=Math.max(0.6,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}

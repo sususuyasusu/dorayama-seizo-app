@@ -91,6 +91,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(anko_layer.get_anko_order(tab), ensure_ascii=False))
         elif path == "/api/raw":
             self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
+        elif path == "/api/raw_styled":
+            import sheetfmt_layer
+            self._send(200, json.dumps(sheetfmt_layer.get_raw_styled(tab), ensure_ascii=False))
         elif path == "/static/logo.png":
             self._send(200, (BASE / "static" / "logo.png").read_bytes(), "image/png")
         else:
