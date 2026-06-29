@@ -172,7 +172,7 @@
   <div id="make">
     <div class="blks" id="blks"></div>
     <div class="days" id="days"></div>
-    <div class="legend"><b style="color:var(--ink)">予算</b>＝事前の計画 ／ <b style="color:var(--ink)">実績（作った数）</b>＝本日以降は予算を表示（手入力で調整可）、昨日以前は実売（エアレジ/Airメイト）を自動反映 ／ <b style="color:var(--ink)">売れた</b>＝実際に売れた数（エアレジ/Airメイト）</div>
+    <div class="legend"><b style="color:var(--ink)">予算</b>＝事前の計画 ／ 名前の横の<b style="color:var(--ink)">実績</b>＝製造表の実績（昨日以前は実売／エアレジ・Airメイトを自動反映） ／ 下の大きい数字<b style="color:var(--ink)">実績（作る数・作った数）</b>＝その日に作る数。本日以降は「作る数」、昨日以前は「作った数」。既定は実績、手入力で調整できます</div>
     <div class="wxline" id="wxline"></div>
     <div id="rows"></div>
     <div class="sum">
@@ -315,11 +315,13 @@ function renderMake(){
   const _w=(W.weather||[])[sel];document.getElementById('wxline').innerHTML=_w&&_w.emoji?(_w.emoji+' '+_w.label+'　最高'+Math.round(_w.tmax)+'° 最低'+Math.round(_w.tmin)+'°　降水'+(_w.pop==null?'–':_w.pop+'%')):'';
   document.getElementById('totlbl').textContent=blk.name+' 実績';
   const box=document.getElementById('rows');box.innerHTML='';let tot=0;
+  // 作った数/作る数 は選択日が過去か（本日以降か）で表記を切り替える
+  const madeLbl=isPastDay(sel)?'実績（作った数）':'実績（作る数）';
   blk.products.forEach(p=>{
     const made=madeVal(p,sel),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=made;
     const r=document.createElement('div');r.className='row';
-    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<span class="planedit" contenteditable="true" inputmode="numeric">'+plan+'</span>　売れた '+(sold==null?'–':sold)+'</div></div>'+
-      '<div class="stpwrap"><div class="stplbl">実績（作った数）</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
+    r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<span class="planedit" contenteditable="true" inputmode="numeric">'+plan+'</span>　実績 '+(sold==null?'–':sold)+'</div></div>'+
+      '<div class="stpwrap"><div class="stplbl">'+madeLbl+'</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
     const v=r.querySelector('.val'),bs=r.querySelectorAll('button'),pe=r.querySelector('.planedit');
     bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);
     pe.addEventListener('focus',()=>{pe.dataset.b=pe.textContent;});
