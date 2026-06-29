@@ -57,14 +57,11 @@
   .val:focus{outline:none;border-bottom-color:var(--info);}
   #sheetbar{position:fixed;top:0;left:0;right:0;max-width:var(--appw);margin:0 auto;height:46px;display:flex;align-items:center;padding:0 12px;background:#fff;border-bottom:1px solid var(--line);z-index:6;}
   #sheetweek{flex:1;min-width:0;height:36px;font-size:16px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
-  #rawmode{height:36px;font-size:13px;font-weight:600;padding:0 12px;margin-left:8px;border:1px solid var(--info);border-radius:9px;background:var(--infobg);color:var(--info);white-space:nowrap;}
+  .sheethint{flex:0 1 auto;min-width:0;font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .zbtn{height:36px;width:34px;flex:0 0 auto;font-size:19px;font-weight:600;line-height:1;margin-left:6px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
   .zbtn:active{transform:scale(.95);}
   #rawgrid{position:fixed;top:46px;left:0;right:0;max-width:var(--appw);margin:0 auto;bottom:calc(60px + env(safe-area-inset-bottom,0));overflow:auto;background:#fff;z-index:5;padding:4px;}
   #rawgrid table.rawt td{min-width:46px;}
-  #sheetwrap{position:fixed;top:46px;left:0;right:0;max-width:var(--appw);margin:0 auto;bottom:calc(60px + env(safe-area-inset-bottom,0));overflow:hidden;background:#fff;z-index:5;}
-  #sheetframe{width:100%;height:100%;border:0;display:block;}
-  @media (max-width:640px){#sheetframe{width:154%;height:154%;transform:scale(.65);transform-origin:top left;}}
   .sum{display:flex;gap:10px;padding:14px 16px;background:#faf8f3;border-top:1px solid var(--line);flex-wrap:wrap;}
   .card{flex:1;min-width:120px;background:#fff;border-radius:8px;padding:10px 12px;}.card .l{font-size:12px;color:var(--muted);}.card .n{font-size:21px;font-weight:600;}
   .biz{display:flex;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line);gap:10px;}
@@ -85,9 +82,12 @@
   .loadwarm{margin:24px 14px;padding:18px;border-radius:12px;background:var(--infobg,#eef4fb);color:var(--info,#1565a6);font-size:15px;line-height:1.7;font-weight:600;text-align:center;}
   .loadwarm .lw2{font-size:12px;color:var(--muted);font-weight:400;}
   .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
-  table.rawt{border-collapse:collapse;font-size:var(--rawfs,11px);}
-  table.rawt td{border:1px solid var(--line);padding:2px 5px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
-  table.rawt tr:first-child td{font-weight:600;background:#faf8f3;}
+  table.rawt{border-collapse:separate;border-spacing:0;font-size:var(--rawfs,11px);background:#fff;}
+  table.rawt td{border-right:1px solid #d8d2c4;border-bottom:1px solid #d8d2c4;padding:3px 6px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;background:#fff;}
+  table.rawt td:focus{outline:2px solid var(--info);outline-offset:-2px;background:#fffdf5;position:relative;z-index:3;}
+  table.rawt tr:first-child td{font-weight:600;background:#eef0ec;color:var(--ink);position:sticky;top:0;z-index:2;border-bottom:1.5px solid #c4bdac;text-align:center;}
+  table.rawt td:first-child{position:sticky;left:0;z-index:1;background:#f6f4ee;font-weight:600;box-shadow:1px 0 0 #d8d2c4;}
+  table.rawt tr:first-child td:first-child{z-index:3;background:#e7e4da;}
   .ecard{margin:9px 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
   .ecard .eh{padding:8px 13px;background:#faf8f3;font-weight:600;font-size:14px;display:flex;align-items:center;}
   .erow{display:flex;align-items:center;padding:9px 13px;border-top:1px solid var(--line);gap:8px;}
@@ -212,8 +212,7 @@
   </div>
 
   <div id="raw" class="hide">
-    <div id="sheetbar"><select id="sheetweek"></select><button class="zbtn" onclick="zoomStep(-1)" aria-label="小さく表示" title="小さく">－</button><button class="zbtn" onclick="zoomStep(1)" aria-label="大きく表示" title="大きく">＋</button><button id="rawmode" onclick="toggleRaw()">🔳 シート表示</button></div>
-    <div id="sheetwrap" class="hide"><iframe id="sheetframe" title="製造表（本物・直接編集）"></iframe></div>
+    <div id="sheetbar"><select id="sheetweek"></select><span class="sheethint">タップして直接編集（大本に保存）</span><button class="zbtn" onclick="zoomStep(-1)" aria-label="小さく表示" title="小さく">－</button><button class="zbtn" onclick="zoomStep(1)" aria-label="大きく表示" title="大きく">＋</button></div>
     <div id="rawgrid"></div>
   </div>
 </div>
@@ -604,26 +603,21 @@ function saveCell(tab,r,c,v,td){td.style.background='#fff7d6';
     .catch(()=>{td.style.background='#fcebeb';});}
 let sheetWeeksLoaded=false;
 async function setSheet(){
-  const f=document.getElementById('sheetframe'),sw=document.getElementById('sheetweek');
-  if(!f||!sw||typeof W==='undefined'||!W||!W.sheetId)return;
+  const sw=document.getElementById('sheetweek');
+  if(!sw||typeof W==='undefined'||!W)return;
   if(!sheetWeeksLoaded){
     try{const gids=await fetchJSON('/api/gids');sw.innerHTML='';
       gids.slice().reverse().forEach(g=>{const o=document.createElement('option');o.value=String(g[1]);o.textContent=g[0];sw.appendChild(o);});
-      sw.onchange=()=>{if(rawEdit){loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:'');}else{setSheetGid(sw.value);}};sheetWeeksLoaded=true;
+      sw.onchange=()=>loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:'');sheetWeeksLoaded=true;
     }catch(e){}
   }
   const gid=(W.gid!=null?String(W.gid):'');
   if(gid)sw.value=gid;
-  if(rawEdit){loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:(W.tab||''));}else{setSheetGid(sw.value||gid);}
+  loadRawGrid(sw.options[sw.selectedIndex]?sw.options[sw.selectedIndex].text:(W.tab||''));
 }
-function setSheetGid(gid){const f=document.getElementById('sheetframe');if(!f||!W)return;gid=String(gid||'');
-  if(f.dataset.gid===gid)return;f.dataset.gid=gid;
-  f.src='https://docs.google.com/spreadsheets/d/'+W.sheetId+'/edit?rm=minimal'+(gid?('#gid='+gid):'');}
-let rawEdit=true;
-function toggleRaw(){rawEdit=!rawEdit;document.getElementById('sheetwrap').classList.toggle('hide',rawEdit);document.getElementById('rawgrid').classList.toggle('hide',!rawEdit);document.getElementById('rawmode').textContent=rawEdit?'🔳 シート表示':'📝 表で編集';const sw=document.getElementById('sheetweek');if(rawEdit){loadRawGrid(sw&&sw.selectedIndex>=0?sw.options[sw.selectedIndex].text:'');}else{setSheetGid(sw?sw.value:'');}}
 async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw'+q);box.innerHTML=editGrid(r.tab,r.values,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 let zoom=1;
-function applyZoom(){document.documentElement.style.setProperty('--rawfs',(11*zoom).toFixed(1)+'px');const f=document.getElementById('sheetframe');if(f){if(Math.abs(zoom-1)<0.001){f.style.transform='';f.style.width='';f.style.height='';}else{const inv=(100/zoom).toFixed(1);f.style.transformOrigin='top left';f.style.transform='scale('+zoom+')';f.style.width=inv+'%';f.style.height=inv+'%';}}}
+function applyZoom(){document.documentElement.style.setProperty('--rawfs',(11*zoom).toFixed(1)+'px');}
 function zoomStep(d){zoom=Math.max(0.6,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}
 init();
 </script>
