@@ -142,6 +142,69 @@ def _future_safe_todo(todo, day_date, today):
     return "\n".join(kept)
 
 
+# 締切日 → その締切で動かす便と、便がカバーする曜日
+#  月: 木便(金土) / 水: 土便(日 + 翌週月火) / 土: 翌火便(翌週水木)
+_DEADLINE_COVER = {
+    "月": {"bin": "木便", "this": ["金", "土"], "next": [], "arrive": "木"},
+    "水": {"bin": "土便", "this": ["日"], "next": [0, 1], "arrive": "土"},
+    "土": {"bin": "翌火便", "this": [], "next": [2, 3], "arrive": None},
+}
+
+
+def _num(s):
+    try:
+        return float(str(s).replace(",", "").strip())
+    except Exception:
+        return 0.0
+
+
+def _white_bags_up(rot):
+    """卵白の回転数 → 5kg袋（1回転=750g、5kg袋に切り上げ）。おすすめ量に使う。"""
+    return int(_math.ceil(rot * 0.75 / 5 - 1e-9))
+
+
+def _white_bags_round(rot):
+    """既存発注（届く回転）→ 何袋ぶんか（袋単位なので四捨五入）。"""
+    return int(round(rot * 0.75 / 5))
+
+
+def _white_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd):
+    """締切日の卵白おすすめ文を『便がカバーする製造回転を5kg袋に切り上げ』で作る。
+    安全在庫の上乗せはしない。既存の発注(届く)が分かる便は差分を、
+    分からない便(翌火便)は新規発注として返す。算出できなければ None。"""
+    cfg = _DEADLINE_COVER.get(wd)
+    if not cfg:
+        return None
+    rot = sum(prod_by_wd.get(d, 0.0) for d in cfg["this"])
+    if cfg["next"]:
+        if not next_act:
+            return None  # 翌週タブが無ければ算出しない（従来表示のまま）
+        rot += sum(next_act[i] for i in cfg["next"])
+    if rot <= 0:
+        return None
+    target_bags = _white_bags_up(rot)
+    kg = target_bags * 5
+    arrive = cfg["arrive"]
+    existing = incoming_by_wd.get(arrive) if arrive else None
+    if existing is None:
+        return f"🛒 卵白 {target_bags}袋（{kg}kg）を発注"
+    diff = target_bags - _white_bags_round(existing)
+    if diff == 0:
+        return f"✅ 卵白は {target_bags}袋（{kg}kg）でOK・変更不要"
+    if diff > 0:
+        return f"🔴 卵白を ＋{diff}袋 追加 → 合計{target_bags}袋（{kg}kg）"
+    return f"🔵 卵白を {abs(diff)}袋 減らせる → 合計{target_bags}袋（{kg}kg）"
+
+
+def _rewrite_white_todo(todo, line):
+    """卵白やること文の過不足/警告行（🔴🔵🚨等）を、算出した1行に差し替える。
+    📦締切案内などの非・判断行は残す。"""
+    keep = [l for l in todo.split("\n") if not l.strip().startswith(_ACTION_PREFIXES)]
+    keep = [k for k in keep if k.strip()]
+    keep.append(line)
+    return "\n".join(keep)
+
+
 def _sections(cells):
     """テキスト群を「■/【/📖 見出し」で章立てに整理。各章 {header, lines}。"""
     secs = []
@@ -234,6 +297,23 @@ def get_egg_nav(tab=None):
                 "yolk": {"stock": v("sy"), "need": v("ny"), "incoming": v("iy"), "outlook": v("oy"), "todo": yt},
                 "white": {"stock": v("sw"), "need": v("nw"), "incoming": v("iw"), "outlook": v("ow"), "todo": wt},
             })
+
+    # 締切日（当日・過去）の卵白おすすめを「便のカバー製造回転→5kg袋に切り上げ」で算出し直す。
+    # シートの予測ベース(+N回転)が過大に出る問題への対応。卵白のみ・未来日は従来どおり。
+    if days:
+        prod_by_wd = {d["wd"]: _num(d["prod"]) for d in days}
+        incoming_by_wd = {d["wd"]: _num(d["white"]["incoming"]) for d in days}
+        _kp, next_act = _next_week_kaiten(ws.title)
+        for d in days:
+            d_date = _parse_date(d["date"])
+            if d_date is None or d_date > today:
+                continue   # 未来日は当日まで断定数量を出さない（従来方針）
+            wtodo = d["white"]["todo"]
+            if "📦" not in wtodo:
+                continue   # 締切案内のある行＝締切日のみ対象
+            line = _white_coverage_line(d["wd"], prod_by_wd, next_act, incoming_by_wd)
+            if line:
+                d["white"]["todo"] = _rewrite_white_todo(wtodo, line)
 
     syCol = (col["sy"] + 1) if "sy" in col else 0   # 在庫卵黄 列（1始まり・編集用）
     swCol = (col["sw"] + 1) if "sw" in col else 0
