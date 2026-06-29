@@ -66,6 +66,7 @@ def get_material_inventory(tab=None):
         if match:
             used.add(match["name"])
             row.update({
+                "invId": match.get("id"),
                 "invName": match["name"],
                 "stock": match["total"],
                 "min": match["min"],
@@ -88,10 +89,15 @@ def get_material_inventory(tab=None):
         rows.append(row)
 
     others = [it for it in items if it["name"] not in used]
-    # 発注履歴と突き合わせ、最近発注して未入荷のものに「発注済み」を付ける
+    # 発注履歴と突き合わせ、最近発注して未入荷のものに「発注済み」を付ける（材料・その他の両方）
     try:
         import orderlist_layer
         pend = orderlist_layer.pending_map()
+        for it in rows:
+            st = pend.get(it.get("invId"))
+            if st:
+                it["ordered"] = True
+                it["orderStatus"] = st
         for it in others:
             st = pend.get(it.get("id"))
             if st:
@@ -103,8 +109,9 @@ def get_material_inventory(tab=None):
         "tab": mats["tab"],
         "rows": rows,
         "others": others,
-        "linkedNeed": sum(1 for r in rows if r.get("need")),
-        "othersNeed": sum(1 for it in others if it.get("need")),
+        # 要発注の件数は「発注済み」を除く（発注済みは赤の要発注から外す）
+        "linkedNeed": sum(1 for r in rows if r.get("need") and not r.get("ordered")),
+        "othersNeed": sum(1 for it in others if it.get("need") and not it.get("ordered")),
         "unlinked": sum(1 for r in rows if not r.get("linked")),
         "error": inv.get("error"),
     }

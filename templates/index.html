@@ -203,7 +203,7 @@
   <div id="mat" class="hide">
     <div class="sec">🛒 発注リスト<span id="ordneed"></span></div><div id="orderlist"></div>
     <div class="sec">🌾 1週間に必要な代表的な原材料一覧<span id="matneed"></span></div>
-    <div class="matnote">直近1週間の製造実績をもとに必要量を割り出しています（下の在庫チェックとは性質が違います）</div>
+    <div class="matnote">今週の製造実績をもとに必要量を割り出しています（下の在庫チェックとは性質が違います）</div>
     <div id="matlist" class="matwrap"></div>
     <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
@@ -565,12 +565,12 @@ function renderOrderList(O){
 function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
   const ml=document.getElementById('matlist');ml.innerHTML='';
-  (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow matrow'+(r.need?' need':'');
+  (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow matrow'+(r.ordered?' ordered':(r.need?' need':''));
     const uw=r.orderUnitWord||'袋';
     const perPack=(r.orderUnit!=null&&String(r.orderUnit).trim()!=='')?(' ・ 1'+uw+numfmt(r.orderUnit)+(r.unit||'')):'';
     const bags=(r.orderBags!=null)?('（'+r.orderBags+uw+perPack+'）'):'';
-    const sub='推奨発注 '+numfmt(r.order)+(r.unit||'')+bags+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携');
-    const chip=!r.linked?'<span class="chip na">未連携</span>':(r.need?invChip(r):'<span class="chip ok">OK</span>');
+    const sub='推奨発注 '+numfmt(r.order)+(r.unit||'')+bags+' ・ 入荷 '+(r.arrive||'–')+(r.linked?(r.supplier?' ・ '+esc(r.supplier):''):' ・ 在庫未連携')+(r.ordered&&r.orderStatus?'<br><span class="ordtag">📦 '+esc(r.orderStatus)+'</span>':'');
+    const chip=r.ordered?'<span class="chip wait">発注済み</span>':(!r.linked?'<span class="chip na">未連携</span>':(r.need?invChip(r):'<span class="chip ok">OK</span>'));
     el.innerHTML='<div class="invn"><div class="invt">'+esc(r.name)+'</div><div class="invs">'+sub+'</div></div>'+
       '<div class="invq"><div class="invnum">'+(r.linked?nz(r.stock):'–')+'</div><div class="invmin">在庫 ・ 最低 '+(r.min==null?'–':nz(r.min))+'</div></div>'+chip;
     ml.appendChild(el);});
