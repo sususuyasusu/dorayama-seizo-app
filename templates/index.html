@@ -28,6 +28,11 @@
   .wxline:empty{display:none;}
   .invrow{display:flex;align-items:center;padding:9px 16px;border-top:1px solid var(--line);gap:10px;}
   .invrow.need{background:#fff7f3;}
+  .matnote{margin:2px 14px 8px;font-size:11px;color:var(--brand);line-height:1.5;}
+  .matwrap{margin:0 14px 8px;border:1px solid #e6dcc8;border-radius:12px;overflow:hidden;background:#fdfaf3;box-shadow:var(--shadow);}
+  .matwrap .matrow{border-top:1px solid #efe7d6;border-left:3px solid var(--brand);}
+  .matwrap .matrow:first-child{border-top:0;}
+  .matwrap .matrow.need{background:#fbf1e6;}
   .invn{flex:1;min-width:0;}.invt{font-size:14px;font-weight:600;}.invs{font-size:11px;color:var(--muted);margin-top:2px;}
   .invq{text-align:right;min-width:60px;}.invnum{font-size:16px;font-weight:600;}.invmin{font-size:11px;color:var(--muted);}
   .ordergrp{margin:8px 14px 10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
@@ -197,7 +202,9 @@
 
   <div id="mat" class="hide">
     <div class="sec">🛒 発注リスト<span id="ordneed"></span></div><div id="orderlist"></div>
-    <div class="sec">材料（必要量 × 在庫）<span id="matneed"></span></div><div id="matlist"></div>
+    <div class="sec">🌾 1週間に必要な代表的な原材料一覧<span id="matneed"></span></div>
+    <div class="matnote">直近1週間の製造実績をもとに必要量を割り出しています（下の在庫チェックとは性質が違います）</div>
+    <div id="matlist" class="matwrap"></div>
     <div class="sec">📦 その他の在庫（包材・消耗品など）<span id="invneed"></span></div><div id="invlist"></div>
   </div>
 
@@ -558,7 +565,7 @@ function renderOrderList(O){
 function renderMatStock(V){
   const need=document.getElementById('matneed');if(need){need.textContent=V.linkedNeed?('　要発注 '+V.linkedNeed+'件'):'';need.style.color='var(--warn)';}
   const ml=document.getElementById('matlist');ml.innerHTML='';
-  (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow'+(r.need?' need':'');
+  (V.rows||[]).forEach(r=>{const el=document.createElement('div');el.className='invrow matrow'+(r.need?' need':'');
     const uw=r.orderUnitWord||'袋';
     const perPack=(r.orderUnit!=null&&String(r.orderUnit).trim()!=='')?(' ・ 1'+uw+numfmt(r.orderUnit)+(r.unit||'')):'';
     const bags=(r.orderBags!=null)?('（'+r.orderBags+uw+perPack+'）'):'';
