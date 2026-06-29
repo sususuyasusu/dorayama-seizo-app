@@ -172,3 +172,24 @@ def get_orderlist():
         "openOrderDays": OPEN_ORDER_DAYS,
         "deliveryGraceDays": DELIVERY_GRACE_DAYS,
     }
+
+
+def pending_map():
+    """商品ID → 発注済みステータス文字列。最近発注して未入荷・未消込のものだけ。
+    『その他の在庫』一覧に発注済み表示を出すための判定（要発注かどうかに関係なく見る）。
+    判定は発注リストの『発注済み待ち』と同じロジックを使う。"""
+    hist = _history()
+    out = {}
+    for item in _source_rows():
+        last_order = hist.get(item["id"], {}).get("order")
+        if not last_order:
+            continue
+        last_receive = hist.get(item["id"], {}).get("receive")
+        last_received = item.get("lastReceived")
+        closed_by_receive = last_receive and last_receive >= last_order
+        closed_by_stock_edit = last_received and last_received >= last_order
+        pending_until = _pending_until(last_order, item["lead"])
+        still_recent = pending_until and pending_until >= datetime.now()
+        if still_recent and not closed_by_receive and not closed_by_stock_edit:
+            out[item["id"]] = _status_text(last_order, item["lead"])
+    return out

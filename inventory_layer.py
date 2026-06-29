@@ -9,7 +9,7 @@ import data_layer
 INV_SHEET_ID = "14gFJiuVpuGT-GwDhGw-plVqbX5ulKY31g7fvRtwGJ8k"
 TAB = "商品マスタ"
 # 列: 0商品ID 1商品名 2カテゴリー 3発注先 4発注頻度 5倉庫数量 6店舗在庫 7最低在庫 8納期 9発注ロット 10備考 11参考URL
-C_NAME, C_CAT, C_SUP, C_WH, C_STORE, C_MIN, C_LEAD = 1, 2, 3, 5, 6, 7, 8
+C_ID, C_NAME, C_CAT, C_SUP, C_WH, C_STORE, C_MIN, C_LEAD = 0, 1, 2, 3, 5, 6, 7, 8
 
 _cache = {"t": 0.0, "data": None}
 _TTL = 60.0
@@ -48,6 +48,7 @@ def get_inventory():
         total = wh + store
         need = (mn is not None and total < mn)
         items.append({
+            "id": g(r, C_ID).strip(),
             "name": name,
             "category": g(r, C_CAT).strip(),
             "supplier": g(r, C_SUP).strip(),

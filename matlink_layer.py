@@ -88,6 +88,17 @@ def get_material_inventory(tab=None):
         rows.append(row)
 
     others = [it for it in items if it["name"] not in used]
+    # 発注履歴と突き合わせ、最近発注して未入荷のものに「発注済み」を付ける
+    try:
+        import orderlist_layer
+        pend = orderlist_layer.pending_map()
+        for it in others:
+            st = pend.get(it.get("id"))
+            if st:
+                it["ordered"] = True
+                it["orderStatus"] = st
+    except Exception:
+        pass
     return {
         "tab": mats["tab"],
         "rows": rows,
