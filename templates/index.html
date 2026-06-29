@@ -91,7 +91,8 @@
   .ecard{margin:9px 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
   .ecard .eh{padding:8px 13px;background:#faf8f3;font-weight:600;font-size:14px;display:flex;align-items:center;}
   .erow{display:flex;align-items:center;padding:9px 13px;border-top:1px solid var(--line);gap:8px;}
-  .erow .lbl{width:52px;font-size:13px;font-weight:600;}
+  .erow .lbl{width:58px;font-size:13px;font-weight:600;}
+  .erow .lbl .lbnote{display:block;font-size:10px;font-weight:400;color:var(--muted);margin-top:1px;}
   .erow .kv{flex:1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);}
   .erow .kv b{color:var(--ink);font-weight:600;}
   .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap;}
@@ -192,6 +193,7 @@
 
   <div id="sales" class="hide">
     <div class="sec">この週の製造実績（予算 → 実績）</div>
+    <div class="legend">🏪 <b>店舗＝売上</b>（エアレジの実売）／🎪 <b>催事＝製造数ベース</b>（作った分。実際に売れた額ではありません）／👷 <b>人件費＝店舗スタッフ分</b></div>
     <div id="salessum"></div>
     <div class="sec">日別（店舗・催事）</div>
     <div id="salesdays"></div>
@@ -492,14 +494,14 @@ function renderSales(C){
   const transSum=laborDays.reduce((a,d)=>a+(d.transportAir||0),0);
   const salesForLabor=laborDays.reduce((a,d)=>a+(d.storeActual+d.eventActual),0);
   const wpct=salesForLabor>0?Math.round(laborSum/salesForLabor*1000)/10:null;
-  document.getElementById('salessum').innerHTML=scard('🏪 店舗',C.store)+scard('🎪 催事',C.event)+scard('合計',C.total)+
-    '<div class="scard"><div class="sl">👷 人件費</div><div class="sv"><span class="sp">うち交通費 '+yen(transSum)+'　人件費率 '+(wpct!=null?wpct+'%':'–')+(wpct!=null&&wpct>20?' ⚠':'')+'</span><span class="sa">'+yen(laborSum)+'</span></div></div>';
+  document.getElementById('salessum').innerHTML=scard('🏪 店舗（売上）',C.store)+scard('🎪 催事（製造数）',C.event)+scard('合計',C.total)+
+    '<div class="scard"><div class="sl">👷 人件費（店舗スタッフ）</div><div class="sv"><span class="sp">うち交通費 '+yen(transSum)+'　人件費率 '+(wpct!=null?wpct+'%':'–')+(wpct!=null&&wpct>20?' ⚠':'')+'</span><span class="sa">'+yen(laborSum)+'</span></div></div>';
   const box=document.getElementById('salesdays');box.innerHTML='';
   C.days.forEach((d,i)=>{const el=document.createElement('div');el.className='ecard';
     el.innerHTML='<div class="eh">'+d.d+(i===sel?'<span class="chip ok" style="margin-left:8px;font-size:11px">今日</span>':'')+'<span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400">回転 '+nz(d.kaiten)+'</span></div>'+
-      '<div class="erow"><div class="lbl">🏪店舗</div><div class="kv">予算 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
-      '<div class="erow"><div class="lbl">🎪催事</div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
-      '<div class="erow"><div class="lbl">👷人件費</div><div class="kv">'+(d.laborAir!=null?('<b>'+yen(d.laborAir)+'</b>（うち交通費 '+yen(d.transportAir||0)+'）　人件費率 '+(d.laborPct!=null?d.laborPct+'%':'–')):'–')+'</div>'+(d.laborAlert?'<span class="chip bad">⚠20%超</span>':(d.laborPct!=null?'<span class="chip ok">OK</span>':''))+'</div>';
+      '<div class="erow"><div class="lbl">🏪店舗<span class="lbnote">売上</span></div><div class="kv">予算 <b>'+yen(d.storePlan)+'</b>　→　実績 <b>'+yen(d.storeActual)+'</b></div></div>'+
+      '<div class="erow"><div class="lbl">🎪催事<span class="lbnote">製造数</span></div><div class="kv">予算 <b>'+yen(d.eventPlan)+'</b>　→　実績 <b>'+yen(d.eventActual)+'</b></div></div>'+
+      '<div class="erow"><div class="lbl">👷人件費<span class="lbnote">店舗</span></div><div class="kv">'+(d.laborAir!=null?('<b>'+yen(d.laborAir)+'</b>（うち交通費 '+yen(d.transportAir||0)+'）　人件費率 '+(d.laborPct!=null?d.laborPct+'%':'–')):'–')+'</div>'+(d.laborAlert?'<span class="chip bad">⚠20%超</span>':(d.laborPct!=null?'<span class="chip ok">OK</span>':''))+'</div>';
     box.appendChild(el);});}
 function numfmt(v){const s=(v==null?'':String(v)).trim();if(s==='')return '';const n=Number(s.replace(/,/g,''));return isFinite(n)?n.toLocaleString('ja-JP'):s;}
 function ankoCard(c,A,isShiro){
