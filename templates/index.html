@@ -87,7 +87,7 @@
   .loadwarm{margin:24px 14px;padding:18px;border-radius:12px;background:var(--infobg,#eef4fb);color:var(--info,#1565a6);font-size:15px;line-height:1.7;font-weight:600;text-align:center;}
   .loadwarm .lw2{font-size:12px;color:var(--muted);font-weight:400;}
   .rawwrap{overflow:auto;margin:8px;border:1px solid var(--line);border-radius:8px;max-height:78vh;}
-  table.rawt{border-collapse:separate;border-spacing:0;font-size:var(--rawfs,11px);background:#fff;}
+  table.rawt{border-collapse:separate;border-spacing:0;font-size:calc(11px * var(--rawzoom,1));background:#fff;}
   table.rawt td{border-right:1px solid #d8d2c4;border-bottom:1px solid #d8d2c4;padding:3px 6px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;background:#fff;}
   table.rawt td:focus{outline:2px solid var(--info);outline-offset:-2px;background:#fffdf5;position:relative;z-index:3;}
   table.rawt tr:first-child td{font-weight:600;background:#eef0ec;color:var(--ink);position:sticky;top:0;z-index:2;border-bottom:1.5px solid #c4bdac;text-align:center;}
@@ -598,7 +598,7 @@ function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function cellStyle(f){if(!f)return '';let s='';
   if(f.bg)s+='background:'+f.bg+';';
   if(f.fg)s+='color:'+f.fg+';';
-  if(f.fs)s+='font-size:'+f.fs+'px;';
+  if(f.fs)s+='font-size:calc('+f.fs+'px * var(--rawzoom,1));';
   if(f.b)s+='font-weight:700;';
   if(f.a)s+='text-align:'+f.a+';';
   if(f.bd){if(f.bd.t)s+='border-top:1px solid '+f.bd.t+';';if(f.bd.b)s+='border-bottom:1px solid '+f.bd.b+';';if(f.bd.l)s+='border-left:1px solid '+f.bd.l+';';if(f.bd.r)s+='border-right:1px solid '+f.bd.r+';';}
@@ -631,7 +631,7 @@ async function setSheet(){
 }
 async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw_styled'+q);box.innerHTML=editGrid(r.tab,r.values,r.fmts,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 let zoom=1;
-function applyZoom(){document.documentElement.style.setProperty('--rawfs',(11*zoom).toFixed(1)+'px');}
+function applyZoom(){document.documentElement.style.setProperty('--rawzoom',zoom.toFixed(2));}
 function zoomStep(d){zoom=Math.max(0.6,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}
 init();
 </script>
