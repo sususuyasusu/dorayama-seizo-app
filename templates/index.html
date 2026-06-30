@@ -632,7 +632,7 @@ async function setSheet(){
 async function loadRawGrid(tab){const box=document.getElementById('rawgrid');box.innerHTML='<div style="padding:14px;color:var(--muted)">読み込み中…</div>';try{const q=tab?('?tab='+encodeURIComponent(tab)):'';const r=await J('/api/raw_styled'+q);box.innerHTML=editGrid(r.tab,r.values,r.fmts,1,1);bindEdit(box);applyZoom();}catch(e){box.innerHTML='<div style="padding:14px;color:#a32d2d">読み込めませんでした</div>';}}
 let zoom=1;
 function applyZoom(){document.documentElement.style.setProperty('--rawzoom',zoom.toFixed(2));}
-function zoomStep(d){zoom=Math.max(0.6,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}
+function zoomStep(d){zoom=Math.max(0.35,Math.min(2.4,+(zoom+d*0.15).toFixed(2)));applyZoom();}
 init();
 </script>
 </body>
