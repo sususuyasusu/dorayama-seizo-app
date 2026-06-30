@@ -65,6 +65,13 @@
   .sheethint{flex:0 1 auto;min-width:0;font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .zbtn{height:36px;width:34px;flex:0 0 auto;font-size:19px;font-weight:600;line-height:1;margin-left:6px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
   .zbtn:active{transform:scale(.95);}
+  #busy{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(247,247,249,.82);}
+  #busy.on{display:flex;}
+  #busy .bx{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 24px;box-shadow:0 8px 28px rgba(0,0,0,.16);text-align:center;}
+  #busy .bx .t{font-size:15px;font-weight:700;color:var(--ink);}
+  #busy .bx .s{font-size:12px;color:var(--muted);margin-top:5px;}
+  #busy .sp{display:inline-block;animation:busyrot 1s linear infinite;}
+  @keyframes busyrot{to{transform:rotate(360deg);}}
   #rawgrid{position:fixed;top:46px;left:0;right:0;max-width:var(--appw);margin:0 auto;bottom:calc(60px + env(safe-area-inset-bottom,0));overflow:auto;background:#fff;z-index:5;padding:4px;}
   #rawgrid table.rawt td{min-width:46px;}
   .sum{display:flex;gap:10px;padding:14px 16px;background:#faf8f3;border-top:1px solid var(--line);flex-wrap:wrap;}
@@ -270,13 +277,28 @@ function showLoadError(msg,isFile){
   if(box)box.innerHTML='<div class="loaderr">'+esc(msg)+'<br>'+btn+'</div>';
   const n=document.getElementById('eggnote');if(n)n.textContent=msg;
 }
+function setBusy(on,label){
+  let b=document.getElementById('busy');
+  if(!b){b=document.createElement('div');b.id='busy';
+    b.innerHTML='<div class="bx"><div class="t"><span class="sp">🔄</span> <span class="lb"></span></div><div class="s">数字が変わるまでお待ちください</div></div>';
+    document.body.appendChild(b);}
+  b.querySelector('.lb').textContent=label||'読み込み中…';
+  b.classList.toggle('on',!!on);
+}
 async function loadWeek(){
-  W=await J('/api/week');sel=Math.min(sel,6);paintMake();
-  J('/api/eggs').then(renderEgg);
-  J('/api/cost').then(renderSales);
-  J('/api/matstock').then(renderMatStock).catch(()=>{});
-  fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{});
-  J('/api/anko').then(renderAnko).catch(()=>{});
+  // 週の切替中は古い数字を隠し、新しい数字が全部そろってから表示（見間違い防止）
+  setBusy(true,(curTab||'')+' を読み込み中…');
+  try{
+    W=await J('/api/week');sel=Math.min(sel,6);paintMake();
+    await Promise.all([
+      J('/api/eggs').then(renderEgg).catch(()=>{}),
+      J('/api/cost').then(renderSales).catch(()=>{}),
+      J('/api/matstock').then(renderMatStock).catch(()=>{}),
+      fetchJSON('/api/orderlist').then(renderOrderList).catch(()=>{}),
+      J('/api/anko').then(renderAnko).catch(()=>{})
+    ]);
+  }catch(e){
+  }finally{ setBusy(false); }
 }
 // ヘッダーの更新ボタン：今見ている週のデータを取り直す（全データの表も）
 function manualRefresh(){const b=document.getElementById('refreshbtn');if(b){b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');}loadWeek();const raw=document.getElementById('raw');if(raw&&!raw.classList.contains('hide')){const sw=document.getElementById('sheetweek');loadRawGrid(sw&&sw.selectedIndex>=0?sw.options[sw.selectedIndex].text:(W&&W.tab||''));}}
