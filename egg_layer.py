@@ -79,15 +79,6 @@ def _apply_actual_kaiten(batches, cur_tab):
     def _fmt(v):
         return str(int(v)) if v == int(v) else f"{v:.1f}"
 
-    def _bags(kg, per_rot, thr):
-        """5kg袋に丸める。満杯ぶんは切り捨て、端数は閾値回転(卵黄7/卵白4)以上で初めて+1袋。
-        端数が閾値未満＝『発注しない』ルールに一致（例: 卵黄6.4kg=1袋, 2.4kg=0袋）。"""
-        if kg <= 0:
-            return 0
-        full = int(kg // 5)
-        rem_rot = (kg - full * 5) / per_rot
-        return full + (1 if rem_rot >= thr - 1e-9 else 0)
-
     for b in batches:
         idxs = _batch_day_indices(b["name"])
         if not idxs:
@@ -104,10 +95,26 @@ def _apply_actual_kaiten(batches, cur_tab):
         wkg = wk * 0.75
         b["yolkKai"] = _fmt(yk)
         b["yolkKg"] = _fmt(ykg)
-        b["yolkBags"] = str(_bags(ykg, 0.4, 7))   # 卵黄: 端数7回転(2.8kg)以上で+1袋
+        b["yolkBags"] = str(_bags(ykg, 0.4, YOLK_BAG_THR))    # 端数7回転以上で+1袋
         b["whiteKai"] = _fmt(wk)
         b["whiteKg"] = _fmt(wkg)
-        b["whiteBags"] = str(_bags(wkg, 0.75, 4))  # 卵白: 端数4回転(3.0kg)以上で+1袋
+        b["whiteBags"] = str(_bags(wkg, 0.75, WHITE_BAG_THR))  # 端数4回転以上で+1袋
+
+# 袋数の丸めルール（画面ヘッダーの表記と一致）:
+#  端数（5kg袋に満たない残り）が、卵黄は7回転以上・卵白は4回転以上で初めて+1袋。
+#  卵黄6回転以下・卵白3回転以下の端数は切り捨て（発注しない）。1回転=卵黄400g/卵白750g。
+YOLK_BAG_THR = 7    # 卵黄: 端数7回転(2.8kg)以上で+1袋
+WHITE_BAG_THR = 4   # 卵白: 端数4回転(3.0kg)以上で+1袋
+
+
+def _bags(kg, per_rot, thr):
+    """kg を 5kg袋に丸める。満杯ぶんは切り捨て、端数は閾値回転(thr)以上で初めて+1袋。"""
+    if kg <= 0:
+        return 0
+    full = int(kg // 5)
+    rem_rot = (kg - full * 5) / per_rot
+    return full + (1 if rem_rot >= thr - 1e-9 else 0)
+
 
 # 過不足の判断を表す行頭記号（🔴追加/🔵減量/🟢/✅変更不要/🛒新規/🚨⚠️在庫切れ警告）
 _ACTION_PREFIXES = ("🔴", "🔵", "🟢", "🚨", "⚠️", "✅", "🛒")
@@ -182,7 +189,7 @@ def _white_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd):
         rot += sum(next_act[i] for i in cfg["next"])
     if rot <= 0:
         return None
-    target_bags = _white_bags_up(rot)
+    target_bags = _bags(rot * 0.75, 0.75, WHITE_BAG_THR)   # 端数4回転以上で+1袋
     kg = target_bags * 5
     arrive = cfg["arrive"]
     existing = incoming_by_wd.get(arrive) if arrive else None
@@ -222,7 +229,7 @@ def _yolk_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd, stock_by_wd):
     need_kg = rot * 0.4
     stock_kg = stock_by_wd.get(wd, 0.0) * 0.4
     net_kg = max(0.0, need_kg - stock_kg)
-    target_bags = _yolk_bags_up(net_kg)
+    target_bags = _bags(net_kg, 0.4, YOLK_BAG_THR)   # 端数7回転以上で+1袋
     kg = target_bags * 5
     arrive = cfg["arrive"]
     existing = incoming_by_wd.get(arrive) if arrive else None
