@@ -45,7 +45,8 @@ def _client():
 # === 読み取り削減キャッシュ（Google Sheets APIの分間上限=429対策） ===
 _SH = None            # Spreadsheet object（メタ情報の読み直しを避ける）
 _VC = {}              # {タブ名: (取得時刻, 全セル値)}
-_VC_TTL = 8.0         # 秒。同一画面の複数取得や連打はこの間1回の読み取りを共有
+_VC_TTL = 20.0        # 秒。同一画面の複数取得や連打・週の行き来はこの間1回の読み取りを共有。
+                      # 自分の編集は set_cell/made が invalidate するので即反映される（鮮度は保たれる）。
 
 
 def _spreadsheet(refresh=False):
