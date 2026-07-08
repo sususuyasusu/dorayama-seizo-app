@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""あん(粒あん=あんこ／上白あん=白あん)の木曜締め発注計算。
-現在庫で翌木曜まで足りるかを確認し、木曜通常発注は翌金曜〜翌々木曜分を計算する。
+"""あん(粒あん=あんこ／上白あん=白あん)の月曜締め発注計算。
+現在庫で翌月曜まで足りるかを確認し、月曜通常発注は翌火曜〜翌々月曜分を計算する。
 
 レシピ(製造表の数式に準拠):
  - 粒あん  = 35g × (黒どら + あんバター) の個数
  - 上白あん = 35g × 白どら の個数  ＋  (旬どら原単位/100) × 旬どら の個数
    ※旬どらの白あん消費は製造表に無いので、係数を _app_config に入力して加算する。
 個数は各週タブの実績側製造表(V〜AB, 3ブロック分 行5-34, I列『はい』のみ)を合計。
-現在庫は翌木曜までの消費に引き当てる。翌木曜時点で余る分だけ、通常発注から差し引く。"""
+現在庫は翌月曜までの消費に引き当てる。翌月曜時点で余る分だけ、通常発注から差し引く。"""
 import datetime
 import math
 
@@ -85,18 +85,17 @@ def _tab_monday(tab):
 
 def _alert(tab):
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    monday = _tab_monday(tab)
-    thursday = monday + datetime.timedelta(days=3)
-    if now.date() == thursday:
+    order_day = _tab_monday(tab)   # 発注日＝月曜
+    if now.date() == order_day:
         if now.hour >= BUSINESS_CLOSE_HOUR:
-            return {"level": "confirm", "text": "🔴 木曜営業終了後です。在庫数を確定して、あんを発注してください。"}
+            return {"level": "confirm", "text": "🔴 月曜営業終了後です。在庫数を確定して、あんを発注してください。"}
         return {"level": "today", "text": "🟡 本日17:00の営業終了後、在庫数を確定して発注してください。"}
-    if now.date() == thursday + datetime.timedelta(days=1):
+    if now.date() == order_day + datetime.timedelta(days=1):
         return {"level": "late", "text": "⚠️ 昨日が発注日です。未発注なら在庫数を確認して、すぐ発注してください。"}
-    days = (thursday - now.date()).days
+    days = (order_day - now.date()).days
     if days < 0:
-        thursday += datetime.timedelta(days=7)
-    return {"level": "next", "text": f"次回発注：{thursday.month}/{thursday.day}（木）営業終了後"}
+        order_day += datetime.timedelta(days=7)
+    return {"level": "next", "text": f"次回発注：{order_day.month}/{order_day.day}（月）営業終了後"}
 
 
 def _stock_bags():
@@ -118,15 +117,15 @@ def get_anko_order(tab=None):
     nxt_title, nxt_daily = _daily_counts(nxt) if nxt else (None, empty)
     nxt2_title, nxt2_daily = _daily_counts(nxt2) if nxt2 else (None, empty)
 
-    # 現在庫でカバーする期間=金土日＋翌週月火水木。
-    cover_cur = _sum_days(cur_daily, range(4, 7))
-    cover_next = _sum_days(nxt_daily, range(0, 4))
+    # 現在庫でカバーする期間=火水木金土日（当週）＋翌週月。
+    cover_cur = _sum_days(cur_daily, range(1, 7))
+    cover_next = _sum_days(nxt_daily, range(0, 1))
     cover_counts = {name: cover_cur[name] + cover_next[name] for name in cover_cur}
     d_cover = _demand(cover_counts, jun_rate)
 
-    # 木曜通常発注の対象=翌週金土日＋翌々週月火水木。
-    order_next = _sum_days(nxt_daily, range(4, 7))
-    order_nxt2 = _sum_days(nxt2_daily, range(0, 4))
+    # 月曜通常発注の対象=翌週火水木金土日＋翌々週月。
+    order_next = _sum_days(nxt_daily, range(1, 7))
+    order_nxt2 = _sum_days(nxt2_daily, range(0, 1))
     order_counts = {name: order_next[name] + order_nxt2[name] for name in order_next}
     d_order = _demand(order_counts, jun_rate)
 
@@ -159,8 +158,8 @@ def get_anko_order(tab=None):
 
     return {
         "tab": cur_title, "nextTab": nxt_title, "next2Tab": nxt2_title,
-        "coverPeriodLabel": "金曜〜翌木曜",
-        "orderPeriodLabel": "翌金曜〜翌々木曜",
+        "coverPeriodLabel": "火曜〜翌月曜",
+        "orderPeriodLabel": "翌火曜〜翌々月曜",
         "alert": _alert(cur_title),
         "junRatePer100": jun_rate,
         "junCountCover": round(cover_counts["旬どら"]),

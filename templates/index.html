@@ -138,6 +138,8 @@
   .eggorder{margin-top:9px;border-top:1px solid var(--line);padding-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .eggorder label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;}
   .eggorder input{width:54px;height:32px;text-align:center;font-size:16px;font-weight:600;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  .recq{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .recq b{color:var(--info);font-weight:700;}
   .smsbtn,.copybtn{min-height:34px;text-decoration:none;font-size:12px;font-weight:600;border-radius:12px;padding:8px 11px;border:0;white-space:nowrap;}
   .smsbtn{margin-left:auto;background:var(--infobg);color:var(--info);}
   .copybtn{background:#f1efe8;color:var(--ink);}
@@ -214,7 +216,7 @@
   </div>
 
   <div id="anko" class="hide">
-    <div class="sec">🫘 あん発注（実績ベース・木曜締め7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
+    <div class="sec">🫘 あん発注（実績ベース・月曜締め7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
   </div>
 
   <div id="mat" class="hide">
@@ -413,7 +415,7 @@ function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':
 function eline(label,o,row,col,tab){
   const stock=col>0?('<span class="estock" contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+row+'" data-c="'+col+'">'+esc(o.stock||'')+'</span>'):('<b>'+nz(o.stock)+'</b>');
   let h='<div class="erow"><div class="lbl">'+label+'</div><div class="kv"><span>在庫 '+stock+'</span><span>必要 <b>'+nz(o.need)+'</b></span><span>届く <b>'+nz(o.incoming)+'</b></span></div>'+eChip(o.outlook)+'</div>';
-  if(o.todo&&o.todo.trim())h+='<div class="todoln">📢 やること：'+esc(o.todo)+'</div>';
+  h+='<div class="todoln">📢 やること：'+((o.todo&&o.todo.trim())?esc(o.todo):'✅ 変更なし')+'</div>';
   return h;}
 function renderEgg(E){
   eggMonDate=((E.days||[]).find(d=>d.wd==='月')||{}).date||'';
@@ -431,7 +433,7 @@ function renderEgg(E){
   function orderInput(batch,yb,wb,kind2,oy,ow){
     // kind2(変更)のときは先週の一括発注数(before)をdata属性に保持し、SMSで before→after を出す
     const od=kind2?(' data-orig-y="'+(oy==null?yb:oy)+'" data-orig-w="'+(ow==null?wb:ow)+'"'):'';
-    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yb+'">袋</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wb+'">袋</label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yb+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span></label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wb+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span></label><a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
   }
   // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
   function changeBlock(dayChar,hint,day){
@@ -572,7 +574,7 @@ function ankoCard(c,A,isShiro){
   const linked=c.url&&/^https?:/.test(c.url);
   const sup=c.supplier?('<span class="sup">'+esc(c.supplier)+(linked?' ↗':'')+'</span>'):'';
   const head=linked?('<a href="'+esc(c.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;width:100%">'+esc(c.name)+sup+'</a>'):('<span>'+esc(c.name)+'</span>'+sup);
-  const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：翌木曜までに '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
+  const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：翌月曜までに '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
   const carry=c.emergencyBags>0?'不足':('余り '+numfmt(c.carryoverG)+'g');
   const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（通常発注対象の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
     '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g</div>'):'';
@@ -584,7 +586,7 @@ function ankoCard(c,A,isShiro){
     '<div class="arow"><span class="lb">通常発注対象</span><b>'+numfmt(c.orderPeriodG)+'g</b><span class="sub">'+A.orderPeriodLabel+'・'+c.orderPeriodBags+'袋</span></div>'+
     '<div class="arow"><span class="lb">発注計算</span><b>'+numfmt(c.regularOrderG)+'g</b><span class="sub">対象量−翌木時点の余り</span></div>'+
     jun+
-    '<div class="aorder">木曜通常発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
+    '<div class="aorder">月曜通常発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
 }
 function renderAnko(A){
   const wrap=document.getElementById('ankolist');if(!wrap)return;
