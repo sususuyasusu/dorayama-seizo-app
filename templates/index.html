@@ -141,6 +141,8 @@
   .recq{font-size:11px;color:var(--muted);white-space:nowrap;}
   .recq b{color:var(--info);font-weight:700;}
   .eggreset{font-size:11px;color:var(--muted);text-decoration:underline;white-space:nowrap;}
+  .ordq{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .ordq b{color:var(--ink);font-weight:700;}
   .smsbtn,.copybtn{min-height:34px;text-decoration:none;font-size:12px;font-weight:600;border-radius:12px;padding:8px 11px;border:0;white-space:nowrap;}
   .smsbtn{margin-left:auto;background:var(--infobg);color:var(--info);}
   .copybtn{background:#f1efe8;color:var(--ink);}
@@ -438,13 +440,14 @@ function renderEgg(E){
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
   const findB=kw=>E.batches.find(b=>(b.name||'').indexOf(kw)===0);
   const findDay=wd=>(E.days||[]).find(d=>d.wd===wd);
-  function orderInput(batch,yb,wb,kind2,oy,ow){
+  function orderInput(batch,yb,wb,kind2,oy,ow,ordY,ordW){
     // kind2(変更)のときは先週の一括発注数(before)をdata属性に保持し、SMSで before→after を出す
     const od=kind2?(' data-orig-y="'+(oy==null?yb:oy)+'" data-orig-w="'+(ow==null?wb:ow)+'"'):'';
     const yval=eggOverride(batch,'y',yb), wval=eggOverride(batch,'w',wb);
     const edited=(String(yval)!==String(yb))||(String(wval)!==String(wb));
     const reset=edited?'<a class="eggreset" href="#" rel="noopener">↺推奨に戻す</a>':'';
-    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span></label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span></label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+    const ordChip=(v)=> (v==null||v===''?'':' <span class="ordq">発注済 <b>'+v+'</b>袋</span>');
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span>'+ordChip(ordY)+'</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span>'+ordChip(ordW)+'</label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
   }
   // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
   function changeBlock(dayChar,hint,day){
@@ -460,7 +463,12 @@ function renderEgg(E){
     const yOrig=(yc.rot!=null&&yc.delta!=null)?bagsFromKg((yc.rot-yc.delta)*0.4,0.4,7):yb;
     const wOrig=(wc.rot!=null&&wc.delta!=null)?bagsFromKg((wc.rot-wc.delta)*0.75,0.75,4):wb;
     const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
-    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true,yOrig,wOrig);
+    // 発注済（もともと発注した数）＝その便が届く曜日の「届く」回転を袋換算
+    const dwd=hint.charAt(0),dd=findDay(dwd);
+    const inKai=(o)=>{const n=o?parseFloat(o.incoming):NaN;return isNaN(n)?null:n;};
+    const ky=dd?inKai(dd.yolk):null,kw=dd?inKai(dd.white):null;
+    const ordY=ky==null?null:Math.round(ky*0.4/5),ordW=kw==null?null:Math.round(kw*0.75/5);
+    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true,yOrig,wOrig,ordY,ordW);
     bl.appendChild(el);
   }
   changeBlock('月','木便',findDay('月'));
@@ -469,7 +477,7 @@ function renderEgg(E){
   const bulk=document.createElement('div');bulk.className='bulkorder';
   bulk.innerHTML='<div class="boh"><span class="daytag daytag-main">木</span>翌週分を新規発注（火・木・土便まとめて）</div><div class="bos">木曜が新規発注の締切。下の3便を確認して一括SMSで発注。各便は締切までの変更にも使える。</div>';
   E.batches.forEach(b=>{const row=document.createElement('div');row.className='batch bbrow';
-    row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false);
+    row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false,null,null,b.orderedYolkBags,b.orderedWhiteBags);
     bulk.appendChild(row);});
   const boa=document.createElement('div');boa.className='boa';boa.style.marginTop='9px';
   boa.innerHTML='<a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button>';
@@ -479,7 +487,7 @@ function renderEgg(E){
   // 土：翌週の火便を変更（変更なければそのまま）
   const fb=findB('火曜便');
   if(fb){const sat=document.createElement('div');sat.className='batch';
-    sat.innerHTML='<div class="bn"><span class="daytag">土</span>翌週の火便を変更（'+esc(fb.name)+'）</div><div class="bos">土曜が翌火便の最終変更日。変更があれば下の数でSMS、なければそのまま。</div>'+orderInput('翌週の火便',numOnly(fb.yolkBags),numOnly(fb.whiteBags),true);
+    sat.innerHTML='<div class="bn"><span class="daytag">土</span>翌週の火便を変更（'+esc(fb.name)+'）</div><div class="bos">土曜が翌火便の最終変更日。変更があれば下の数でSMS、なければそのまま。</div>'+orderInput('翌週の火便',numOnly(fb.yolkBags),numOnly(fb.whiteBags),true,null,null,fb.orderedYolkBags,fb.orderedWhiteBags);
     bl.appendChild(sat);}
   bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);

@@ -16,14 +16,14 @@ _DAY_IDX = {"月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6
 
 
 def _next_week_kaiten(cur_tab):
-    """cur_tab（例: '0622'）の翌週タブから行39の回転数を予定・実績で返す。
-    見つからなければ (None, None)。
+    """cur_tab（例: '0622'）の翌週タブから行39の回転数を予定・実績、および現在の発注済(届く)を返す。
+    見つからなければ (None, None, None)。
     スプレッドシートのバッチ発注数式は row39_予定 − 繰り越し在庫 で計算している。
-    Python側で row39_実績 に差し替えるため、両方を返す。"""
+    Python側で row39_実績 に差し替えるため両方を返す。3つ目は便別の発注済(届く)回転。"""
     from datetime import date, timedelta
     m = _re.match(r'^(\d{1,2})(\d{2})$', str(cur_tab))
     if not m:
-        return None, None
+        return None, None, None
     mon_month, mon_day = int(m.group(1)), int(m.group(2))
     today = date.today()
     for year in [today.year, today.year - 1]:
@@ -33,14 +33,14 @@ def _next_week_kaiten(cur_tab):
         except ValueError:
             continue
     else:
-        return None, None
+        return None, None, None
     next_mon = cur_monday + timedelta(days=7)
     cands = [f"{next_mon.month:02d}{next_mon.day:02d}", f"{next_mon.month}{next_mon.day:02d}"]
     sh = data_layer._spreadsheet()
     tab_map = {w.title: w for w in sh.worksheets()}
     next_ws = next((tab_map[c] for c in cands if c in tab_map), None)
     if not next_ws:
-        return None, None
+        return None, None, None
     vals = data_layer.cached_values(next_ws)
 
     def gv(r, c):
@@ -51,7 +51,9 @@ def _next_week_kaiten(cur_tab):
 
     kp = [gv(39, c) for c in range(1, 8)]    # 予定 B-H → 月火水木金土日
     ka = [gv(39, c) for c in range(21, 28)]   # 実績 V-AB → 月火水木金土日
-    return kp, ka
+    # 発注済(届く) AU=index46(卵黄)/AV=index47(卵白)。火=row7/木=row9/土=row11。
+    incoming = {"火": (gv(7, 46), gv(7, 47)), "木": (gv(9, 46), gv(9, 47)), "土": (gv(11, 46), gv(11, 47))}
+    return kp, ka, incoming
 
 
 def _batch_day_indices(name):
@@ -66,7 +68,7 @@ def _apply_actual_kaiten(batches, cur_tab):
     """バッチリストの回転・kg・袋を翌週実績回転数ベースに補正する。
     計算式: 実績ベース発注 = スプレッドシート値 + (実績合計 − 予定合計)
     これにより繰り越し在庫はスプレッドシートの計算をそのまま継承する。"""
-    kp, ka = _next_week_kaiten(cur_tab)
+    kp, ka, _inc = _next_week_kaiten(cur_tab)
     if not kp or not ka:
         return  # 翌週タブがなければ補正しない
 
@@ -354,7 +356,7 @@ def get_egg_nav(tab=None):
         inc_w = {d["wd"]: _num(d["white"]["incoming"]) for d in days}
         inc_y = {d["wd"]: _num(d["yolk"]["incoming"]) for d in days}
         stock_y = {d["wd"]: _num(d["yolk"]["stock"]) for d in days}
-        _kp, next_act = _next_week_kaiten(ws.title)
+        _kp, next_act, _next_inc = _next_week_kaiten(ws.title)
         for d in days:
             d_date = _parse_date(d["date"])
             if d_date is None or d_date > today:
@@ -399,6 +401,16 @@ def get_egg_nav(tab=None):
 
     # スプレッドシートのバッチ数式は予定ベース → 実績回転数で上書き補正
     _apply_actual_kaiten(batches, ws.title)
+
+    # 各便の「発注済(届く)」= 翌週タブの届く回転を袋換算して付与（もともと発注した数の表示用）
+    _kp2, _ka2, next_inc = _next_week_kaiten(ws.title)
+    if next_inc:
+        for b in batches:
+            key = "火" if b["name"].startswith("火曜便") else ("木" if b["name"].startswith("木曜便") else ("土" if b["name"].startswith("土曜便") else None))
+            if key and key in next_inc:
+                yk, wk = next_inc[key]
+                b["orderedYolkBags"] = _yolk_bags_round(yk)
+                b["orderedWhiteBags"] = _white_bags_round(wk)
 
     # この表の見方（AW/AX列）= 各行 AW→AX の順に読むと表示順になる
     guide_cells = []
