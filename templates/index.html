@@ -141,8 +141,10 @@
   .recq{font-size:11px;color:var(--muted);white-space:nowrap;}
   .recq b{color:var(--info);font-weight:700;}
   .eggreset{font-size:11px;color:var(--muted);text-decoration:underline;white-space:nowrap;}
-  .ordq{font-size:11px;color:var(--muted);white-space:nowrap;}
-  .ordq b{color:var(--ink);font-weight:700;}
+  .ordbtn{min-height:34px;font-size:12px;font-weight:600;border-radius:12px;padding:8px 12px;border:1px solid var(--info);background:#fff;color:var(--info);white-space:nowrap;}
+  .ordmark{font-size:12px;color:#137a3f;font-weight:700;white-space:nowrap;}
+  .ordmark b{color:#137a3f;font-weight:700;}
+  .ordundo{font-size:11px;color:var(--muted);text-decoration:underline;white-space:nowrap;}
   .smsbtn,.copybtn{min-height:34px;text-decoration:none;font-size:12px;font-weight:600;border-radius:12px;padding:8px 11px;border:0;white-space:nowrap;}
   .smsbtn{margin-left:auto;background:var(--infobg);color:var(--info);}
   .copybtn{background:#f1efe8;color:var(--ink);}
@@ -253,6 +255,12 @@ function eggKey(batch,kind){return eggTab+'|'+batch+'|'+kind;}
 function eggOverride(batch,kind,def){const v=eggEdits[eggKey(batch,kind)];return (v===undefined||v===null||v==='')?def:v;}
 function saveEggEdit(batch,kind,val){eggEdits[eggKey(batch,kind)]=val;try{localStorage.setItem('eggEdits',JSON.stringify(eggEdits));}catch(e){}}
 function clearEggEdit(batch){delete eggEdits[eggKey(batch,'y')];delete eggEdits[eggKey(batch,'w')];try{localStorage.setItem('eggEdits',JSON.stringify(eggEdits));}catch(e){}}
+// 「発注済み」ボタンで押した実発注（袋数）を端末内に保持。週(eggTab)+便で保存。押すまで未発注。
+let eggOrdered={};try{eggOrdered=JSON.parse(localStorage.getItem('eggOrdered')||'{}')||{};}catch(e){eggOrdered={};}
+function ordKey(batch){return eggTab+'|'+batch;}
+function getOrdered(batch){return eggOrdered[ordKey(batch)]||null;}
+function setOrdered(batch,y,w){eggOrdered[ordKey(batch)]={y:y,w:w};try{localStorage.setItem('eggOrdered',JSON.stringify(eggOrdered));}catch(e){}}
+function clearOrdered(batch){delete eggOrdered[ordKey(batch)];try{localStorage.setItem('eggOrdered',JSON.stringify(eggOrdered));}catch(e){}}
 const SC=['make','sales','egg','anko','mat','raw'],TT={make:'製造計画',sales:'製造実績',egg:'卵発注',anko:'あんこ発注',mat:'その他材料',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
 // 無料サーバーは無操作が続くと眠る。起こすのに最大1分ほどかかるので、
@@ -427,6 +435,7 @@ function eline(label,o,row,col,tab){
   h+='<div class="todoln">📢 やること：'+((o.todo&&o.todo.trim())?esc(o.todo):'✅ 変更なし')+'</div>';
   return h;}
 function renderEgg(E){
+  if(!E||!E.days||!E.batches)return;   // 取得失敗で欠けたデータでは再描画せず、今の表示を保つ
   eggTab=E.tab||'';
   eggMonDate=((E.days||[]).find(d=>d.wd==='月')||{}).date||'';
   document.getElementById('eggnote').textContent=E.note||'';
@@ -446,8 +455,11 @@ function renderEgg(E){
     const yval=eggOverride(batch,'y',yb), wval=eggOverride(batch,'w',wb);
     const edited=(String(yval)!==String(yb))||(String(wval)!==String(wb));
     const reset=edited?'<a class="eggreset" href="#" rel="noopener">↺推奨に戻す</a>':'';
-    const ordChip=(v)=> (v==null||v===''?'':' <span class="ordq">発注済 <b>'+v+'</b>袋</span>');
-    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span>'+ordChip(ordY)+'</label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span>'+ordChip(ordW)+'</label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button><div class="smsbody"></div></div>';
+    const ord=getOrdered(batch);
+    const ordBlock=ord
+      ? '<span class="ordmark">✅ 発注済 <b>卵黄'+ord.y+'袋・卵白'+ord.w+'袋</b></span><a class="ordundo" href="#" rel="noopener">取消</a>'
+      : '<button class="ordbtn" type="button">発注済みにする</button>';
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span></label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span></label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button>'+ordBlock+'<div class="smsbody"></div></div>';
   }
   // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
   function changeBlock(dayChar,hint,day){
@@ -561,6 +573,10 @@ function bindEggSms(root){
     box.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{saveEggEdit(box.dataset.batch,i.dataset.kind,i.value);refreshEggSms(box);}));
     const rst=box.querySelector('.eggreset');
     if(rst)rst.onclick=(e)=>{e.preventDefault();clearEggEdit(box.dataset.batch);J('/api/eggs').then(renderEgg);};
+    const ob=box.querySelector('.ordbtn');
+    if(ob)ob.onclick=()=>{const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);setOrdered(box.dataset.batch,y,w);J('/api/eggs').then(renderEgg);};
+    const ou=box.querySelector('.ordundo');
+    if(ou)ou.onclick=(e)=>{e.preventDefault();clearOrdered(box.dataset.batch);J('/api/eggs').then(renderEgg);};
     const copy=box.querySelector('.copybtn');
     if(copy)copy.onclick=async()=>{refreshEggSms(box);const body=box.querySelector('.smsbtn').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='本文コピー',1200);}catch(e){box.querySelector('.smsbody').focus&&box.querySelector('.smsbody').focus();copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='本文コピー',1800);}};
     refreshEggSms(box);
