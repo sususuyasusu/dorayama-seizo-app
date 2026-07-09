@@ -495,7 +495,12 @@ function renderEgg(E){
     row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false);
     bulk.appendChild(row);});
   const boa=document.createElement('div');boa.className='boa';boa.style.marginTop='9px';
-  boa.innerHTML='<a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button>';
+  const bulkNames=(E.batches||[]).map(b=>b.name);
+  const allOrdered=bulkNames.length>0&&bulkNames.every(n=>getOrdered(n));
+  const bulkOrdBtn=allOrdered
+    ? '<a class="ordundo bulkUnorder" href="#" rel="noopener">一括取消</a>'
+    : '<button class="ordbtn bulkOrdered" type="button">3便まとめて発注済みにする</button>';
+  boa.innerHTML='<a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button>'+bulkOrdBtn;
   bulk.appendChild(boa);
   const bbody=document.createElement('div');bbody.className='smsbody bulkBody';bulk.appendChild(bbody);
   bl.appendChild(bulk);
@@ -591,6 +596,11 @@ function bindEggSms(root){
 function bindBulkEggSms(root){
   const copy=root.querySelector('.bulkCopy');
   if(copy)copy.onclick=async()=>{refreshBulkEggSms(root);const body=root.querySelector('.bulkSms').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='一括本文コピー',1200);}catch(e){copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='一括本文コピー',1800);}};
+  // 3便まとめて発注済みにする／一括取消（各行の入力値を実発注として記録）
+  const bo=root.querySelector('.bulkOrdered');
+  if(bo)bo.onclick=()=>{root.querySelectorAll('.bulkorder .eggorder').forEach(box=>{const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);setOrdered(box.dataset.batch,y,w);});J('/api/eggs').then(renderEgg);};
+  const bu=root.querySelector('.bulkUnorder');
+  if(bu)bu.onclick=(e)=>{e.preventDefault();root.querySelectorAll('.bulkorder .eggorder').forEach(box=>clearOrdered(box.dataset.batch));J('/api/eggs').then(renderEgg);};
 }
 function renderSecs(secs){return (secs||[]).map(s=>{
   let h=(s.header&&!s.header.startsWith('📖'))?'<div class="rsh">'+esc(s.header)+'</div>':'';
