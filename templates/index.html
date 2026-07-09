@@ -216,7 +216,7 @@
   </div>
 
   <div id="anko" class="hide">
-    <div class="sec">🫘 あん発注（実績ベース・月曜締め7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
+    <div class="sec">🫘 あん発注（実績ベース・月曜朝発注／当週7日分）<span id="ankonext"></span></div><div id="ankoalert"></div><div id="ankolist"></div>
   </div>
 
   <div id="mat" class="hide">
@@ -574,23 +574,23 @@ function ankoCard(c,A,isShiro){
   const linked=c.url&&/^https?:/.test(c.url);
   const sup=c.supplier?('<span class="sup">'+esc(c.supplier)+(linked?' ↗':'')+'</span>'):'';
   const head=linked?('<a href="'+esc(c.url)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;width:100%">'+esc(c.name)+sup+'</a>'):('<span>'+esc(c.name)+'</span>'+sup);
-  const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：翌月曜までに '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
+  const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：今週いっぱい（日曜まで）に '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
   const carry=c.emergencyBags>0?'不足':('余り '+numfmt(c.carryoverG)+'g');
   const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（通常発注対象の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
     '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g</div>'):'';
   return '<div class="ankocard"><div class="ah">'+head+'</div>'+
     warn+
-    '<div class="arow"><span class="lb">翌木まで使用</span><b>'+numfmt(c.coverPeriodG)+'g</b><span class="sub">'+A.coverPeriodLabel+'・'+c.coverPeriodBags+'袋</span></div>'+
+    '<div class="arow"><span class="lb">当週の使用</span><b>'+numfmt(c.coverPeriodG)+'g</b><span class="sub">'+A.coverPeriodLabel+'・'+c.coverPeriodBags+'袋</span></div>'+
     '<div class="arow"><span class="lb">現在庫</span><b>'+numfmt(c.stockBags)+'袋</b><span class="sub">'+numfmt(c.stockG)+'g</span></div>'+
-    '<div class="arow"><span class="lb">翌木時点</span><b>'+carry+'</b><span class="sub">通常発注の調整に使う</span></div>'+
+    '<div class="arow"><span class="lb">当週末の余り</span><b>'+carry+'</b><span class="sub">通常発注の調整に使う</span></div>'+
     '<div class="arow"><span class="lb">通常発注対象</span><b>'+numfmt(c.orderPeriodG)+'g</b><span class="sub">'+A.orderPeriodLabel+'・'+c.orderPeriodBags+'袋</span></div>'+
-    '<div class="arow"><span class="lb">発注計算</span><b>'+numfmt(c.regularOrderG)+'g</b><span class="sub">対象量−翌木時点の余り</span></div>'+
+    '<div class="arow"><span class="lb">発注計算</span><b>'+numfmt(c.regularOrderG)+'g</b><span class="sub">対象量−当週末の余り</span></div>'+
     jun+
-    '<div class="aorder">月曜通常発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
+    '<div class="aorder">月曜朝の通常発注 <b>'+c.totalOrderBags+'袋</b></div></div>';
 }
 function renderAnko(A){
   const wrap=document.getElementById('ankolist');if(!wrap)return;
-  const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　'+A.periodLabel+'（'+A.tab+'→'+A.nextTab+'）'):'　翌週タブなし';
+  const nx=document.getElementById('ankonext');if(nx)nx.textContent=A.nextTab?('　'+(A.orderPeriodLabel||'')+'（'+A.tab+'→'+A.nextTab+'）'):'　翌週タブなし';
   const al=document.getElementById('ankoalert');if(al){al.className='aalert '+(A.alert.level||'next');al.textContent=A.alert.text||'';}
   wrap.innerHTML=ankoCard(A.tsubu,A,false)+ankoCard(A.shiro,A,true);
   const bindAnkoInput=(id,key)=>{
