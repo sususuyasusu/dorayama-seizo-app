@@ -449,17 +449,19 @@ function renderEgg(E){
   const bl=document.getElementById('eggbatches');bl.innerHTML='';
   const findB=kw=>E.batches.find(b=>(b.name||'').indexOf(kw)===0);
   const findDay=wd=>(E.days||[]).find(d=>d.wd===wd);
-  function orderInput(batch,yb,wb,kind2,oy,ow,ordY,ordW){
-    // kind2(変更)のときは先週の一括発注数(before)をdata属性に保持し、SMSで before→after を出す
-    const od=kind2?(' data-orig-y="'+(oy==null?yb:oy)+'" data-orig-w="'+(ow==null?wb:ow)+'"'):'';
-    const yval=eggOverride(batch,'y',yb), wval=eggOverride(batch,'w',wb);
-    const edited=(String(yval)!==String(yb))||(String(wval)!==String(wb));
-    const reset=edited?'<a class="eggreset" href="#" rel="noopener">↺推奨に戻す</a>':'';
+  function orderInput(batch,defY,defW,kind2,oy,ow,recY,recW){
+    // defY/defW=入力の初期値（実発注＝届くに合わせる）。recY/recW=推奨ラベル（省略時は初期値）。
+    const rY=(recY==null?defY:recY),rW=(recW==null?defW:recW);
+    // kind2(変更)のときは変更前(before)をdata属性に保持し、SMSで before→after を出す
+    const od=kind2?(' data-orig-y="'+(oy==null?defY:oy)+'" data-orig-w="'+(ow==null?defW:ow)+'"'):'';
+    const yval=eggOverride(batch,'y',defY), wval=eggOverride(batch,'w',defW);
+    const edited=(String(yval)!==String(defY))||(String(wval)!==String(defW));
+    const reset=edited?'<a class="eggreset" href="#" rel="noopener">↺戻す</a>':'';
     const ord=getOrdered(batch);
     const ordBlock=ord
       ? '<span class="ordmark">✅ 発注済 <b>卵黄'+ord.y+'袋・卵白'+ord.w+'袋</b></span><a class="ordundo" href="#" rel="noopener">取消</a>'
       : '<button class="ordbtn" type="button">発注済みにする</button>';
-    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+yb+'</b>袋</span></label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+wb+'</b>袋</span></label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button>'+ordBlock+'<div class="smsbody"></div></div>';
+    return '<div class="eggorder" data-batch="'+escAttr(batch)+'"'+(kind2?' data-kind2="change"':'')+od+'><label><span class="dot dot-y"></span>卵黄 <input class="eggqty" data-kind="y" type="number" inputmode="numeric" min="0" value="'+yval+'">袋 <span class="recq">推奨 <b>'+rY+'</b>袋</span></label><label><span class="dot dot-w"></span>卵白 <input class="eggqty" data-kind="w" type="number" inputmode="numeric" min="0" value="'+wval+'">袋 <span class="recq">推奨 <b>'+rW+'</b>袋</span></label>'+reset+'<a class="smsbtn" href="#" rel="noopener">変更SMS</a><button class="copybtn" type="button">本文コピー</button>'+ordBlock+'<div class="smsbody"></div></div>';
   }
   // 今週分の変更ブロック（月＝木便 / 水＝土便）。その曜日のやることから拾う。
   function changeBlock(dayChar,hint,day){
@@ -470,17 +472,18 @@ function renderEgg(E){
       el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bd">✅ そのまま（変更不要）</div>';
       bl.appendChild(el);return;
     }
-    const yb=yc.kg!=null?bagsFromKg(yc.kg,0.4,7):0,wb=wc.kg!=null?bagsFromKg(wc.kg,0.75,4):0;
-    // 先週の一括発注数(before) = 今回の合計回転 − 増減回転 を袋換算
-    const yOrig=(yc.rot!=null&&yc.delta!=null)?bagsFromKg((yc.rot-yc.delta)*0.4,0.4,7):yb;
-    const wOrig=(wc.rot!=null&&wc.delta!=null)?bagsFromKg((wc.rot-wc.delta)*0.75,0.75,4):wb;
-    const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
-    // 発注済（もともと発注した数）＝その便が届く曜日の「届く」回転を袋換算
+    // 届く＝実際の発注数（その便が届く曜日の「届く」回転を袋換算）
     const dwd=hint.charAt(0),dd=findDay(dwd);
     const inKai=(o)=>{const n=o?parseFloat(o.incoming):NaN;return isNaN(n)?null:n;};
     const ky=dd?inKai(dd.yolk):null,kw=dd?inKai(dd.white):null;
-    const ordY=ky==null?null:Math.round(ky*0.4/5),ordW=kw==null?null:Math.round(kw*0.75/5);
-    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,yb,wb,true,yOrig,wOrig,ordY,ordW);
+    const curY=ky==null?null:Math.round(ky*0.4/5),curW=kw==null?null:Math.round(kw*0.75/5);
+    // 推奨＝やること文の「合計◯袋」。無ければkg換算、それも無ければ届く。
+    const recY=yc.bags!=null?yc.bags:(yc.kg!=null?bagsFromKg(yc.kg,0.4,7):(curY!=null?curY:0));
+    const recW=wc.bags!=null?wc.bags:(wc.kg!=null?bagsFromKg(wc.kg,0.75,4):(curW!=null?curW:0));
+    // 入力の初期値＝届く（実発注）に合わせる。SMSのbeforeも届く。
+    const defY=curY!=null?curY:recY,defW=curW!=null?curW:recW;
+    const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
+    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,defY,defW,true,curY,curW,recY,recW);
     bl.appendChild(el);
   }
   changeBlock('月','木便',findDay('月'));
@@ -489,7 +492,7 @@ function renderEgg(E){
   const bulk=document.createElement('div');bulk.className='bulkorder';
   bulk.innerHTML='<div class="boh"><span class="daytag daytag-main">木</span>翌週分を新規発注（火・木・土便まとめて）</div><div class="bos">木曜が新規発注の締切。下の3便を確認して一括SMSで発注。各便は締切までの変更にも使える。</div>';
   E.batches.forEach(b=>{const row=document.createElement('div');row.className='batch bbrow';
-    row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false,null,null,b.orderedYolkBags,b.orderedWhiteBags);
+    row.innerHTML='<div class="bn">'+esc(b.name)+'</div><div class="bd"><span class="dot dot-y"></span>卵黄 '+nz(b.yolkKai)+'回転（'+nz(b.yolkKg)+'kg・'+nz(b.yolkBags)+'袋）<br><span class="dot dot-w"></span>卵白 '+nz(b.whiteKai)+'回転（'+nz(b.whiteKg)+'kg・'+nz(b.whiteBags)+'袋）</div>'+orderInput(b.name,numOnly(b.yolkBags),numOnly(b.whiteBags),false);
     bulk.appendChild(row);});
   const boa=document.createElement('div');boa.className='boa';boa.style.marginTop='9px';
   boa.innerHTML='<a class="smsbtn bulkSms" href="#" rel="noopener">一括SMSを開く</a><button class="copybtn bulkCopy" type="button">一括本文コピー</button>';
@@ -499,21 +502,24 @@ function renderEgg(E){
   // 土：翌週の火便を変更（変更なければそのまま）
   const fb=findB('火曜便');
   if(fb){const sat=document.createElement('div');sat.className='batch';
-    sat.innerHTML='<div class="bn"><span class="daytag">土</span>翌週の火便を変更（'+esc(fb.name)+'）</div><div class="bos">土曜が翌火便の最終変更日。変更があれば下の数でSMS、なければそのまま。</div>'+orderInput('翌週の火便',numOnly(fb.yolkBags),numOnly(fb.whiteBags),true,null,null,fb.orderedYolkBags,fb.orderedWhiteBags);
+    sat.innerHTML='<div class="bn"><span class="daytag">土</span>翌週の火便を変更（'+esc(fb.name)+'）</div><div class="bos">土曜が翌火便の最終変更日。変更があれば下の数でSMS、なければそのまま。</div>'+orderInput('翌週の火便',numOnly(fb.yolkBags),numOnly(fb.whiteBags),true);
     bl.appendChild(sat);}
   bindEggSms(bl);refreshBulkEggSms(bl);bindBulkEggSms(bl);
   document.getElementById('eggguide').innerHTML=renderSecs(E.guide);
   document.getElementById('eggruleslist').innerHTML=renderSecs(E.rules);}
 function bagsFromKg(kg,perRot,thr){if(!(kg>0))return 0;const full=Math.floor(kg/5);const rem=(kg-full*5)/perRot;return full+(rem>=thr-1e-9?1:0);}
 function parseTodoChange(todo){
-  if(!todo)return {has:false,kg:null,rot:null,delta:null,delivery:''};
+  if(!todo)return {has:false,kg:null,rot:null,bags:null,delta:null,delivery:''};
   const has=/🔴|🔵/.test(todo);
-  const mtot=todo.match(/合計([\d.]+)回転（([\d.]+)\s*kg）/);   // 今回の合計（回転・kg）
-  const mdelta=todo.match(/を\s*([+\-−＋]?\s*[\d.]+)\s*回転/);  // 増減（先頭の「○○を ±N回転」）
+  const mtot=todo.match(/合計([\d.]+)回転（([\d.]+)\s*kg）/);   // 旧形式（回転）
+  const mbag=todo.match(/合計([\d.]+)\s*袋/);                   // 新形式「合計◯袋」＝推奨の合計袋数
+  const mkg=todo.match(/（([\d.]+)\s*kg）/);                    // 合計kg
+  const mdelta=todo.match(/を\s*[＋+]?\s*([\d.]+)\s*袋/);       // 増減の袋数（±は色で判断）
   const md=todo.match(/(\d+\/\d+)\s*([^\s　の]*便)/);
-  let delta=null;
-  if(mdelta){delta=parseFloat(mdelta[1].replace(/\s/g,'').replace('−','-').replace('＋','+'));}
-  return {has, rot:mtot?parseFloat(mtot[1]):null, kg:mtot?parseFloat(mtot[2]):null, delta, delivery:md?(md[1]+' '+md[2]):''};
+  const bags=mbag?parseFloat(mbag[1]):null;
+  return {has, rot:mtot?parseFloat(mtot[1]):null, bags:bags,
+    kg:mtot?parseFloat(mtot[2]):(mkg?parseFloat(mkg[1]):null),
+    delta:mdelta?parseFloat(mdelta[1]):null, delivery:md?(md[1]+' '+md[2]):''};
 }
 // 発注文に配達日を入れる。翌週分(火/木/土便)の日付を、卵ナビの今週月曜(E.days)から算出。
 function _ymd(s){const m=(s||'').match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;}
