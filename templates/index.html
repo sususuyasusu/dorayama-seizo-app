@@ -438,6 +438,14 @@ function renderEgg(E){
   if(!E||!E.days||!E.batches)return;   // 取得失敗で欠けたデータでは再描画せず、今の表示を保つ
   eggTab=E.tab||'';
   eggMonDate=((E.days||[]).find(d=>d.wd==='月')||{}).date||'';
+  // 発注済みにした今週の変更便は、その袋数を「正」として届く(回転)に固定反映する。
+  // 以後 発注作業の数字を変えても、届く・発注済は変わらない。木便→木曜/土便→土曜。
+  const _wkOrdMap={'木':'今週の木便','土':'今週の土便'};
+  (E.days||[]).forEach(d=>{
+    const o=getOrdered(_wkOrdMap[d.wd]); if(!o)return;
+    if(d.yolk)d.yolk.incoming=String(Math.round(o.y*12.5*10)/10);      // 1袋=5kg=12.5回転(卵黄)
+    if(d.white)d.white.incoming=String(Math.round(o.w*(5000/750)*10)/10); // 1袋=5kg≒6.67回転(卵白)
+  });
   document.getElementById('eggnote').textContent=E.note||'';
   document.getElementById('eggrule').innerHTML=(E.ruleY?esc(E.ruleY):'')+(E.ruleW?'<br>'+esc(E.ruleW):'');
   const dl=document.getElementById('eggdaylist');dl.innerHTML='';
@@ -452,10 +460,13 @@ function renderEgg(E){
   function orderInput(batch,defY,defW,kind2,oy,ow,recY,recW){
     // defY/defW=入力の初期値（実発注＝届くに合わせる）。recY/recW=推奨ラベル（省略時は初期値）。
     const rY=(recY==null?defY:recY),rW=(recW==null?defW:recW);
+    // 発注済みにしてあれば、その値を初期表示の「正」とする（届く・発注済は入力編集で変わらない）
+    const _od=getOrdered(batch);
+    const baseY=_od?_od.y:defY, baseW=_od?_od.w:defW;
     // kind2(変更)のときは変更前(before)をdata属性に保持し、SMSで before→after を出す
-    const od=kind2?(' data-orig-y="'+(oy==null?defY:oy)+'" data-orig-w="'+(ow==null?defW:ow)+'"'):'';
-    const yval=eggOverride(batch,'y',defY), wval=eggOverride(batch,'w',defW);
-    const edited=(String(yval)!==String(defY))||(String(wval)!==String(defW));
+    const od=kind2?(' data-orig-y="'+(oy==null?baseY:oy)+'" data-orig-w="'+(ow==null?baseW:ow)+'"'):'';
+    const yval=eggOverride(batch,'y',baseY), wval=eggOverride(batch,'w',baseW);
+    const edited=(String(yval)!==String(baseY))||(String(wval)!==String(baseW));
     const reset=edited?'<a class="eggreset" href="#" rel="noopener">↺戻す</a>':'';
     const ord=getOrdered(batch);
     const ordBlock=ord
@@ -483,7 +494,7 @@ function renderEgg(E){
     // 入力の初期値＝届く（実発注）に合わせる。SMSのbeforeも届く。
     const defY=curY!=null?curY:recY,defW=curW!=null?curW:recW;
     const note=[day.yolk.todo,day.white.todo].filter(Boolean).map(t=>esc(t.replace(/\n/g,' '))).join('<br>');
-    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+delivery,defY,defW,true,curY,curW,recY,recW);
+    el.innerHTML='<div class="bn"><span class="daytag">'+dayChar+'</span>今週の'+esc(delivery)+'を変更</div><div class="bos">'+note+'</div>'+orderInput('今週の'+hint,defY,defW,true,curY,curW,recY,recW);
     bl.appendChild(el);
   }
   changeBlock('月','木便',findDay('月'));
