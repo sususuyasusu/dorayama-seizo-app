@@ -73,8 +73,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, (BASE / "templates" / "index.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
         elif path == "/manual" or path == "/manual/":
-            self._send(200, (BASE / "templates" / "manual.html").read_text(encoding="utf-8"),
-                       "text/html; charset=utf-8")
+            # マニュアルは独立アプリへ移行（2026-07-14）。旧URLは転送で生かす。
+            self.send_response(302)
+            self.send_header("Location", "https://sususuyasusu.github.io/dorayama-manual/")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
         elif path == "/api/manual":
             self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
