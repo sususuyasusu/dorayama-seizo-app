@@ -18,8 +18,11 @@ import inventory_layer
 import matlink_layer
 import anko_layer
 import orderlist_layer
+import manual_layer
 
 BASE = Path(__file__).parent
+STATIC = (BASE / "static").resolve()
+MIME = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 
 
 def week_payload(tab=None):
@@ -69,6 +72,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/" or path.startswith("/index"):
             self._send(200, (BASE / "templates" / "index.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
+        elif path == "/manual" or path == "/manual/":
+            self._send(200, (BASE / "templates" / "manual.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
+        elif path == "/api/manual":
+            self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
             self._send(200, json.dumps(data_layer.list_tabs(), ensure_ascii=False))
         elif path == "/api/gids":
@@ -94,8 +102,12 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/raw_styled":
             import sheetfmt_layer
             self._send(200, json.dumps(sheetfmt_layer.get_raw_styled(tab), ensure_ascii=False))
-        elif path == "/static/logo.png":
-            self._send(200, (BASE / "static" / "logo.png").read_bytes(), "image/png")
+        elif path.startswith("/static/"):
+            p = (STATIC / path[len("/static/"):]).resolve()
+            if STATIC in p.parents and p.is_file() and p.suffix.lower() in MIME:
+                self._send(200, p.read_bytes(), MIME[p.suffix.lower()])
+            else:
+                self._send(404, "{}")
         else:
             self._send(404, "{}")
 
@@ -128,6 +140,10 @@ class Handler(BaseHTTPRequestHandler):
                 anko_layer.set_anko_config(data, data.get("tab")),
                 ensure_ascii=False,
             ))
+        elif path == "/api/manual/add":
+            self._send(200, json.dumps(manual_layer.add_entry(data), ensure_ascii=False))
+        elif path == "/api/manual/announce":
+            self._send(200, json.dumps(manual_layer.announce(data), ensure_ascii=False))
         else:
             self._send(404, "{}")
 
