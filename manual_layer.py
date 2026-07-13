@@ -17,13 +17,15 @@ UPDATES_HEADER = ["日付", "タイトル", "内容", "カテゴリ", "記入者
 
 # 現場カテゴリ（掲示版の色と対応）
 CATEGORIES = [
+    {"id": "shinjin", "name": "はじめての人","emoji": "🔰", "accent": "00838F", "light": "D9EEF1", "sub": "初日ガイド・教え方"},
     {"id": "common",  "name": "共通",        "emoji": "⭐", "accent": "595959", "light": "EDEDED", "sub": "全員で守るルール"},
     {"id": "iriguchi","name": "入口",        "emoji": "🚪", "accent": "8B5E3C", "light": "F3E5D8", "sub": "出勤・開店・閉店"},
     {"id": "shikomi", "name": "仕込み台",    "emoji": "🥚", "accent": "C55A11", "light": "FCE4D6", "sub": "たまご管理・仕込み"},
     {"id": "kiji",    "name": "生地作り",    "emoji": "🥣", "accent": "BF8F00", "light": "FBE9C7", "sub": "タネづくり"},
     {"id": "yakidai", "name": "焼台",        "emoji": "🔥", "accent": "9E3D3D", "light": "F2DCDC", "sub": "焼き・銅板清掃"},
     {"id": "seizou",  "name": "製造作業台",  "emoji": "🫘", "accent": "538135", "light": "E2EFDA", "sub": "あんこ・生どら・フルーツ"},
-    {"id": "counter", "name": "カウンター",  "emoji": "🛍️", "accent": "2E75B6", "light": "DDEBF7", "sub": "接客・レジ"},
+    {"id": "counter", "name": "カウンター",  "emoji": "🛍️", "accent": "2E75B6", "light": "DDEBF7", "sub": "接客・レジ・クレーム対応"},
+    {"id": "shouhin", "name": "商品知識",    "emoji": "🏷️", "accent": "C2185B", "light": "F8DCE8", "sub": "アレルゲン・期限・価格"},
     {"id": "tana",    "name": "材料などの棚","emoji": "📦", "accent": "7030A0", "light": "E6DCF0", "sub": "在庫・発注"},
     {"id": "pc",      "name": "PC・コピー機","emoji": "🖨️", "accent": "305496", "light": "DCE3EE", "sub": "打刻・袋印刷・伝票"},
     {"id": "sealer",  "name": "シーラー・梱包","emoji": "🎁", "accent": "1F7A6B", "light": "D6EAE4", "sub": "箱詰め・袋・発送"},
