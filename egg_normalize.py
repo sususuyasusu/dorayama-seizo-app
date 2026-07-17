@@ -79,6 +79,22 @@ def normalize(tab, ws, tabset):
     if cC:
         ws.batch_update([{"range": "AY6:AZ12", "values": newC}], value_input_option="USER_ENTERED")
 
+    # C2) 翌週正味発注数(AO16:AU18) の製造消費・繰越控除も予定→実績に
+    bt = ws.get("AO16:AU18", value_render_option="FORMULA")
+    newD, cD = [], False
+    for i in range(3):
+        row = bt[i] if i < len(bt) else []
+        out = []
+        for j in range(7):
+            c = row[j] if j < len(row) else ""
+            nc = _plan_to_act(c)
+            if nc != c:
+                cD = True
+            out.append(nc)
+        newD.append(out)
+    if cD:
+        ws.batch_update([{"range": "AO16:AU18", "values": newD}], value_input_option="USER_ENTERED")
+
     # B) AS6:AT12 を製造ベースに（翌週タブが在る場合のみ）
     m = re.search(r"'(\d{4})'!", as6)
     nw = m.group(1) if m else None

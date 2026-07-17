@@ -65,12 +65,10 @@ def _batch_day_indices(name):
 
 
 def _apply_actual_kaiten(batches, cur_tab):
-    """バッチリストの回転・kg・袋を翌週実績回転数ベースに補正する。
-    計算式: 実績ベース発注 = スプレッドシート値 + (実績合計 − 予定合計)
-    これにより繰り越し在庫はスプレッドシートの計算をそのまま継承する。"""
-    kp, ka, _inc = _next_week_kaiten(cur_tab)
-    if not kp or not ka:
-        return  # 翌週タブがなければ補正しない
+    """翌週正味発注数の kg・袋数を丸めルールで再計算する。
+    シートの回転数は 2026-07-08 に数式を予定(B-H)→実績(V-AB)へ是正済みなので、
+    ここでの差分補正(旧: +実績合計−予定合計)は廃止。旧補正は土曜便で誤った曜日
+    (翌週の月火。正しくは翌々週の月火)を使い、土曜便だけ大きくズレる原因だった。"""
 
     def _n(s):
         try:
@@ -82,17 +80,8 @@ def _apply_actual_kaiten(batches, cur_tab):
         return str(int(v)) if v == int(v) else f"{v:.1f}"
 
     for b in batches:
-        idxs = _batch_day_indices(b["name"])
-        if not idxs:
-            continue
-        plan_sum = sum(kp[i] for i in idxs)
-        act_sum = sum(ka[i] for i in idxs)
-        if act_sum == 0:
-            continue  # 実績未入力の便はそのまま（予定ベースを維持）
-        delta = act_sum - plan_sum
-
-        yk = max(0.0, _n(b["yolkKai"]) + delta)
-        wk = max(0.0, _n(b["whiteKai"]) + delta)
+        yk = max(0.0, _n(b["yolkKai"]))
+        wk = max(0.0, _n(b["whiteKai"]))
         ykg = yk * 0.4
         wkg = wk * 0.75
         b["yolkKai"] = _fmt(yk)
