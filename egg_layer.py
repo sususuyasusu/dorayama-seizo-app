@@ -15,6 +15,15 @@ import data_layer
 _DAY_IDX = {"月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6}
 
 
+def _kaiten_row(vals):
+    """A列から「回転数（切上げ）」ラベルの行(1始まり)を探す。
+    週タブは催事ブロックの増減で集計行がズレる(例: 0727は39→50行)ため、行番号決め打ちは禁止。"""
+    for r, row in enumerate(vals):
+        if row and str(row[0]).strip().startswith("回転数（切上げ）"):
+            return r + 1
+    return 39
+
+
 def _next_week_kaiten(cur_tab):
     """cur_tab（例: '0622'）の翌週タブから行39の回転数を予定・実績、および現在の発注済(届く)を返す。
     見つからなければ (None, None, None)。
@@ -49,8 +58,9 @@ def _next_week_kaiten(cur_tab):
         except Exception:
             return 0.0
 
-    kp = [gv(39, c) for c in range(1, 8)]    # 予定 B-H → 月火水木金土日
-    ka = [gv(39, c) for c in range(21, 28)]   # 実績 V-AB → 月火水木金土日
+    krow = _kaiten_row(vals)                    # 集計行はタブごとにズレるためラベルで特定
+    kp = [gv(krow, c) for c in range(1, 8)]     # 予定 B-H → 月火水木金土日
+    ka = [gv(krow, c) for c in range(21, 28)]   # 実績 V-AB → 月火水木金土日
     # 発注済(届く) AU=index46(卵黄)/AV=index47(卵白)。火=row7/木=row9/土=row11。
     incoming = {"火": (gv(7, 46), gv(7, 47)), "木": (gv(9, 46), gv(9, 47)), "土": (gv(11, 46), gv(11, 47))}
     return kp, ka, incoming
@@ -317,6 +327,7 @@ def get_egg_nav(tab=None):
 
     days = []
     today = datetime.date.today()
+    krow = _kaiten_row(vals)   # 「回転数（切上げ）」の行。タブごとにズレるためラベルで特定
     if hrow and "date" in col:
         for r in range(hrow + 1, hrow + 9):
             dt = g(r, col["date"]).strip()
@@ -329,9 +340,9 @@ def get_egg_nav(tab=None):
             d_date = _parse_date(dt)
             yt = _future_safe_todo(v("ty"), d_date, today)
             wt = _future_safe_todo(v("tw"), d_date, today)
-            # その日の製造回転（実績）= row39 の 実績側 V-AB（月〜日）。卵の必要量の元。
+            # その日の製造回転（実績）= 回転数（切上げ）行の実績側 V-AB（月〜日）。卵の必要量の元。
             _pcol = {"月": 21, "火": 22, "水": 23, "木": 24, "金": 25, "土": 26, "日": 27}.get(v("wd"))
-            prod = g(39, _pcol).strip() if _pcol is not None else ""
+            prod = g(krow, _pcol).strip() if _pcol is not None else ""
             days.append({
                 "row": r, "date": dt, "wd": v("wd"), "prod": prod,
                 "yolk": {"stock": v("sy"), "need": v("ny"), "incoming": v("iy"), "outlook": v("oy"), "todo": yt},

@@ -17,14 +17,24 @@
 import sys, re, datetime
 import data_layer
 
-# C) 見通し(BA/BB)・発注チェック(AY/AZ) が製造消費に「予定(標準値 B〜H列 row39)」を
-#    引いていたのを「実績(作る数 V〜AB列 row39)」に統一する。$X$39形式のみ一致（$AB$39等は不一致）。
+# C) 見通し(BA/BB)・発注チェック(AY/AZ) が製造消費に「予定(標準値 B〜H列)」を
+#    引いていたのを「実績(作る数 V〜AB列)」に統一する。行番号は保持（週タブごとに集計行が
+#    ズレるため。例: 通常39行、0727は50行）。$X$39形式のみ一致（$AB$39等は不一致）。
 _PLAN2ACT = {"B": "V", "C": "W", "D": "X", "E": "Y", "F": "Z", "G": "AA", "H": "AB"}
-_PLAN_PAT = re.compile(r"\$([BCDEFGH])\$39")
+_PLAN_PAT = re.compile(r"\$([BCDEFGH])\$(\d+)")
 def _plan_to_act(f):
     if not isinstance(f, str):
         return f
-    return _PLAN_PAT.sub(lambda m: "$" + _PLAN2ACT[m.group(1)] + "$39", f)
+    return _PLAN_PAT.sub(lambda m: "$" + _PLAN2ACT[m.group(1)] + "$" + m.group(2), f)
+
+
+def _label_row(ws, label):
+    """A列から指定ラベルの行(1始まり)を探す。集計行のズレ対応。見つからなければNone。"""
+    colA = ws.get("A1:A60")
+    for i, row in enumerate(colA):
+        if row and str(row[0]).strip().startswith(label):
+            return i + 1
+    return None
 
 
 def _parse(d):
@@ -96,17 +106,21 @@ def normalize(tab, ws, tabset):
         ws.batch_update([{"range": "AO16:AU18", "values": newD}], value_input_option="USER_ENTERED")
 
     # B) AS6:AT12 を製造ベースに（翌週タブが在る場合のみ）
+    # 集計行はタブごとにズレる(通常39行、催事ブロック追加週は下にずれる)ためラベルで特定する。
     m = re.search(r"'(\d{4})'!", as6)
     nw = m.group(1) if m else None
     b = "skip(翌週なし)"
     if nw and nw in tabset:
+        kr = _label_row(ws, "回転数（切上げ）") or 39
+        nws = ws.spreadsheet.worksheet(nw)
+        nkr = _label_row(nws, "回転数（切上げ）") or 39
         def f(r):
-            return (f"=CHOOSE(WEEKDAY(AO{r},2),$W$39,$X$39+$Y$39,$Y$39,"
-                    f"$Z$39+$AA$39,$AA$39,$AB$39+'{nw}'!$V$39+'{nw}'!$W$39,"
-                    f"'{nw}'!$V$39+'{nw}'!$W$39)")
+            return (f"=CHOOSE(WEEKDAY(AO{r},2),$W${kr},$X${kr}+$Y${kr},$Y${kr},"
+                    f"$Z${kr}+$AA${kr},$AA${kr},$AB${kr}+'{nw}'!$V${nkr}+'{nw}'!$W${nkr},"
+                    f"'{nw}'!$V${nkr}+'{nw}'!$W${nkr})")
         ws.batch_update([{"range": "AS6:AT12", "values": [[f(r), f(r)] for r in range(6, 13)]}],
                         value_input_option="USER_ENTERED")
-        b = f"OK(翌週{nw})"
+        b = f"OK(翌週{nw}/集計行{kr}・翌週{nkr})"
     return f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)"
 
 
