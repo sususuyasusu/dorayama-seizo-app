@@ -19,6 +19,8 @@ import matlink_layer
 import anko_layer
 import orderlist_layer
 import manual_layer
+import sms_layer
+import seibun_layer
 
 BASE = Path(__file__).parent
 STATIC = (BASE / "static").resolve()
@@ -78,6 +80,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Location", "https://sususuyasusu.github.io/dorayama-manual/")
             self.send_header("Content-Length", "0")
             self.end_headers()
+        elif path == "/seibun" or path == "/seibun/":
+            self._send(200, (BASE / "templates" / "seibun.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
+        elif path == "/api/seibun/usage":
+            self._send(200, json.dumps(seibun_layer.usage(), ensure_ascii=False))
         elif path == "/api/manual":
             self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
@@ -100,6 +107,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(orderlist_layer.get_orderlist(), ensure_ascii=False))
         elif path == "/api/anko":
             self._send(200, json.dumps(anko_layer.get_anko_order(tab), ensure_ascii=False))
+        elif path == "/api/sms_status":
+            self._send(200, json.dumps(sms_layer.status(), ensure_ascii=False))
         elif path == "/api/raw":
             self._send(200, json.dumps(data_layer.get_raw(tab), ensure_ascii=False))
         elif path == "/api/raw_styled":
@@ -143,6 +152,18 @@ class Handler(BaseHTTPRequestHandler):
                 anko_layer.set_anko_config(data, data.get("tab")),
                 ensure_ascii=False,
             ))
+        elif path == "/api/seibun/analyze":
+            # 合言葉が通らなければ画像認識に進まない（URLを知っているだけの人に費用を使わせない）
+            ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            r = seibun_layer.analyze(
+                data.get("image"), data.get("mediaType"),
+                data.get("manufacturer", ""), data.get("productName", ""),
+            )
+            self._send(int(r.pop("status", 200)) if "error" in r else 200,
+                       json.dumps(r, ensure_ascii=False))
         elif path == "/api/manual/add":
             self._send(200, json.dumps(manual_layer.add_entry(data), ensure_ascii=False))
         elif path == "/api/manual/announce":

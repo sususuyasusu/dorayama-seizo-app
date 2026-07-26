@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>どら山 成分ノート</title>
+<style>
+:root{--bg:#faf8f4;--card:#fff;--line:#e5ded2;--ink:#241f1a;--sub:#6f665b;--accent:#8a5a2b;--accent2:#f0e6d8;--ok:#2f7a4d;--warn:#b23b3b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.6}
+header{background:var(--accent);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0}
+header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-size:13px}
+main{max-width:960px;margin:0 auto;padding:16px 14px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.step{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em}
+h2{font-size:16px;margin:2px 0 12px}
+label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff;font-family:inherit}
+textarea{min-height:56px;resize:vertical}
+.grid{display:grid;gap:10px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:620px){.g3,.g5{grid-template-columns:repeat(2,1fr)}}
+.row{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fffdfa}
+.row h3{font-size:13px;margin:0 0 10px;color:var(--sub);display:flex;justify-content:space-between;align-items:center}
+button.btn{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600}
+button.ghost{background:var(--accent2);color:var(--accent);border:0;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600}
+button.mini{background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--sub)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.result{background:var(--accent2);border-radius:10px;padding:12px;margin-top:10px}
+.result table{width:100%;border-collapse:collapse;font-size:14px}
+.result td{padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.result td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+pre.label{white-space:pre-wrap;background:#fff;border:1px dashed var(--line);border-radius:9px;padding:12px;font-size:13px;font-family:inherit;margin:10px 0 0}
+.note{font-size:12px;color:var(--sub);margin:8px 0 0}
+.msg{font-size:13px;margin-top:8px}
+.msg.ok{color:var(--ok)} .msg.ng{color:var(--warn)}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
+.chk input{width:auto}
+#histBox{display:none}
+.hist{border-bottom:1px solid var(--line);padding:9px 0;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.scan{background:#fff8ee;border:1px solid #f0dcc0;border-radius:10px;padding:12px;margin-bottom:12px}
+img#prev{max-width:100%;border-radius:8px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>どら山 成分ノート</h1>
+  <button onclick="toggleHist()">履歴 <span id="histN"></span></button>
+</header>
+<main>
+
+<div class="card" id="histBox">
+  <div class="step">保存したもの</div>
+  <h2>履歴（最新10件）</h2>
+  <div id="histList"></div>
+</div>
+
+<div class="card">
+  <div class="step">STEP 1</div>
+  <h2>商品を設定</h2>
+  <div class="grid g3">
+    <div><label>商品名</label><input id="pname" placeholder="例：黒どら"></div>
+    <div><label>できあがり個数</label><input id="ycount" type="number" min="1" value="1"></div>
+    <div><label>完成後の総重量（g・任意）</label><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></div>
+  </div>
+  <div class="btns">
+    <button class="ghost" onclick="loadSkin()">共通の皮レシピを入れる（1回転・皮120枚）</button>
+    <button class="mini" onclick="resetAll()">全部消す</button>
+  </div>
+  <p class="note">皮レシピは2026-07-26に本人確認した正本（合計4,335g・皮120枚＝どらやき60個）です。</p>
+</div>
+
+<div class="card">
+  <div class="step">STEP 2</div>
+  <h2>原材料を入れる</h2>
+
+  <div class="scan">
+    <strong style="font-size:14px">パッケージ写真から読み取る</strong>
+    <p class="note">原材料の袋・箱の裏面を撮って選ぶと、商品名・メーカー・原材料全文・栄養成分を読み取って行に入れます。<b>必ず写真と見比べて確認してください。</b></p>
+    <div class="grid g2" style="margin-top:8px">
+      <div><label>メーカー名（任意・検索の手がかり）</label><input id="smaker" placeholder="例：山田養蜂堂"></div>
+      <div><label>商品名（任意）</label><input id="sprod" placeholder="例：純粋はちみつ"></div>
+    </div>
+    <div style="margin-top:10px"><input type="file" accept="image/*" id="photo" onchange="scanPhoto(event)"></div>
+    <div class="msg" id="scanMsg"></div>
+    <img id="prev" alt="読み取った写真">
+  </div>
+
+  <div id="rows"></div>
+  <div class="btns">
+    <button class="ghost" onclick="addRow()">＋ 原材料を追加</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="step">STEP 3</div>
+  <h2>結果</h2>
+  <div class="result">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:6px">1個あたり</div>
+    <table id="perItem"></table>
+  </div>
+  <div class="result">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:6px">完成品100gあたり<span id="wbase"></span></div>
+    <table id="per100"></table>
+  </div>
+  <pre class="label" id="backLabel"></pre>
+  <div class="btns">
+    <button class="btn" onclick="copyItem()">1個あたりをコピー</button>
+    <button class="btn" onclick="copyBack()">商品裏面用をコピー</button>
+    <button class="ghost" onclick="saveHist()">履歴に保存</button>
+  </div>
+  <div class="msg ok" id="copyMsg"></div>
+  <p class="note">正式な食品表示では、検査結果がある場合は計算値より検査値を優先してください。複合原材料・添加物・原産地・アレルゲンは印刷前に専門家または所管窓口へ確認を。</p>
+  <p class="note" id="usage"></p>
+</div>
+
+</main>
+<script>
+const PRESETS=[
+ {n:"小麦粉（薄力粉）",k:349,p:8.3,f:1.5,c:75.8,s:0},
+ {n:"スーパーバイオレット（薄力粉）",k:349,p:8.3,f:1.5,c:75.8,s:0},
+ {n:"中力粉",k:368,p:9,f:1.8,c:74.8,s:0},
+ {n:"砂糖（上白糖）",k:391,p:0,f:0,c:99.3,s:0},
+ {n:"黒糖",k:352,p:1.7,f:0,c:90.3,s:0.1},
+ {n:"卵",k:142,p:12.2,f:10.2,c:0.4,s:0.4},
+ {n:"卵黄",k:336,p:16.5,f:34.3,c:0.2,s:0.1},
+ {n:"卵白",k:44,p:10.1,f:0,c:0.5,s:0.4},
+ {n:"みりん",k:241,p:0.3,f:0,c:43.2,s:0},
+ {n:"水あめ",k:341,p:0,f:0,c:85,s:0},
+ {n:"重曹",k:0,p:0,f:0,c:0,s:69.6},
+ {n:"浄水",k:0,p:0,f:0,c:0,s:0},
+ {n:"米油",k:921,p:0,f:100,c:0,s:0},
+ {n:"小豆あん（つぶしあん）",k:239,p:5.6,f:0.6,c:54,s:0.1},
+ {n:"抹茶パウダー",k:237,p:29.6,f:5.3,c:39.5,s:0},
+ {n:"無塩バター",k:720,p:0.5,f:83,c:0.2,s:0},
+ {n:"生クリーム",k:404,p:1.9,f:43,c:3.1,s:0.1}
+];
+// 2026-07-26 本人確認済みの正本レシピ（1回転＝たまご25個＝皮120枚＝どらやき60個）
+// 砂糖は上白糖560＋黒糖65＝625g（旧配合の「砂糖625g」の内訳）。
+// 現場で量る「砂糖545g」は加糖卵黄に含まれる砂糖80gを引いた値なので、成分計算では560を使う。
+const SKIN=[["卵黄",400],["卵白",750],["浄水",425],["みりん",325],["水あめ",500],
+ ["砂糖（上白糖）",560],["黒糖",65],["重曹",25],["スーパーバイオレット（薄力粉）",790],
+ ["中力粉",335],["米油",60]];
+const DISP={"スーパーバイオレット（薄力粉）":"小麦粉","中力粉":"小麦粉","砂糖（上白糖）":"砂糖","小麦粉（薄力粉）":"小麦粉"};
+
+let rows=[], hist=[];
+const $=id=>document.getElementById(id);
+const num=v=>{const n=Number(v);return Number.isFinite(n)&&n>=0?n:0};
+const fmt=(v,d=0)=>new Intl.NumberFormat("ja-JP",{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
+const uid=()=>Math.random().toString(36).slice(2)+Date.now();
+
+function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",show:true}}
+
+function addRow(r){rows.push(r||blank());draw()}
+function delRow(id){rows=rows.filter(x=>x.id!==id);if(!rows.length)rows=[blank()];draw()}
+function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec")drawLabel()}}
+function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;const r=rows.find(x=>x.id===id);
+ Object.assign(r,{name:p.n,disp:DISP[p.n]||p.n,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,src:r.src||"標準成分値"});draw()}
+
+function loadSkin(){
+ $("pname").value="どら焼きの皮";$("ycount").value="120";$("fweight").value="";
+ rows=SKIN.map(([n,w])=>{const p=PRESETS.find(x=>x.n===n)||{};
+  return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:String(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
+   txt:"",url:"",src:"標準成分値",show:n!=="浄水"}});
+ draw()}
+
+function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
+
+function draw(){
+ $("rows").innerHTML=rows.map(r=>`
+ <div class="row">
+  <h3><span>原材料</span><button class="mini" onclick="delRow('${r.id}')">削除</button></h3>
+  <div class="grid g2">
+   <div><label>原材料名</label><input value="${esc(r.name)}" oninput="setV('${r.id}','name',this.value)"></div>
+   <div><label>プリセットから選ぶ</label><select onchange="applyPreset('${r.id}',this.value)">
+     <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${p.n}</option>`).join("")}</select></div>
+   <div><label>裏面に載せる名称</label><input value="${esc(r.disp)}" oninput="setV('${r.id}','disp',this.value)" placeholder="例：小麦粉"></div>
+   <div><label>区分</label><select onchange="setV('${r.id}','sec',this.value)">
+     <option${r.sec==="皮"?" selected":""}>皮</option><option${r.sec!=="皮"?" selected":""}>餡・仕上げ</option></select></div>
+  </div>
+  <div class="grid g5" style="margin-top:10px">
+   <div><label>使用量 g</label><input type="number" min="0" value="${r.w}" oninput="setV('${r.id}','w',this.value)"></div>
+   <div><label>100gあたり kcal</label><input type="number" min="0" value="${r.k}" oninput="setV('${r.id}','k',this.value)"></div>
+   <div><label>たんぱく質 g</label><input type="number" min="0" step="0.1" value="${r.p}" oninput="setV('${r.id}','p',this.value)"></div>
+   <div><label>脂質 g</label><input type="number" min="0" step="0.1" value="${r.f}" oninput="setV('${r.id}','f',this.value)"></div>
+   <div><label>炭水化物 g</label><input type="number" min="0" step="0.1" value="${r.c}" oninput="setV('${r.id}','c',this.value)"></div>
+  </div>
+  <div class="grid g2" style="margin-top:10px">
+   <div><label>食塩相当量 g（100gあたり）</label><input type="number" min="0" step="0.01" value="${r.s}" oninput="setV('${r.id}','s',this.value)"></div>
+   <div><label>根拠（区分／URL）</label><input value="${esc(r.src)}" oninput="setV('${r.id}','src',this.value)" placeholder="package / manufacturer など"></div>
+  </div>
+  <div style="margin-top:10px"><label>複合原材料の全文（括弧の中に入れる文字）</label>
+   <textarea oninput="setV('${r.id}','txt',this.value)" placeholder="例：砂糖、小豆、水あめ、寒天">${esc(r.txt)}</textarea></div>
+  <div style="margin-top:8px" class="chk"><input type="checkbox" id="sh${r.id}" ${r.show?"checked":""}
+    onchange="setV('${r.id}','show',this.checked)"><label for="sh${r.id}" style="margin:0">裏面の原材料名に載せる</label></div>
+  ${r.url?`<p class="note">出典: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`:""}
+ </div>`).join("");
+ calc()}
+
+function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+
+function calc(){
+ const t={k:0,p:0,f:0,c:0,s:0};let wsum=0;
+ rows.forEach(r=>{const w=num(r.w);wsum+=w;
+  t.k+=w*num(r.k)/100;t.p+=w*num(r.p)/100;t.f+=w*num(r.f)/100;t.c+=w*num(r.c)/100;t.s+=w*num(r.s)/100});
+ const div=Math.max(num($("ycount").value),1);
+ const fin=num($("fweight").value)||wsum;
+ const f100=fin>0?100/fin:0;
+ $("perItem").innerHTML=tbl([["エネルギー",fmt(t.k/div)+" kcal"],["たんぱく質",fmt(t.p/div,1)+" g"],
+  ["脂質",fmt(t.f/div,1)+" g"],["炭水化物",fmt(t.c/div,1)+" g"],["食塩相当量",fmt(t.s/div,2)+" g"]]);
+ $("per100").innerHTML=tbl([["エネルギー",fmt(t.k*f100)+" kcal"],["たんぱく質",fmt(t.p*f100,1)+" g"],
+  ["脂質",fmt(t.f*f100,1)+" g"],["炭水化物",fmt(t.c*f100,1)+" g"],["食塩相当量",fmt(t.s*f100,2)+" g"]]);
+ $("wbase").textContent=`（基準 ${fmt(fin)}g｜材料合計 ${fmt(wsum)}g）`;
+ window._t=t;window._f100=f100;window._div=div;
+ drawLabel()}
+
+function tbl(rs){return rs.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("")}
+
+function ingList(sec){
+ return rows.filter(r=>r.sec===sec&&r.show&&r.name.trim()&&num(r.w)>0)
+  .sort((a,b)=>num(b.w)-num(a.w))
+  .map(r=>{const l=(r.disp||r.name).trim();return r.txt.trim()?`${l}（${r.txt.trim()}）`:l})}
+
+function labelText(){
+ const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f100||0;
+ const skin=ingList("皮"),fill=ingList("餡・仕上げ");
+ const ing=[skin.length?`皮（${skin.join("、")}）`:"",fill.length?`餡・仕上げ（${fill.join("、")}）`:""].filter(Boolean).join("、");
+ return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${ing||"未登録"}\n内容量　1個\n`+
+  `栄養成分表示（100g当たり）　熱量 ${fmt(t.k*f)}kcal　たんぱく質 ${fmt(t.p*f,1)}g　脂質 ${fmt(t.f*f,1)}g　炭水化物 ${fmt(t.c*f,1)}g　食塩相当量 ${fmt(t.s*f,2)}g`}
+
+function drawLabel(){$("backLabel").textContent=labelText()}
+
+async function cp(text,msg){try{await navigator.clipboard.writeText(text);say(msg)}catch{say("コピーできませんでした。長押しで選択してください","ng")}}
+function say(m,cls="ok"){const e=$("copyMsg");e.className="msg "+cls;e.textContent=m;setTimeout(()=>e.textContent="",2600)}
+function copyBack(){cp(labelText(),"商品裏面用の文章をコピーしました")}
+function copyItem(){const t=window._t,d=window._div;
+ cp(`${$("pname").value||"商品"}（1個あたり）\nエネルギー ${fmt(t.k/d)} kcal\nたんぱく質 ${fmt(t.p/d,1)} g\n脂質 ${fmt(t.f/d,1)} g\n炭水化物 ${fmt(t.c/d,1)} g\n食塩相当量 ${fmt(t.s/d,2)} g`,"1個あたりをコピーしました")}
+
+/* ---- 合言葉つきの写真読み取り ---- */
+const CODE_KEY="dorayama-seibun-code";
+function askCode(){let c=localStorage.getItem(CODE_KEY);if(c)return c;
+ const v=prompt("どら山スタッフ用の合言葉を入力してください（初回のみ）");if(!v)return null;
+ c=v.trim();localStorage.setItem(CODE_KEY,c);return c}
+
+async function scanPhoto(ev){
+ const file=ev.target.files&&ev.target.files[0];if(!file)return;
+ const code=askCode();
+ if(!code){$("scanMsg").className="msg ng";$("scanMsg").textContent="合言葉が入力されなかったため中止しました。";ev.target.value="";return}
+ $("prev").src=URL.createObjectURL(file);$("prev").style.display="block";
+ $("scanMsg").className="msg";$("scanMsg").textContent="読み取り中です。写真の文字を細かく見ています（30秒〜1分ほどかかります）…";
+ try{
+  const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=()=>rej(new Error("画像を開けません"));r.readAsDataURL(file)});
+  const resp=await fetch("/api/seibun/analyze",{method:"POST",headers:{"content-type":"application/json"},
+   body:JSON.stringify({image:dataUrl.split(",")[1],mediaType:file.type||"image/jpeg",
+    manufacturer:$("smaker").value,productName:$("sprod").value,accessCode:code})});
+  if(resp.status===401){localStorage.removeItem(CODE_KEY);throw new Error("合言葉が違います。もう一度お試しください。")}
+  const d=await resp.json();
+  if(!resp.ok)throw new Error(d.error||"画像を読み取れませんでした");
+  const per100=d.basis==="per100g";
+  addRow({id:uid(),name:d.productName||"",disp:(d.productName||"").replace(/（.*）/,""),sec:"餡・仕上げ",
+   w:"",k:per100&&d.calories!=null?d.calories:"",p:per100&&d.protein!=null?d.protein:"",
+   f:per100&&d.fat!=null?d.fat:"",c:per100&&d.carbs!=null?d.carbs:"",s:per100&&d.salt!=null?d.salt:"",
+   txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",show:true});
+  const w=(d.warnings||[]).join(" / ");
+  let m=per100&&d.calories!=null?`読み取りました：100gあたり ${d.calories} kcal。`:
+    (d.basis==="perServing"?"読み取りましたが、100g当たりではなく1食当たりの表示でした。換算して入力してください。":
+     "原材料は読み取りましたが、100gあたりの栄養値を確定できませんでした。メーカー確認待ちにしてください。");
+  m+=`確信度:${d.confidence||"不明"}。必ず写真と照合してください。`+(w?` ⚠ ${w}`:"");
+  $("scanMsg").className="msg "+(per100&&d.calories!=null?"ok":"ng");$("scanMsg").textContent=m;
+  if(d._usage&&d._usage.count)$("usage").textContent=`これまでの読み取り ${d._usage.count} 回・推定 約${Math.round(d._usage.yen)}円（月1,000円が目安）`;
+ }catch(e){$("scanMsg").className="msg ng";$("scanMsg").textContent=e.message||"画像を読み取れませんでした。手入力で続けてください。"}
+ finally{ev.target.value=""}}
+
+/* ---- 履歴 ---- */
+function loadHist(){try{hist=JSON.parse(localStorage.getItem("seibun-history")||"[]")}catch{hist=[]}drawHist()}
+function saveHist(){
+ const v=rows.filter(r=>r.name.trim()&&num(r.w)>0);
+ if(!v.length){say("保存できる原材料がありません","ng");return}
+ hist=[{id:uid(),at:new Date().toLocaleString("ja-JP"),pname:$("pname").value,y:$("ycount").value,
+  fw:$("fweight").value,rows:v},...hist].slice(0,10);
+ localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist();say("履歴に保存しました")}
+function drawHist(){$("histN").textContent=hist.length?`(${hist.length})`:"";
+ $("histList").innerHTML=hist.length?hist.map(h=>`<div class="hist"><span><b>${esc(h.pname||"（無題）")}</b><br><small>${h.at}・原材料${h.rows.length}件</small></span>
+  <span><button class="mini" onclick="restore('${h.id}')">開く</button> <button class="mini" onclick="delHist('${h.id}')">削除</button></span></div>`).join(""):"<p class='note'>まだありません。</p>"}
+function restore(id){const h=hist.find(x=>x.id===id);if(!h)return;
+ rows=h.rows.map(r=>({...r,id:uid()}));$("pname").value=h.pname||"";$("ycount").value=h.y||"1";$("fweight").value=h.fw||"";draw();toggleHist()}
+function delHist(id){hist=hist.filter(x=>x.id!==id);localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist()}
+function toggleHist(){const b=$("histBox");b.style.display=b.style.display==="block"?"none":"block"}
+
+["pname","ycount","fweight"].forEach(id=>document.addEventListener("input",e=>{if(e.target.id===id)calc()}));
+rows=[blank()];draw();loadHist();
+fetch("/api/seibun/usage").then(r=>r.json()).then(u=>{if(u&&u.count)$("usage").textContent=`これまでの読み取り ${u.count} 回・推定 約${Math.round(u.yen)}円（月1,000円が目安）`}).catch(()=>{});
+</script>
+</body>
+</html>
