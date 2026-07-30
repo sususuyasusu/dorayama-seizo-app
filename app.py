@@ -135,6 +135,22 @@ class Handler(BaseHTTPRequestHandler):
     def _route_post(self):
         path = urlparse(self.path).path
         n = int(self.headers.get("Content-Length", 0) or 0)
+        # LINE Bot Webhook（卵発注/製造実績を同居）: 生ボディ＋署名で検証
+        if path in ("/webhook/egg", "/webhook/jisseki"):
+            raw = (self.rfile.read(n) or b"").decode("utf-8")
+            sig = self.headers.get("X-Line-Signature", "")
+            if path == "/webhook/egg":
+                from eggbot import hook as _hook
+            else:
+                from jissekibot import hook as _hook
+            ok = _hook.handle(raw, sig)
+            if ok is None:
+                self._send(503, json.dumps({"error": "not configured"}))
+            elif ok is False:
+                self._send(400, json.dumps({"error": "invalid signature"}))
+            else:
+                self._send(200, json.dumps({"status": "ok"}))
+            return
         data = json.loads(self.rfile.read(n) or b"{}") if path.startswith("/api/") else {}
         if path == "/api/made":
             made_store.set_made(data["tab"], data["block"], data["product"], data["dayIndex"], data.get("value"))

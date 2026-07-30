@@ -11,16 +11,16 @@ import manual_layer
 MARK = "動作テスト"
 
 
-def cleanup(tab, header, col_idx):
+def cleanup(tab, header):
     ws = manual_layer._ws(tab, header)
     vals = ws.get_all_values()
     hit = [i for i, r in enumerate(vals, start=1)
-           if len(r) > col_idx and MARK in str(r[col_idx])]
+           if any(MARK in str(c) for c in r)]
     for i in reversed(hit):
         ws.delete_rows(i)
     print(f"{tab}: {len(hit)}行削除")
 
 
-cleanup(manual_layer.CONTENT_TAB, manual_layer.CONTENT_HEADER, 3)
-cleanup(manual_layer.UPDATES_TAB, manual_layer.UPDATES_HEADER, 2)
+cleanup(manual_layer.CONTENT_TAB, manual_layer.CONTENT_HEADER)
+cleanup(manual_layer.UPDATES_TAB, manual_layer.UPDATES_HEADER)
 data_layer.invalidate()
