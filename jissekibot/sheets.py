@@ -117,4 +117,7 @@ class SheetsClient:
 
 
 def get_client_from_env() -> SheetsClient:
-    return SheetsClient(os.environ["SPREADSHEET_ID"], os.environ["GOOGLE_CREDENTIALS_JSON"])
+    # 統合版: 製造アプリの既存env(DORAYAMA_SA_CRED_JSON)とシートIDを使い回す
+    sid = os.environ.get("SPREADSHEET_ID") or "1PRDhGP_4xiO_ZjJP3NB9Id3PmaPa5W7hNyrqFQ5EyqM"
+    cred = os.environ.get("GOOGLE_CREDENTIALS_JSON") or os.environ["DORAYAMA_SA_CRED_JSON"]
+    return SheetsClient(sid, cred)
