@@ -422,9 +422,14 @@ function ingredientsText(){
  const mode=($("lmode")||{}).value||"proc";
  if(mode==="flat")return ingItems(null).map(asText).join("、");
  const skin=ingItems("皮"),fill=ingItems("餡・仕上げ");
+ const sum=a=>a.reduce((x,y)=>x+y.w,0);
  const blocks=[];
- if(skin.length)blocks.push({w:skin.reduce((a,b)=>a+b.w,0),s:`皮（${skin.map(asText).join("、")}）`});
- fill.forEach(x=>blocks.push({w:x.w,s:asText(x)}));
+ if(skin.length)blocks.push({w:sum(skin),s:`皮（${skin.map(asText).join("、")}）`});
+ // 餡が複数の材料でできているときだけ「餡（…）」でくくる。
+ // 買ってきた粒あん1品だけなら、それ自体が「名前（中身）」の形なので
+ // さらにくくると括弧が三重になり読みにくいだけ。
+ if(fill.length>1)blocks.push({w:sum(fill),s:`餡（${fill.map(asText).join("、")}）`});
+ else fill.forEach(x=>blocks.push({w:x.w,s:asText(x)}));
  return blocks.sort((a,b)=>b.w-a.w).map(x=>x.s).join("、")}
 
 function labelText(){
