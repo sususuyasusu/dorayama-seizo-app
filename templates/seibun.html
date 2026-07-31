@@ -5,124 +5,290 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>どら山 成分ノート</title>
 <style>
-:root{--bg:#faf8f4;--card:#fff;--line:#e5ded2;--ink:#241f1a;--sub:#6f665b;--accent:#8a5a2b;--accent2:#f0e6d8;--ok:#2f7a4d;--warn:#b23b3b}
+:root{--ink:#18352d;--muted:#6b7c76;--green:#184b3c;--lime:#d8f043;--cream:#f5f3ea;--line:#d9ddd5;--white:#fff}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.6}
-header{background:var(--accent);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
-header h1{font-size:17px;margin:0}
-header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-size:13px}
-main{max-width:960px;margin:0 auto;padding:16px 14px 80px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
-.step{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em}
-h2{font-size:16px;margin:2px 0 12px}
-label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff;font-family:inherit}
-textarea{min-height:56px;resize:vertical}
-.grid{display:grid;gap:10px}
-.g3{grid-template-columns:repeat(3,1fr)}
-.g2{grid-template-columns:repeat(2,1fr)}
-.g5{grid-template-columns:repeat(5,1fr)}
-@media(max-width:620px){.g3,.g5{grid-template-columns:repeat(2,1fr)}}
-.row{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fffdfa}
-.row h3{font-size:13px;margin:0 0 10px;color:var(--sub);display:flex;justify-content:space-between;align-items:center}
-button.btn{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600}
-button.ghost{background:var(--accent2);color:var(--accent);border:0;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600}
-button.mini{background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12px;color:var(--sub)}
-.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.result{background:var(--accent2);border-radius:10px;padding:12px;margin-top:10px}
-.result table{width:100%;border-collapse:collapse;font-size:14px}
-.result td{padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06)}
-.result td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-pre.label{white-space:pre-wrap;background:#fff;border:1px dashed var(--line);border-radius:9px;padding:12px;font-size:13px;font-family:inherit;margin:10px 0 0}
-.note{font-size:12px;color:var(--sub);margin:8px 0 0}
-.msg{font-size:13px;margin-top:8px}
-.msg.ok{color:var(--ok)} .msg.ng{color:var(--warn)}
-.chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
-.chk input{width:auto}
-#histBox{display:none}
-.hist{border-bottom:1px solid var(--line);padding:9px 0;font-size:13px;display:flex;justify-content:space-between;gap:10px}
-.scan{background:#fff8ee;border:1px solid #f0dcc0;border-radius:10px;padding:12px;margin-bottom:12px}
-img#prev{max-width:100%;border-radius:8px;margin-top:8px;display:none}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif}
+button,input,select,textarea{font:inherit}
+button{color:inherit}
+.app-shell{min-height:100vh}
+.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(24,53,45,.14);padding:0 max(24px,calc((100vw - 1180px)/2))}
+.brand{display:flex;align-items:center;gap:11px;color:var(--ink);text-decoration:none;font-weight:800;letter-spacing:.04em}
+.brand-mark{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--green);color:var(--lime);font-family:Georgia,serif;font-size:19px;font-weight:700}
+.history-button{display:flex;align-items:center;gap:8px;border:0;background:transparent;font-weight:700;cursor:pointer;padding:12px}
+.history-count{min-width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-size:11px}
+.hero{max-width:1180px;margin:0 auto;padding:44px 24px 34px}
+.eyebrow,.step{color:var(--green);font-size:11px;font-weight:900;letter-spacing:.18em;margin:0 0 12px}
+.hero h1{margin:0;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:clamp(38px,5vw,62px);line-height:1.13;letter-spacing:-.04em;font-weight:600}
+.hero h1 span{background:linear-gradient(transparent 67%,var(--lime) 0)}
+.lead{max-width:510px;margin:16px 0 0;color:var(--muted);line-height:1.9;font-size:14px}
+.flow-guide{margin-top:28px;display:flex;align-items:center;gap:14px;max-width:820px}
+.flow-guide>i{color:#9ba7a2;font-style:normal}
+.flow-step{flex:1;min-width:0;display:flex;align-items:center;gap:10px;opacity:.48}
+.flow-step>b{width:32px;height:32px;flex:0 0 32px;border-radius:50%;display:grid;place-items:center;border:1px solid #9eaaa5}
+.flow-step>span{font-size:12px;font-weight:800}
+.flow-step small{display:block;margin-top:3px;font-size:9px;color:var(--muted);font-weight:500}
+.flow-step.active,.flow-step.done{opacity:1}
+.flow-step.active>b{background:var(--lime);border-color:var(--lime)}
+.flow-step.done>b{background:var(--green);border-color:var(--green);color:#fff}
+.workspace{max-width:1180px;margin:0 auto;padding:0 24px 72px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.meal-card,.summary-card,.history-panel{background:rgba(255,255,255,.82);border:1px solid rgba(24,53,45,.12);box-shadow:0 20px 60px rgba(32,56,46,.06)}
+.meal-card{padding:34px}
+.card-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.card-heading h2,.summary-card h2,.history-heading h2{margin:0;font-size:22px;letter-spacing:.02em}
+.foods{margin-top:28px;display:grid;gap:18px}
+.product-fields{display:grid;grid-template-columns:1.5fr .65fr .9fr;gap:14px;margin-top:28px;padding:20px;background:#f3f6ee;border-left:4px solid var(--lime)}
+.field em{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:8px;background:#e2e6e2;color:var(--muted);font-size:8px;font-style:normal}
+.field-help,.section-help{color:var(--muted);font-size:10px;line-height:1.7;margin:10px 0 0}
+.skin-recipe-button{width:100%;margin-top:15px;padding:14px 16px;border:1px solid #cbd8c9;background:#f5f8ef;color:var(--green);text-align:left;cursor:pointer;display:grid;gap:3px}
+.skin-recipe-button:hover{border-color:var(--green);background:#eff5df}
+.skin-recipe-button b{font-size:13px}
+.skin-recipe-button span{color:var(--muted);font-size:10px}
+.skin-recipe-button.primary{background:var(--green);border-color:var(--green);color:#fff}
+.skin-recipe-button.primary span{color:#c8d4ce}
+.skin-recipe-button.primary:hover{background:#123c30}
+.scan-card{margin-top:12px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:12px 18px;align-items:center;border:1px solid #cbd8c9;background:#fff}
+.scan-card>div{display:grid;gap:4px}
+.scan-card>div b{font-size:13px}
+.scan-card>div span{color:var(--muted);font-size:10px;line-height:1.6}
+.scan-search-fields{grid-column:1/-1;display:grid!important;grid-template-columns:1fr 1fr;gap:10px!important}
+.scan-button{min-height:44px;padding:0 15px;display:flex;align-items:center;justify-content:center;background:var(--green);color:#fff;font-size:12px;font-weight:800;cursor:pointer;position:relative}
+.scan-button input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.scan-preview{grid-column:1/-1;width:min(100%,430px);max-height:240px;object-fit:contain;object-position:left center;border:1px solid var(--line);background:#f4f5f1;display:none}
+.scan-status{grid-column:1/-1;margin:0;padding:11px 13px;background:#f3f6ee;color:var(--ink);font-size:11px;line-height:1.7}
+.section-divider{margin-top:34px;padding-top:28px;border-top:1px solid var(--line);display:flex;align-items:end;justify-content:space-between;gap:18px}
+.section-divider h2{margin:0;font-size:22px}
+.food-row{border-top:1px solid var(--line);padding:24px 0 5px}
+.row-top{display:grid;grid-template-columns:36px minmax(130px,1.15fr) minmax(105px,.8fr) minmax(90px,.55fr) minmax(105px,.68fr) 100px 28px;gap:13px;align-items:end}
+.row-number{align-self:center;font-family:Georgia,serif;font-style:italic;color:#a4b0aa;font-size:18px}
+.field{display:grid;gap:8px;min-width:0}
+.field>span,.row-result>span{color:var(--muted);font-size:11px;font-weight:700}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:3px;background:#fff;padding:0 12px;outline:none;transition:border .15s,box-shadow .15s}
+.field input,.field select{height:46px}
+.field textarea{min-height:72px;padding-top:10px;resize:vertical;line-height:1.6}
+.field input:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(24,75,60,.1)}
+.field input::placeholder{color:#b0b9b5}
+.label-fields{margin:14px 0 0 53px;display:grid;grid-template-columns:180px 1fr;gap:12px}
+.unit-input{position:relative}
+.unit-input input{padding-right:42px}
+.unit-input b{position:absolute;right:11px;top:34px;color:#85918c;font-size:11px}
+.row-result{align-self:end;padding-bottom:8px;display:grid;gap:7px}
+.row-result strong{font-family:Georgia,serif;font-size:24px;white-space:nowrap}
+.row-result small{font:700 10px "Hiragino Sans",sans-serif;color:var(--muted)}
+.delete-button,.history-heading>button{border:0;background:transparent;color:#92a09a;font-size:25px;cursor:pointer;line-height:1;padding:10px 2px}
+.delete-button:hover{color:#b43e34}
+.preset-strip{margin:12px 0 0 53px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.preset-strip span{font-size:10px;color:var(--muted)}
+.preset-strip select{border:1px solid #dce2dc;border-radius:20px;padding:5px 9px;background:#f6f8f4;font-size:10px;cursor:pointer}
+.preset-strip label{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.pfc-fields{margin:15px 0 0 53px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;background:#f4f6f1}
+.pfc-fields em{margin-right:5px;color:var(--green);font-style:normal;font-weight:900}
+.add-button{width:100%;margin-top:24px;height:53px;border:1px dashed #9eaba5;background:transparent;cursor:pointer;font-weight:800}
+.add-button:hover{border-color:var(--green);background:#f6f8f3}
+.add-button span{font-size:19px;vertical-align:-1px}
+.summary-card{position:sticky;top:22px;padding:32px;background:var(--green);color:#fff;border:0}
+.summary-card .step{color:var(--lime)}
+.result-guide{margin:18px 0 0;padding:13px;background:rgba(255,255,255,.08);color:#d8e2de;font-size:11px;line-height:1.7}
+.calorie-total{border-top:1px solid rgba(255,255,255,.19);border-bottom:1px solid rgba(255,255,255,.19);margin:25px 0 0;padding:24px 0}
+.calorie-total span{display:block;color:#c8d4ce;font-size:11px;margin-bottom:8px}
+.calorie-total strong{font:italic 62px Georgia,serif;color:var(--lime);letter-spacing:-.06em}
+.calorie-total b{margin-left:7px;font-size:12px}
+.pfc-summary{padding:20px 0;display:grid;gap:14px}
+.pfc-summary>div{display:flex;align-items:center;gap:11px}
+.pfc-summary>div>span{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;font-size:10px;font-weight:900}
+.p-dot{background:#c8e9de;color:var(--green)}
+.f-dot{background:#f5dc7d;color:#594a0c}
+.c-dot{background:#efd7c6;color:#673a22}
+.s-dot{background:#d8e2ef;color:#294a6d}
+.pfc-summary p{margin:0;display:flex;align-items:baseline;justify-content:space-between;width:100%;color:#c8d4ce;font-size:11px}
+.pfc-summary strong{color:#fff;font:22px Georgia,serif}
+.pfc-summary small{margin-left:4px;color:#c8d4ce;font:10px sans-serif}
+.summary-note{margin:0 0 21px;color:#b8c9c2;font-size:10px;line-height:1.6}
+.nutrition-table{border-top:1px solid rgba(255,255,255,.18);padding:17px 0 12px}
+.nutrition-table>span{color:var(--lime);font-size:10px;font-weight:800}
+.nutrition-table p{display:flex;justify-content:space-between;margin:9px 0;font-size:11px;color:#c8d4ce}
+.nutrition-table strong{color:#fff}
+.label-preview{margin-top:18px;padding:16px;border:2px solid var(--ink);background:#fff;color:var(--ink)}
+.label-preview>span{display:block;margin-bottom:10px;color:var(--muted);font-size:10px;font-weight:800}
+.label-preview p{margin:0;padding:8px 0;border-top:1px solid var(--line);font-size:11px;line-height:1.7;white-space:pre-wrap}
+.label-preview p:first-of-type{border-top:0}
+.copy-button,.save-button,.reset-button{width:100%;height:48px;border:0;cursor:pointer;font-size:12px;font-weight:900}
+.copy-button{margin-bottom:8px;background:var(--lime);color:var(--green)}
+.save-button{background:#fff;color:var(--green)}
+.reset-button{margin-top:8px;background:transparent;color:#dce5e1;border:1px solid rgba(255,255,255,.25)}
+.saved-message{color:var(--lime);text-align:center;font-size:11px;margin:13px 0 0;min-height:14px}
+.saved-message.ng{color:#ffd0c8}
+.history-panel{position:fixed;z-index:10;right:24px;top:88px;width:min(390px,calc(100vw - 32px));max-height:calc(100vh - 110px);overflow:auto;padding:27px;background:#fff;display:none}
+.history-heading{display:flex;justify-content:space-between;align-items:center}
+.empty-history{color:var(--muted);font-size:13px;padding:25px 0}
+.history-list{display:grid;gap:10px;margin-top:22px}
+.history-list article{display:flex;align-items:center;background:#f5f6f2}
+.history-load{flex:1;text-align:left;border:0;background:transparent;padding:15px;display:grid;gap:4px;cursor:pointer}
+.history-load span{color:var(--muted);font-size:10px}
+.history-load strong{font-family:Georgia,serif}
+.history-delete{border:0;background:transparent;font-size:20px;padding:15px;cursor:pointer;color:#89948f}
+footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px solid rgba(24,53,45,.14);color:var(--muted);font-size:10px;display:flex;justify-content:space-between;gap:16px}
+@media (max-width:900px){
+ .workspace{grid-template-columns:1fr}
+ .summary-card{position:static}
+ .row-top{grid-template-columns:35px 1fr 1fr}
+ .product-fields{grid-template-columns:1fr 1fr}
+ .product-fields .field:first-child{grid-column:1/-1}
+ .food-name{grid-column:2/4}
+ .row-result{grid-column:2/3}
+ .delete-button{grid-column:3;justify-self:end}
+ .label-fields{grid-template-columns:1fr}
+}
+@media (max-width:600px){
+ .topbar{height:64px;padding:0 18px}
+ .brand{font-size:14px}
+ .hero{padding:32px 18px 28px}
+ .hero h1{font-size:38px;line-height:1.2}
+ .lead{font-size:13px}
+ .workspace{padding:0 12px 50px;gap:12px}
+ .meal-card,.summary-card{padding:24px 18px}
+ .card-heading{align-items:flex-start}
+ .card-heading h2,.summary-card h2{font-size:19px}
+ .flow-guide{gap:5px;margin-top:22px}
+ .flow-guide>i{display:none}
+ .flow-step{display:grid;justify-items:center;gap:5px;text-align:center}
+ .flow-step>span{font-size:10px}
+ .flow-step small{display:none}
+ .section-divider{align-items:flex-start}
+ .row-top{grid-template-columns:29px 1fr 1fr;gap:10px}
+ .row-number{font-size:15px}
+ .preset-strip,.pfc-fields,.label-fields{margin-left:39px}
+ .pfc-fields{grid-template-columns:1fr}
+ .product-fields{grid-template-columns:1fr}
+ .product-fields .field:first-child{grid-column:auto}
+ .scan-card{grid-template-columns:1fr}
+ .scan-search-fields{grid-template-columns:1fr}
+ .scan-button{width:100%}
+ .calorie-total strong{font-size:58px}
+ footer{padding-inline:18px;flex-direction:column}
+ .history-panel{right:16px;top:76px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
-<header>
-  <h1>どら山 成分ノート</h1>
-  <button onclick="toggleHist()">履歴 <span id="histN"></span></button>
+<div class="app-shell">
+
+<header class="topbar">
+  <a class="brand" href="/seibun"><span class="brand-mark" aria-hidden="true">ど</span><span>どら山 成分ノート</span></a>
+  <button class="history-button" onclick="toggleHist()">◷ 履歴 <span class="history-count" id="histN" style="display:none"></span></button>
 </header>
-<main>
 
-<div class="card" id="histBox">
-  <div class="step">保存したもの</div>
-  <h2>履歴（最新10件）</h2>
-  <div id="histList"></div>
-</div>
+<section class="hero">
+  <p class="eyebrow">どら山 食品成分計算</p>
+  <h1>3ステップで、<span>かんたん計算。</span></h1>
+  <p class="lead">商品を決める → 原材料を入れる → 結果をコピー。入力すると自動で計算されます。</p>
+  <nav class="flow-guide" aria-label="計算の流れ">
+    <div class="flow-step" id="f1"><b>1</b><span>商品を設定<small>名前・できあがり個数</small></span></div>
+    <i aria-hidden="true">→</i>
+    <div class="flow-step" id="f2"><b>2</b><span>原材料を入力<small>使用量・成分値</small></span></div>
+    <i aria-hidden="true">→</i>
+    <div class="flow-step" id="f3"><b>3</b><span>結果を使う<small>確認・コピー・保存</small></span></div>
+  </nav>
+</section>
 
-<div class="card">
-  <div class="step">STEP 1</div>
-  <h2>商品を設定</h2>
-  <div class="grid g3">
-    <div><label>商品名</label><input id="pname" placeholder="例：黒どら"></div>
-    <div><label>できあがり個数</label><input id="ycount" type="number" min="1" value="1"></div>
-    <div><label>完成後の総重量（g・任意）</label><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></div>
-  </div>
-  <div class="btns">
-    <button class="btn" onclick="loadKuro()">黒どら1回転を入れる（皮＋あん35g×60個）</button>
-    <button class="ghost" onclick="loadSkin()">皮だけ入れる（1回転・皮120枚）</button>
-    <button class="mini" onclick="resetAll()">全部消す</button>
-  </div>
-  <p class="note">皮レシピは2026-07-26に本人確認した正本（合計4,335g・皮120枚＝どらやき60個）。あんこ35g/個は2026-07-31に確定。</p>
-  <p class="note">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は 1個あたり 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g。
-  このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。
-  計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>によるもので、レシピの誤りではありません
-  （検査では炭水化物を差引きで求めるため、脂質が低く出るとその分だけ炭水化物が高く出ます）。たんぱく質は検査値と一致しています。</p>
-</div>
-
-<div class="card">
-  <div class="step">STEP 2</div>
-  <h2>原材料を入れる</h2>
-
-  <div class="scan">
-    <strong style="font-size:14px">パッケージ写真から読み取る</strong>
-    <p class="note">原材料の袋・箱の裏面を撮って選ぶと、商品名・メーカー・原材料全文・栄養成分を読み取って行に入れます。<b>必ず写真と見比べて確認してください。</b></p>
-    <div class="grid g2" style="margin-top:8px">
-      <div><label>メーカー名（任意・検索の手がかり）</label><input id="smaker" placeholder="例：山田養蜂堂"></div>
-      <div><label>商品名（任意）</label><input id="sprod" placeholder="例：純粋はちみつ"></div>
+<div class="workspace">
+  <section class="meal-card">
+    <div class="card-heading">
+      <div><p class="step">STEP 1</p><h2>商品を設定</h2></div>
     </div>
-    <div style="margin-top:10px"><input type="file" accept="image/*" id="photo" onchange="scanPhoto(event)"></div>
-    <div class="msg" id="scanMsg"></div>
-    <img id="prev" alt="読み取った写真">
-  </div>
 
-  <div id="rows"></div>
-  <div class="btns">
-    <button class="ghost" onclick="addRow()">＋ 原材料を追加</button>
-  </div>
+    <div class="product-fields">
+      <label class="field"><span>① 商品名</span><input id="pname" placeholder="例：黒どら"></label>
+      <label class="field"><span>② できあがり個数</span><input id="ycount" type="number" min="1" value="1"></label>
+      <label class="field"><span>③ 完成後の総重量<em>任意</em></span><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></label>
+    </div>
+
+    <button class="skin-recipe-button primary" onclick="loadKuro()">
+      <b>黒どら1回転を入れる（皮＋あん35g×60個）</b>
+      <span>皮120枚ぶんの材料と粒あん2,100g、個数60、完成重量4,800gが一度に入ります</span>
+    </button>
+    <button class="skin-recipe-button" onclick="loadSkin()">
+      <b>皮だけ入れる（1回転・皮120枚）</b>
+      <span>2026-07-26に確認した正本。合計4,335g・皮120枚＝どらやき60個ぶん</span>
+    </button>
+    <p class="field-help">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は 1個あたり 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g。このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>（炭水化物を差引きで求めるため）で、レシピの誤りではありません。たんぱく質は検査値と一致しています。</p>
+
+    <div class="scan-card">
+      <div>
+        <b>パッケージ写真から読み取る</b>
+        <span>原材料の袋や箱の裏面を撮って選ぶと、商品名・メーカー・原材料全文・栄養成分を読み取って行に入れます。必ず写真と見比べて確認してください。</span>
+      </div>
+      <label class="scan-button">写真を選ぶ<input type="file" accept="image/*" onchange="scanPhoto(event)"></label>
+      <div class="scan-search-fields">
+        <label class="field"><span>メーカー名（任意・検索の手がかり）</span><input id="smaker" placeholder="例：内藤製餡"></label>
+        <label class="field"><span>商品名（任意）</span><input id="sprod" placeholder="例：粒あん"></label>
+      </div>
+      <img id="prev" class="scan-preview" alt="読み取った写真">
+      <p class="scan-status" id="scanMsg">写真は自動で軽くしてから送ります。読み取りには30秒〜1分ほどかかります。</p>
+    </div>
+
+    <div class="section-divider">
+      <div><p class="step">STEP 2</p><h2>原材料を入れる</h2></div>
+      <p class="section-help" id="wsum"></p>
+    </div>
+
+    <div class="foods" id="foods"></div>
+    <button class="add-button" onclick="addRow()"><span>＋</span> 原材料を追加</button>
+  </section>
+
+  <aside class="summary-card">
+    <p class="step">STEP 3</p>
+    <h2>結果</h2>
+    <p class="result-guide">左に入力すると自動で計算されます。正式な食品表示では、検査結果がある場合は計算値より検査値を優先してください。</p>
+
+    <div class="calorie-total">
+      <span>1個あたり</span><strong id="kcal">0</strong><b>kcal</b>
+    </div>
+
+    <div class="pfc-summary">
+      <div><span class="p-dot">P</span><p>たんぱく質<span><strong id="p1">0</strong><small>g</small></span></p></div>
+      <div><span class="f-dot">F</span><p>脂質<span><strong id="f1v">0</strong><small>g</small></span></p></div>
+      <div><span class="c-dot">C</span><p>炭水化物<span><strong id="c1">0</strong><small>g</small></span></p></div>
+      <div><span class="s-dot">塩</span><p>食塩相当量<span><strong id="s1">0</strong><small>g</small></span></p></div>
+    </div>
+
+    <div class="nutrition-table">
+      <span id="base100">完成品100gあたり</span>
+      <p>エネルギー<strong id="k100">0 kcal</strong></p>
+      <p>たんぱく質<strong id="p100">0 g</strong></p>
+      <p>脂質<strong id="f100v">0 g</strong></p>
+      <p>炭水化物<strong id="c100">0 g</strong></p>
+      <p>食塩相当量<strong id="s100">0 g</strong></p>
+    </div>
+
+    <div class="label-preview">
+      <span>商品裏面用（そのまま使えます）</span>
+      <p id="backLabel"></p>
+    </div>
+
+    <div style="margin-top:18px">
+      <button class="copy-button" onclick="copyItem()">1個あたりをコピー</button>
+      <button class="copy-button" onclick="copyBack()">商品裏面用をコピー</button>
+      <button class="save-button" onclick="saveHist()">履歴に保存</button>
+      <button class="reset-button" onclick="resetAll()">全部消す</button>
+    </div>
+    <p class="saved-message" id="copyMsg"></p>
+    <p class="summary-note" id="usage" style="margin-top:14px"></p>
+  </aside>
 </div>
 
-<div class="card">
-  <div class="step">STEP 3</div>
-  <h2>結果</h2>
-  <div class="result">
-    <div style="font-size:12px;color:var(--sub);margin-bottom:6px">1個あたり</div>
-    <table id="perItem"></table>
-  </div>
-  <div class="result">
-    <div style="font-size:12px;color:var(--sub);margin-bottom:6px">完成品100gあたり<span id="wbase"></span></div>
-    <table id="per100"></table>
-  </div>
-  <pre class="label" id="backLabel"></pre>
-  <div class="btns">
-    <button class="btn" onclick="copyItem()">1個あたりをコピー</button>
-    <button class="btn" onclick="copyBack()">商品裏面用をコピー</button>
-    <button class="ghost" onclick="saveHist()">履歴に保存</button>
-  </div>
-  <div class="msg ok" id="copyMsg"></div>
-  <p class="note">正式な食品表示では、検査結果がある場合は計算値より検査値を優先してください。複合原材料・添加物・原産地・アレルゲンは印刷前に専門家または所管窓口へ確認を。</p>
-  <p class="note" id="usage"></p>
+<section class="history-panel" id="histBox">
+  <div class="history-heading"><h2>履歴（最新10件）</h2><button onclick="toggleHist()">×</button></div>
+  <div id="histList"></div>
+</section>
+
+<footer>
+  <span>どら山 成分ノート — 複合原材料・添加物・原産地・アレルゲンは印刷前に専門家または所管窓口へ確認してください。</span>
+  <span>社内用</span>
+</footer>
 </div>
 
-</main>
 <script>
 const PRESETS=[
  {n:"小麦粉（薄力粉）",k:349,p:8.3,f:1.5,c:75.8,s:0},
@@ -144,7 +310,6 @@ const PRESETS=[
  {n:"無塩バター",k:720,p:0.5,f:83,c:0.2,s:0},
  {n:"生クリーム",k:404,p:1.9,f:43,c:3.1,s:0.1}
 ];
-// 2026-07-26 本人確認済みの正本レシピ（1回転＝たまご25個＝皮120枚＝どらやき60個）
 // 2026-07-26 本人が画像で確定した「新配合」列そのまま（合計4,275g、米油を入れて4,335g）。
 // 液卵で仕込む場合は「卵1,250g」を 卵黄400g＋卵白750g に置き換える。
 const SKIN=[["卵",1250],["浄水",425],["みりん",325],["水あめ",500],
@@ -152,17 +317,17 @@ const SKIN=[["卵",1250],["浄水",425],["みりん",325],["水あめ",500],
  ["中力粉",335],["米油",60]];
 const DISP={"スーパーバイオレット（薄力粉）":"小麦粉","中力粉":"小麦粉","砂糖（上白糖）":"砂糖","小麦粉（薄力粉）":"小麦粉"};
 
-let rows=[], hist=[];
+let rows=[],hist=[];
 const $=id=>document.getElementById(id);
 const num=v=>{const n=Number(v);return Number.isFinite(n)&&n>=0?n:0};
 const fmt=(v,d=0)=>new Intl.NumberFormat("ja-JP",{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
 const uid=()=>Math.random().toString(36).slice(2)+Date.now();
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 
 function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",show:true}}
-
 function addRow(r){rows.push(r||blank());draw()}
 function delRow(id){rows=rows.filter(x=>x.id!==id);if(!rows.length)rows=[blank()];draw()}
-function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec")drawLabel()}}
+function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec"||key==="disp"||key==="txt")drawLabel();if(key==="w"||key==="k")drawRowResults()}}
 function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;const r=rows.find(x=>x.id===id);
  Object.assign(r,{name:p.n,disp:DISP[p.n]||p.n,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,src:r.src||"標準成分値"});draw()}
 
@@ -177,50 +342,54 @@ function loadSkin(){
 // 完成重量4,800gは「黒どら1個80g×60個」からの目安。実測が分かれば置き換える。
 function loadKuro(){
  loadSkin();
- $("pname").value="黒どら"; $("ycount").value="60"; $("fweight").value="4800";
+ $("pname").value="黒どら";$("ycount").value="60";$("fweight").value="4800";
  const p=PRESETS.find(x=>x.n==="粒あん（塩入）");
  rows.push({id:uid(),name:"粒あん（塩入）",disp:"粒あん",sec:"餡・仕上げ",w:"2100",
   k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,
   txt:"グラニュー糖（国内製造）、小豆（北海道産）、水飴、食塩、寒天／加工澱粉",
   url:"",src:"package（内藤製餡）",show:true});
  draw();
- say("黒どら1回転を入れました（皮120枚＋粒あん2,100g＝35g×60個）");
-}
+ say("黒どら1回転を入れました（皮120枚＋粒あん2,100g＝35g×60個）")}
 
 function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
 
 function draw(){
- $("rows").innerHTML=rows.map(r=>`
- <div class="row">
-  <h3><span>原材料</span><button class="mini" onclick="delRow('${r.id}')">削除</button></h3>
-  <div class="grid g2">
-   <div><label>原材料名</label><input value="${esc(r.name)}" oninput="setV('${r.id}','name',this.value)"></div>
-   <div><label>プリセットから選ぶ</label><select onchange="applyPreset('${r.id}',this.value)">
-     <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${p.n}</option>`).join("")}</select></div>
-   <div><label>裏面に載せる名称</label><input value="${esc(r.disp)}" oninput="setV('${r.id}','disp',this.value)" placeholder="例：小麦粉"></div>
-   <div><label>区分</label><select onchange="setV('${r.id}','sec',this.value)">
-     <option${r.sec==="皮"?" selected":""}>皮</option><option${r.sec!=="皮"?" selected":""}>餡・仕上げ</option></select></div>
+ $("foods").innerHTML=rows.map((r,i)=>`
+ <article class="food-row">
+  <div class="row-top">
+   <div class="row-number">${i+1}</div>
+   <label class="field food-name"><span>原材料名</span><input value="${esc(r.name)}" oninput="setV('${r.id}','name',this.value)" placeholder="例：粒あん"></label>
+   <label class="field unit-input"><span>使用量</span><input type="number" min="0" value="${r.w}" oninput="setV('${r.id}','w',this.value)"><b>g</b></label>
+   <label class="field"><span>区分</span><select onchange="setV('${r.id}','sec',this.value)">
+     <option${r.sec==="皮"?" selected":""}>皮</option><option${r.sec!=="皮"?" selected":""}>餡・仕上げ</option></select></label>
+   <label class="field"><span>100gあたり kcal</span><input type="number" min="0" value="${r.k}" oninput="setV('${r.id}','k',this.value)"></label>
+   <div class="row-result"><span>この材料</span><strong data-res="${r.id}">0</strong><small>kcal</small></div>
+   <button class="delete-button" onclick="delRow('${r.id}')" aria-label="削除">×</button>
   </div>
-  <div class="grid g5" style="margin-top:10px">
-   <div><label>使用量 g</label><input type="number" min="0" value="${r.w}" oninput="setV('${r.id}','w',this.value)"></div>
-   <div><label>100gあたり kcal</label><input type="number" min="0" value="${r.k}" oninput="setV('${r.id}','k',this.value)"></div>
-   <div><label>たんぱく質 g</label><input type="number" min="0" step="0.1" value="${r.p}" oninput="setV('${r.id}','p',this.value)"></div>
-   <div><label>脂質 g</label><input type="number" min="0" step="0.1" value="${r.f}" oninput="setV('${r.id}','f',this.value)"></div>
-   <div><label>炭水化物 g</label><input type="number" min="0" step="0.1" value="${r.c}" oninput="setV('${r.id}','c',this.value)"></div>
+  <div class="preset-strip">
+   <span>プリセット</span>
+   <select onchange="applyPreset('${r.id}',this.value)">
+    <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${p.n}</option>`).join("")}</select>
+   <label><input type="checkbox" ${r.show?"checked":""} onchange="setV('${r.id}','show',this.checked)">裏面の原材料名に載せる</label>
   </div>
-  <div class="grid g2" style="margin-top:10px">
-   <div><label>食塩相当量 g（100gあたり）</label><input type="number" min="0" step="0.01" value="${r.s}" oninput="setV('${r.id}','s',this.value)"></div>
-   <div><label>根拠（区分／URL）</label><input value="${esc(r.src)}" oninput="setV('${r.id}','src',this.value)" placeholder="package / manufacturer など"></div>
+  <div class="pfc-fields">
+   <label class="field"><span><em>P</em>たんぱく質 g（100gあたり）</span><input type="number" min="0" step="0.1" value="${r.p}" oninput="setV('${r.id}','p',this.value)"></label>
+   <label class="field"><span><em>F</em>脂質 g（100gあたり）</span><input type="number" min="0" step="0.1" value="${r.f}" oninput="setV('${r.id}','f',this.value)"></label>
+   <label class="field"><span><em>C</em>炭水化物 g（100gあたり）</span><input type="number" min="0" step="0.1" value="${r.c}" oninput="setV('${r.id}','c',this.value)"></label>
+   <label class="field"><span><em>塩</em>食塩相当量 g（100gあたり）</span><input type="number" min="0" step="0.01" value="${r.s}" oninput="setV('${r.id}','s',this.value)"></label>
   </div>
-  <div style="margin-top:10px"><label>複合原材料の全文（括弧の中に入れる文字）</label>
-   <textarea oninput="setV('${r.id}','txt',this.value)" placeholder="例：砂糖、小豆、水あめ、寒天">${esc(r.txt)}</textarea></div>
-  <div style="margin-top:8px" class="chk"><input type="checkbox" id="sh${r.id}" ${r.show?"checked":""}
-    onchange="setV('${r.id}','show',this.checked)"><label for="sh${r.id}" style="margin:0">裏面の原材料名に載せる</label></div>
-  ${r.url?`<p class="note">出典: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`:""}
- </div>`).join("");
+  <div class="label-fields">
+   <label class="field"><span>裏面に載せる名称</span><input value="${esc(r.disp)}" oninput="setV('${r.id}','disp',this.value)" placeholder="例：小麦粉"></label>
+   <label class="field"><span>複合原材料の全文（括弧の中）</span><textarea oninput="setV('${r.id}','txt',this.value)" placeholder="例：砂糖、小豆、水あめ、寒天">${esc(r.txt)}</textarea></label>
+   <label class="field"><span>根拠（区分／URL）</span><input value="${esc(r.src)}" oninput="setV('${r.id}','src',this.value)" placeholder="package / manufacturer など"></label>
+   ${r.url?`<p class="field-help">出典: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`:"<span></span>"}
+  </div>
+ </article>`).join("");
  calc()}
 
-function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
+function drawRowResults(){
+ rows.forEach(r=>{const el=document.querySelector(`[data-res="${r.id}"]`);
+  if(el)el.textContent=fmt(num(r.w)*num(r.k)/100)})}
 
 function calc(){
  const t={k:0,p:0,f:0,c:0,s:0};let wsum=0;
@@ -228,30 +397,36 @@ function calc(){
   t.k+=w*num(r.k)/100;t.p+=w*num(r.p)/100;t.f+=w*num(r.f)/100;t.c+=w*num(r.c)/100;t.s+=w*num(r.s)/100});
  const div=Math.max(num($("ycount").value),1);
  const fin=num($("fweight").value)||wsum;
- const f100=fin>0?100/fin:0;
- $("perItem").innerHTML=tbl([["エネルギー",fmt(t.k/div)+" kcal"],["たんぱく質",fmt(t.p/div,1)+" g"],
-  ["脂質",fmt(t.f/div,1)+" g"],["炭水化物",fmt(t.c/div,1)+" g"],["食塩相当量",fmt(t.s/div,2)+" g"]]);
- $("per100").innerHTML=tbl([["エネルギー",fmt(t.k*f100)+" kcal"],["たんぱく質",fmt(t.p*f100,1)+" g"],
-  ["脂質",fmt(t.f*f100,1)+" g"],["炭水化物",fmt(t.c*f100,1)+" g"],["食塩相当量",fmt(t.s*f100,2)+" g"]]);
- $("wbase").textContent=`（基準 ${fmt(fin)}g｜材料合計 ${fmt(wsum)}g）`;
- window._t=t;window._f100=f100;window._div=div;
- drawLabel()}
+ const f=fin>0?100/fin:0;
+ $("kcal").textContent=fmt(t.k/div);
+ $("p1").textContent=fmt(t.p/div,1);$("f1v").textContent=fmt(t.f/div,1);
+ $("c1").textContent=fmt(t.c/div,1);$("s1").textContent=fmt(t.s/div,2);
+ $("k100").textContent=fmt(t.k*f)+" kcal";$("p100").textContent=fmt(t.p*f,1)+" g";
+ $("f100v").textContent=fmt(t.f*f,1)+" g";$("c100").textContent=fmt(t.c*f,1)+" g";
+ $("s100").textContent=fmt(t.s*f,2)+" g";
+ $("base100").textContent=`完成品100gあたり（基準 ${fmt(fin)}g）`;
+ $("wsum").textContent=`材料合計 ${fmt(wsum)}g／できあがり ${fmt(div)}個`;
+ window._t=t;window._f=f;window._div=div;
+ drawRowResults();drawLabel();flow()}
 
-function tbl(rs){return rs.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("")}
+function flow(){
+ const p1=$("pname").value.trim()!==""&&num($("ycount").value)>0;
+ const p2=rows.some(r=>r.name.trim()&&num(r.w)>0&&num(r.k)>0);
+ $("f1").className="flow-step"+(p1?" done":" active");
+ $("f2").className="flow-step"+(p2?" done":(p1?" active":""));
+ $("f3").className="flow-step"+(p2?" active":"")}
 
 // 食品表示では同じ原材料は1つにまとめて、合算した重量の順に並べる。
 // 例: スーパーバイオレット790g＋中力粉335g → 「小麦粉」1つ（1,125g扱い）
 function ingList(sec){
  const m=new Map();
  rows.filter(r=>r.sec===sec&&r.show&&r.name.trim()&&num(r.w)>0).forEach(r=>{
-  const l=(r.disp||r.name).trim(), t=r.txt.trim(), key=l+"｜"+t;
-  const cur=m.get(key)||{l,t,w:0}; cur.w+=num(r.w); m.set(key,cur);
- });
- return [...m.values()].sort((a,b)=>b.w-a.w).map(x=>x.t?`${x.l}（${x.t}）`:x.l);
-}
+  const l=(r.disp||r.name).trim(),t=r.txt.trim(),key=l+"｜"+t;
+  const cur=m.get(key)||{l,t,w:0};cur.w+=num(r.w);m.set(key,cur)});
+ return [...m.values()].sort((a,b)=>b.w-a.w).map(x=>x.t?`${x.l}（${x.t}）`:x.l)}
 
 function labelText(){
- const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f100||0;
+ const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f||0;
  const skin=ingList("皮"),fill=ingList("餡・仕上げ");
  const ing=[skin.length?`皮（${skin.join("、")}）`:"",fill.length?`餡・仕上げ（${fill.join("、")}）`:""].filter(Boolean).join("、");
  return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${ing||"未登録"}\n内容量　1個\n`+
@@ -260,7 +435,7 @@ function labelText(){
 function drawLabel(){$("backLabel").textContent=labelText()}
 
 async function cp(text,msg){try{await navigator.clipboard.writeText(text);say(msg)}catch{say("コピーできませんでした。長押しで選択してください","ng")}}
-function say(m,cls="ok"){const e=$("copyMsg");e.className="msg "+cls;e.textContent=m;setTimeout(()=>e.textContent="",2600)}
+function say(m,cls=""){const e=$("copyMsg");e.className="saved-message "+cls;e.textContent=m;setTimeout(()=>e.textContent="",2800)}
 function copyBack(){cp(labelText(),"商品裏面用の文章をコピーしました")}
 function copyItem(){const t=window._t,d=window._div;
  cp(`${$("pname").value||"商品"}（1個あたり）\nエネルギー ${fmt(t.k/d)} kcal\nたんぱく質 ${fmt(t.p/d,1)} g\n脂質 ${fmt(t.f/d,1)} g\n炭水化物 ${fmt(t.c/d,1)} g\n食塩相当量 ${fmt(t.s/d,2)} g`,"1個あたりをコピーしました")}
@@ -275,29 +450,25 @@ function askCode(){let c=localStorage.getItem(CODE_KEY);if(c)return c;
 // 落ちるのは通信量と待ち時間だけ。スマホの大きな写真でも失敗しにくくなる。
 function shrink(file){
  return new Promise((res,rej)=>{
-  const img=new Image(); const url=URL.createObjectURL(file);
-  img.onload=()=>{
-   const M=2576; let{width:w,height:h}=img;
-   if(Math.max(w,h)>M){const r=M/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r);}
-   const c=document.createElement("canvas"); c.width=w; c.height=h;
-   c.getContext("2d").drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
-   res(c.toDataURL("image/jpeg",0.88));
-  };
+  const img=new Image(),url=URL.createObjectURL(file);
+  img.onload=()=>{const M=2576;let w=img.width,h=img.height;
+   if(Math.max(w,h)>M){const r=M/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r)}
+   const c=document.createElement("canvas");c.width=w;c.height=h;
+   c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+   res(c.toDataURL("image/jpeg",0.88))};
   img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("画像を開けません"))};
-  img.src=url;
- });
-}
+  img.src=url})}
 
 async function scanPhoto(ev){
  const file=ev.target.files&&ev.target.files[0];if(!file)return;
  const code=askCode();
- if(!code){$("scanMsg").className="msg ng";$("scanMsg").textContent="合言葉が入力されなかったため中止しました。";ev.target.value="";return}
+ if(!code){$("scanMsg").textContent="合言葉が入力されなかったため中止しました。";ev.target.value="";return}
  $("prev").src=URL.createObjectURL(file);$("prev").style.display="block";
- $("scanMsg").className="msg";$("scanMsg").textContent="読み取り中です。写真の文字を細かく見ています（30秒〜1分ほどかかります）…";
+ $("scanMsg").textContent="読み取り中です。写真の文字を細かく見ています（30秒〜1分ほどかかります）…";
  try{
   const dataUrl=await shrink(file);
   const resp=await fetch("/api/seibun/analyze",{method:"POST",headers:{"content-type":"application/json"},
-   body:JSON.stringify({image:dataUrl.split(",")[1],mediaType:file.type||"image/jpeg",
+   body:JSON.stringify({image:dataUrl.split(",")[1],mediaType:"image/jpeg",
     manufacturer:$("smaker").value,productName:$("sprod").value,accessCode:code})});
   if(resp.status===401){localStorage.removeItem(CODE_KEY);throw new Error("合言葉が違います。もう一度お試しください。")}
   const d=await resp.json();
@@ -307,18 +478,17 @@ async function scanPhoto(ev){
    w:"",k:per100&&d.calories!=null?d.calories:"",p:per100&&d.protein!=null?d.protein:"",
    f:per100&&d.fat!=null?d.fat:"",c:per100&&d.carbs!=null?d.carbs:"",s:per100&&d.salt!=null?d.salt:"",
    txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",show:true});
-  // 読み取った行は「使用量」が空なので、そのままでは裏面表示に出ない。
-  // 入力すべき欄まで自動で移動して、何をすればいいかを分かるようにする。
-  setTimeout(()=>{const rs=document.querySelectorAll("#rows .row"); const last=rs[rs.length-1];
-   if(last){const wIn=last.querySelector('input[type=number]'); if(wIn){wIn.scrollIntoView({block:"center"}); wIn.focus();}}},150);
+  // 読み取った行は「使用量」が空なので、そのままでは裏面表示に出ない。入力欄まで移動する。
+  setTimeout(()=>{const rs=document.querySelectorAll("#foods .food-row"),last=rs[rs.length-1];
+   if(last){const wIn=last.querySelector('.unit-input input');if(wIn){wIn.scrollIntoView({block:"center"});wIn.focus()}}},150);
   const w=(d.warnings||[]).join(" / ");
   let m=per100&&d.calories!=null?`読み取りました：100gあたり ${d.calories} kcal。★あと「使用量(g)」を入れてください（入れるまで裏面表示には出ません）。`:
     (d.basis==="perServing"?"読み取りましたが、100g当たりではなく1食当たりの表示でした。100g当たりに換算して入力してください。":
      "原材料は読み取りましたが、100gあたりの栄養値を確定できませんでした。メーカー確認待ちにしてください。");
   m+=`確信度:${d.confidence||"不明"}。必ず写真と照合してください。`+(w?` ⚠ ${w}`:"");
-  $("scanMsg").className="msg "+(per100&&d.calories!=null?"ok":"ng");$("scanMsg").textContent=m;
+  $("scanMsg").textContent=m;
   if(d._usage&&d._usage.count)$("usage").textContent=`これまでの読み取り ${d._usage.count} 回・推定 約${Math.round(d._usage.yen)}円（月1,000円が目安）`;
- }catch(e){$("scanMsg").className="msg ng";$("scanMsg").textContent=e.message||"画像を読み取れませんでした。手入力で続けてください。"}
+ }catch(e){$("scanMsg").textContent=e.message||"画像を読み取れませんでした。手入力で続けてください。"}
  finally{ev.target.value=""}}
 
 /* ---- 履歴 ---- */
@@ -329,15 +499,19 @@ function saveHist(){
  hist=[{id:uid(),at:new Date().toLocaleString("ja-JP"),pname:$("pname").value,y:$("ycount").value,
   fw:$("fweight").value,rows:v},...hist].slice(0,10);
  localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist();say("履歴に保存しました")}
-function drawHist(){$("histN").textContent=hist.length?`(${hist.length})`:"";
- $("histList").innerHTML=hist.length?hist.map(h=>`<div class="hist"><span><b>${esc(h.pname||"（無題）")}</b><br><small>${h.at}・原材料${h.rows.length}件</small></span>
-  <span><button class="mini" onclick="restore('${h.id}')">開く</button> <button class="mini" onclick="delHist('${h.id}')">削除</button></span></div>`).join(""):"<p class='note'>まだありません。</p>"}
+function drawHist(){
+ const n=$("histN");n.textContent=hist.length;n.style.display=hist.length?"grid":"none";
+ $("histList").innerHTML=hist.length?`<div class="history-list">`+hist.map(h=>`<article>
+  <button class="history-load" onclick="restore('${h.id}')"><strong>${esc(h.pname||"（無題）")}</strong>
+   <span>${h.at}・原材料${h.rows.length}件</span></button>
+  <button class="history-delete" onclick="delHist('${h.id}')" aria-label="削除">×</button></article>`).join("")+`</div>`
+  :`<p class="empty-history">まだありません。</p>`}
 function restore(id){const h=hist.find(x=>x.id===id);if(!h)return;
  rows=h.rows.map(r=>({...r,id:uid()}));$("pname").value=h.pname||"";$("ycount").value=h.y||"1";$("fweight").value=h.fw||"";draw();toggleHist()}
 function delHist(id){hist=hist.filter(x=>x.id!==id);localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist()}
 function toggleHist(){const b=$("histBox");b.style.display=b.style.display==="block"?"none":"block"}
 
-["pname","ycount","fweight"].forEach(id=>document.addEventListener("input",e=>{if(e.target.id===id)calc()}));
+["pname","ycount","fweight"].forEach(id=>$(id).addEventListener("input",calc));
 rows=[blank()];draw();loadHist();
 fetch("/api/seibun/usage").then(r=>r.json()).then(u=>{if(u&&u.count)$("usage").textContent=`これまでの読み取り ${u.count} 回・推定 約${Math.round(u.yen)}円（月1,000円が目安）`}).catch(()=>{});
 </script>
