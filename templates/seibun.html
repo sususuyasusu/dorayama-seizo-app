@@ -245,6 +245,23 @@ function askCode(){let c=localStorage.getItem(CODE_KEY);if(c)return c;
  const v=prompt("どら山スタッフ用の合言葉を入力してください（初回のみ）");if(!v)return null;
  c=v.trim();localStorage.setItem(CODE_KEY,c);return c}
 
+// 写真は長辺2576pxまでに縮めて送る。読み取り精度はこの大きさで頭打ちなので、
+// 落ちるのは通信量と待ち時間だけ。スマホの大きな写真でも失敗しにくくなる。
+function shrink(file){
+ return new Promise((res,rej)=>{
+  const img=new Image(); const url=URL.createObjectURL(file);
+  img.onload=()=>{
+   const M=2576; let{width:w,height:h}=img;
+   if(Math.max(w,h)>M){const r=M/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r);}
+   const c=document.createElement("canvas"); c.width=w; c.height=h;
+   c.getContext("2d").drawImage(img,0,0,w,h); URL.revokeObjectURL(url);
+   res(c.toDataURL("image/jpeg",0.88));
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("画像を開けません"))};
+  img.src=url;
+ });
+}
+
 async function scanPhoto(ev){
  const file=ev.target.files&&ev.target.files[0];if(!file)return;
  const code=askCode();
@@ -252,7 +269,7 @@ async function scanPhoto(ev){
  $("prev").src=URL.createObjectURL(file);$("prev").style.display="block";
  $("scanMsg").className="msg";$("scanMsg").textContent="読み取り中です。写真の文字を細かく見ています（30秒〜1分ほどかかります）…";
  try{
-  const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=()=>rej(new Error("画像を開けません"));r.readAsDataURL(file)});
+  const dataUrl=await shrink(file);
   const resp=await fetch("/api/seibun/analyze",{method:"POST",headers:{"content-type":"application/json"},
    body:JSON.stringify({image:dataUrl.split(",")[1],mediaType:file.type||"image/jpeg",
     manufacturer:$("smaker").value,productName:$("sprod").value,accessCode:code})});
@@ -264,9 +281,13 @@ async function scanPhoto(ev){
    w:"",k:per100&&d.calories!=null?d.calories:"",p:per100&&d.protein!=null?d.protein:"",
    f:per100&&d.fat!=null?d.fat:"",c:per100&&d.carbs!=null?d.carbs:"",s:per100&&d.salt!=null?d.salt:"",
    txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",show:true});
+  // 読み取った行は「使用量」が空なので、そのままでは裏面表示に出ない。
+  // 入力すべき欄まで自動で移動して、何をすればいいかを分かるようにする。
+  setTimeout(()=>{const rs=document.querySelectorAll("#rows .row"); const last=rs[rs.length-1];
+   if(last){const wIn=last.querySelector('input[type=number]'); if(wIn){wIn.scrollIntoView({block:"center"}); wIn.focus();}}},150);
   const w=(d.warnings||[]).join(" / ");
-  let m=per100&&d.calories!=null?`読み取りました：100gあたり ${d.calories} kcal。`:
-    (d.basis==="perServing"?"読み取りましたが、100g当たりではなく1食当たりの表示でした。換算して入力してください。":
+  let m=per100&&d.calories!=null?`読み取りました：100gあたり ${d.calories} kcal。★あと「使用量(g)」を入れてください（入れるまで裏面表示には出ません）。`:
+    (d.basis==="perServing"?"読み取りましたが、100g当たりではなく1食当たりの表示でした。100g当たりに換算して入力してください。":
      "原材料は読み取りましたが、100gあたりの栄養値を確定できませんでした。メーカー確認待ちにしてください。");
   m+=`確信度:${d.confidence||"不明"}。必ず写真と照合してください。`+(w?` ⚠ ${w}`:"");
   $("scanMsg").className="msg "+(per100&&d.calories!=null?"ok":"ng");$("scanMsg").textContent=m;

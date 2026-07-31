@@ -31,6 +31,7 @@ PROMPT = """あなたは日本の加工食品表示の入力補助担当です�
 - 数値は単位（kcal・g・mg）と桁を必ず画像どおりに写すこと。mgをgに直したりしない。
 - どうしても読めない箇所は、そこだけ空欄にして warnings に「どこが読めなかったか」を書くこと。全体を推測で埋めない。
 - 100g当たりか1個(1食)当たりかは、画像の見出しどおりに basis へ入れること。
+- 🔴 calories・protein・fat・carbs・salt・servingGrams は **単位を付けず数字だけ** で入れること（正: 217 / 4.8 / 0.20　誤: "217kcal" / "4.8g"）。
 回答は説明を付けず、次のJSONだけにしてください。
 {{"productName":"","manufacturer":"","basis":"per100g|perServing|unknown","servingGrams":null,"calories":null,"protein":null,"fat":null,"carbs":null,"salt":null,"ingredientsText":"","allergens":[],"sourceType":"package|manufacturer|retailer|unknown","sourceUrl":"","confidence":"high|medium|low","warnings":[]}}"""
 
@@ -125,5 +126,23 @@ def analyze(image_b64, media_type="image/jpeg", manufacturer="", product_name=""
     except Exception:
         return {"error": "画像の結果を整理できませんでした。", "status": 422}
 
+    # 「217kcal」「0.20g」のように単位付きで返ってくることがあるので、数値に直す。
+    # これをしないとアプリ側で数字として扱えず、成分がすべて0になる。
+    for key in ("calories", "protein", "fat", "carbs", "salt", "servingGrams"):
+        parsed[key] = _to_number(parsed.get(key))
+
     parsed["_usage"] = _bump_usage()
     return parsed
+
+
+def _to_number(v):
+    """「217kcal」「約4.8 g」「0.20g」→ 217 / 4.8 / 0.2。取れなければ None。"""
+    if v is None or isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return v
+    m = re.search(r"-?\d+(?:\.\d+)?", str(v).replace(",", ""))
+    if not m:
+        return None
+    n = float(m.group(0))
+    return int(n) if n == int(n) else n
