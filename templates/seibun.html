@@ -204,10 +204,6 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
       <label class="field"><span>③ 完成後の総重量<em>任意</em></span><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></label>
     </div>
 
-    <button class="skin-recipe-button primary" onclick="loadKuro()">
-      <b>黒どら1回転を入れる（皮＋あん35g×60個）</b>
-      <span>皮120枚ぶんの材料と粒あん2,100g、個数60、完成重量4,800gが一度に入ります</span>
-    </button>
     <button class="skin-recipe-button" onclick="loadSkin()">
       <b>皮だけ入れる（1回転・皮120枚）</b>
       <span>2026-07-26に確認した正本。合計4,335g・皮120枚＝どらやき60個ぶん</span>
@@ -264,6 +260,10 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
 
     <div class="label-preview">
       <span>商品裏面用（そのまま使えます）</span>
+      <select id="lmode" onchange="drawLabel()" style="width:100%;margin-bottom:10px;height:34px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:11px;padding:0 8px">
+        <option value="proc">書き方①　工程別（皮をまとめる）</option>
+        <option value="flat">書き方②　全材料を重量順</option>
+      </select>
       <p id="backLabel"></p>
     </div>
 
@@ -338,19 +338,6 @@ function loadSkin(){
    txt:"",url:"",src:"標準成分値",show:n!=="浄水"}});
  draw()}
 
-// 黒どら1回転＝皮1回転（120枚）＋粒あん35g×60個。あん35gは2026-07-31に本人確定。
-// 完成重量4,800gは「黒どら1個80g×60個」からの目安。実測が分かれば置き換える。
-function loadKuro(){
- loadSkin();
- $("pname").value="黒どら";$("ycount").value="60";$("fweight").value="4800";
- const p=PRESETS.find(x=>x.n==="粒あん（塩入）");
- rows.push({id:uid(),name:"粒あん（塩入）",disp:"粒あん",sec:"餡・仕上げ",w:"2100",
-  k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,
-  txt:"グラニュー糖（国内製造）、小豆（北海道産）、水飴、食塩、寒天／加工澱粉",
-  url:"",src:"package（内藤製餡）",show:true});
- draw();
- say("黒どら1回転を入れました（皮120枚＋粒あん2,100g＝35g×60個）")}
-
 function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
 
 function draw(){
@@ -418,18 +405,31 @@ function flow(){
 
 // 食品表示では同じ原材料は1つにまとめて、合算した重量の順に並べる。
 // 例: スーパーバイオレット790g＋中力粉335g → 「小麦粉」1つ（1,125g扱い）
-function ingList(sec){
+// 返すのは {表示名, 複合原材料の全文, 合算重量} の配列（重い順）。
+function ingItems(sec){
  const m=new Map();
- rows.filter(r=>r.sec===sec&&r.show&&r.name.trim()&&num(r.w)>0).forEach(r=>{
+ rows.filter(r=>(sec?r.sec===sec:true)&&r.show&&r.name.trim()&&num(r.w)>0).forEach(r=>{
   const l=(r.disp||r.name).trim(),t=r.txt.trim(),key=l+"｜"+t;
   const cur=m.get(key)||{l,t,w:0};cur.w+=num(r.w);m.set(key,cur)});
- return [...m.values()].sort((a,b)=>b.w-a.w).map(x=>x.t?`${x.l}（${x.t}）`:x.l)}
+ return [...m.values()].sort((a,b)=>b.w-a.w)}
+const asText=x=>x.t?`${x.l}（${x.t}）`:x.l;
+
+// 原材料名の作り方は2通り。どちらも食品表示として使われている書き方。
+//  工程別 … 皮をひとまとめにして「皮（…）」と書き、あんなどはそのまま並べる
+//  重量順 … 工程でまとめず、全部の材料を重い順に並べる
+// ※「餡・仕上げ」はアプリ内の分類名なので、表示には絶対に出さない。
+function ingredientsText(){
+ const mode=($("lmode")||{}).value||"proc";
+ if(mode==="flat")return ingItems(null).map(asText).join("、");
+ const skin=ingItems("皮"),fill=ingItems("餡・仕上げ");
+ const blocks=[];
+ if(skin.length)blocks.push({w:skin.reduce((a,b)=>a+b.w,0),s:`皮（${skin.map(asText).join("、")}）`});
+ fill.forEach(x=>blocks.push({w:x.w,s:asText(x)}));
+ return blocks.sort((a,b)=>b.w-a.w).map(x=>x.s).join("、")}
 
 function labelText(){
  const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f||0;
- const skin=ingList("皮"),fill=ingList("餡・仕上げ");
- const ing=[skin.length?`皮（${skin.join("、")}）`:"",fill.length?`餡・仕上げ（${fill.join("、")}）`:""].filter(Boolean).join("、");
- return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${ing||"未登録"}\n内容量　1個\n`+
+ return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${ingredientsText()||"未登録"}\n内容量　1個\n`+
   `栄養成分表示（100g当たり）　熱量 ${fmt(t.k*f)}kcal　たんぱく質 ${fmt(t.p*f,1)}g　脂質 ${fmt(t.f*f,1)}g　炭水化物 ${fmt(t.c*f,1)}g　食塩相当量 ${fmt(t.s*f,2)}g`}
 
 function drawLabel(){$("backLabel").textContent=labelText()}
