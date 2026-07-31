@@ -67,10 +67,14 @@ img#prev{max-width:100%;border-radius:8px;margin-top:8px;display:none}
     <div><label>完成後の総重量（g・任意）</label><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></div>
   </div>
   <div class="btns">
-    <button class="ghost" onclick="loadSkin()">共通の皮レシピを入れる（1回転・皮120枚）</button>
+    <button class="btn" onclick="loadKuro()">黒どら1回転を入れる（皮＋あん35g×60個）</button>
+    <button class="ghost" onclick="loadSkin()">皮だけ入れる（1回転・皮120枚）</button>
     <button class="mini" onclick="resetAll()">全部消す</button>
   </div>
-  <p class="note">皮レシピは2026-07-26に本人確認した正本（合計4,335g・皮120枚＝どらやき60個）です。</p>
+  <p class="note">皮レシピは2026-07-26に本人確認した正本（合計4,335g・皮120枚＝どらやき60個）。あんこ35g/個は2026-07-31に確定。</p>
+  <p class="note">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は 1個あたり 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g。
+  このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。
+  なお<b>米油60gは検査値にほとんど反映されていません</b>（鉄板に塗っている可能性）。脂質を検査値に寄せたい場合は米油の使用量を0にしてください。</p>
 </div>
 
 <div class="card">
@@ -133,6 +137,7 @@ const PRESETS=[
  {n:"重曹",k:0,p:0,f:0,c:0,s:69.6},
  {n:"浄水",k:0,p:0,f:0,c:0,s:0},
  {n:"米油",k:921,p:0,f:100,c:0,s:0},
+ {n:"粒あん（塩入）",k:217,p:4.8,f:0.1,c:49.4,s:0.2},
  {n:"小豆あん（つぶしあん）",k:239,p:5.6,f:0.6,c:54,s:0.1},
  {n:"抹茶パウダー",k:237,p:29.6,f:5.3,c:39.5,s:0},
  {n:"無塩バター",k:720,p:0.5,f:83,c:0.2,s:0},
@@ -166,6 +171,20 @@ function loadSkin(){
   return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:String(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
    txt:"",url:"",src:"標準成分値",show:n!=="浄水"}});
  draw()}
+
+// 黒どら1回転＝皮1回転（120枚）＋粒あん35g×60個。あん35gは2026-07-31に本人確定。
+// 完成重量4,800gは「黒どら1個80g×60個」からの目安。実測が分かれば置き換える。
+function loadKuro(){
+ loadSkin();
+ $("pname").value="黒どら"; $("ycount").value="60"; $("fweight").value="4800";
+ const p=PRESETS.find(x=>x.n==="粒あん（塩入）");
+ rows.push({id:uid(),name:"粒あん（塩入）",disp:"粒あん",sec:"餡・仕上げ",w:"2100",
+  k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,
+  txt:"グラニュー糖（国内製造）、小豆（北海道産）、水飴、食塩、寒天／加工澱粉",
+  url:"",src:"package（内藤製餡）",show:true});
+ draw();
+ say("黒どら1回転を入れました（皮120枚＋粒あん2,100g＝35g×60個）");
+}
 
 function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
 
@@ -219,10 +238,16 @@ function calc(){
 
 function tbl(rs){return rs.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join("")}
 
+// 食品表示では同じ原材料は1つにまとめて、合算した重量の順に並べる。
+// 例: スーパーバイオレット790g＋中力粉335g → 「小麦粉」1つ（1,125g扱い）
 function ingList(sec){
- return rows.filter(r=>r.sec===sec&&r.show&&r.name.trim()&&num(r.w)>0)
-  .sort((a,b)=>num(b.w)-num(a.w))
-  .map(r=>{const l=(r.disp||r.name).trim();return r.txt.trim()?`${l}（${r.txt.trim()}）`:l})}
+ const m=new Map();
+ rows.filter(r=>r.sec===sec&&r.show&&r.name.trim()&&num(r.w)>0).forEach(r=>{
+  const l=(r.disp||r.name).trim(), t=r.txt.trim(), key=l+"｜"+t;
+  const cur=m.get(key)||{l,t,w:0}; cur.w+=num(r.w); m.set(key,cur);
+ });
+ return [...m.values()].sort((a,b)=>b.w-a.w).map(x=>x.t?`${x.l}（${x.t}）`:x.l);
+}
 
 function labelText(){
  const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f100||0;
