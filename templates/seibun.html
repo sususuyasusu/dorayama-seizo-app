@@ -208,7 +208,8 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
       <b>皮レシピを入れる（1回転・皮120枚）</b>
       <span>Googleスプレッドシート「共通_皮レシピ」から読み込みます。シートを直せばここも変わります</span>
     </button>
-    <p class="field-help">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は 1個あたり 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g。このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>（炭水化物を差引きで求めるため）で、レシピの誤りではありません。たんぱく質は検査値と一致しています。</p>
+    <p class="field-help">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は<b>100g当たり</b> 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g（1個当たりではありません）。このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>（炭水化物を差引きで求めるため）で、レシピの誤りではありません。</p>
+    <p class="field-help">🔴 <b>「③ 完成後の総重量」は必ず実測を入れてください。</b>100g当たりの数字はここで決まります。焼くと水分が飛んで軽くなるため、材料合計のままだと薄く、少なすぎると濃く出ます。<b>1個の重さ×できあがり個数</b>で入れるのが確実です（例：1個98g×60個＝5,880g）。黒どらは検査値から逆算すると<b>総重量5,800〜5,900gあたり</b>が実態に近い数字です。</p>
 
     <div class="scan-card">
       <div>
@@ -260,9 +261,13 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
 
     <div class="label-preview">
       <span>商品裏面用（そのまま使えます）</span>
-      <select id="lmode" onchange="drawLabel()" style="width:100%;margin-bottom:10px;height:34px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:11px;padding:0 8px">
+      <select id="lmode" onchange="drawLabel()" style="width:100%;margin-bottom:6px;height:34px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:11px;padding:0 8px">
         <option value="proc">書き方①　工程別（皮をまとめる）</option>
         <option value="flat">書き方②　全材料を重量順</option>
+      </select>
+      <select id="amode" onchange="drawLabel()" style="width:100%;margin-bottom:10px;height:34px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:11px;padding:0 8px">
+        <option value="batch">アレルギー　一括表示（一部に○○を含む）</option>
+        <option value="none">アレルギー　付けない（原材料名に卵・小麦粉等が出ている場合）</option>
       </select>
       <p id="backLabel"></p>
     </div>
@@ -458,6 +463,9 @@ function ingredientsText(){
 // 原材料名の最後に付ける一括表示。使っている材料のアレルゲンを重複なくまとめる。
 // ※出るのは入力されたものだけ。書いていない材料があれば当然もれるので、必ず現物と照合すること。
 function allergenText(){
+ // 個別表示（原材料名に「卵」「小麦粉」等がそのまま出ている）と一括表示は併用できない。
+ // 現行の黒どらラベルは個別表示なので、その場合は「付けない」を選ぶ。
+ if((($("amode")||{}).value||"batch")==="none")return "";
  const set=new Set();
  rows.filter(r=>r.name.trim()&&num(r.w)>0).forEach(r=>{
   String(r.alg||"").split(/[、,／\/・\s]+/).forEach(a=>{
