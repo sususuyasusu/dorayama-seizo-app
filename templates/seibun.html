@@ -324,10 +324,18 @@ const fmt=(v,d=0)=>new Intl.NumberFormat("ja-JP",{maximumFractionDigits:d,minimu
 const uid=()=>Math.random().toString(36).slice(2)+Date.now();
 const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 
-function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",show:true}}
+// 一括表示に書く順番。特定原材料8品目 → 準特定20品目の順に並べる。
+const ALG_ORDER=["えび","かに","くるみ","小麦","そば","卵","乳成分","落花生",
+ "アーモンド","あわび","いか","いくら","オレンジ","カシューナッツ","キウイフルーツ","牛肉","ごま",
+ "さけ","さば","大豆","鶏肉","バナナ","豚肉","まつたけ","もも","やまいも","りんご","ゼラチン"];
+// 表記ゆれを一括表示の書き方に寄せる
+const ALG_FIX={"乳":"乳成分","牛乳":"乳成分","乳製品":"乳成分","鶏卵":"卵","たまご":"卵","小麦粉":"小麦",
+ "落花生（ピーナッツ）":"落花生","ピーナッツ":"落花生","大豆由来":"大豆"};
+
+function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",alg:"",show:true}}
 function addRow(r){rows.push(r||blank());draw()}
 function delRow(id){rows=rows.filter(x=>x.id!==id);if(!rows.length)rows=[blank()];draw()}
-function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec"||key==="disp"||key==="txt")drawLabel();if(key==="w"||key==="k")drawRowResults()}}
+function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec"||key==="disp"||key==="txt"||key==="alg")drawLabel();if(key==="w"||key==="k")drawRowResults()}}
 function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;const r=rows.find(x=>x.id===id);
  Object.assign(r,{name:p.n,disp:DISP[p.n]||p.n,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,src:r.src||"標準成分値"});draw()}
 
@@ -339,15 +347,16 @@ async function loadSkin(){
   const d=await fetch("/api/seibun/kawa").then(r=>r.json());
   if(d&&d.rows&&d.rows.length){
    rows=d.rows.map(r=>({id:uid(),name:r.name,disp:r.disp,sec:r.sec,w:String(r.w),
-    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:"",url:"",src:r.src||"シート",show:!!r.show}));
+    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:"",url:"",src:r.src||"シート",alg:r.alg||"",show:!!r.show}));
    draw();
    say(`シートの皮レシピを読み込みました（${d.rows.length}種・合計${fmt(d.total)}g）`);
    return;
   }
  }catch(e){}
+ const ALG={"卵":"卵","卵黄":"卵","卵白":"卵","スーパーバイオレット（薄力粉）":"小麦","中力粉":"小麦","小麦粉（薄力粉）":"小麦"};
  rows=SKIN.map(([n,w])=>{const p=PRESETS.find(x=>x.n===n)||{};
   return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:String(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
-   txt:"",url:"",src:"内蔵の控え",show:n!=="浄水"}});
+   txt:"",url:"",src:"内蔵の控え",alg:ALG[n]||"",show:n!=="浄水"}});
  draw();
  say("シートを読めなかったため、内蔵の控えを使いました","ng")}
 
@@ -381,6 +390,7 @@ function draw(){
   <div class="label-fields">
    <label class="field"><span>裏面に載せる名称</span><input value="${esc(r.disp)}" oninput="setV('${r.id}','disp',this.value)" placeholder="例：小麦粉"></label>
    <label class="field"><span>複合原材料の全文（括弧の中）</span><textarea oninput="setV('${r.id}','txt',this.value)" placeholder="例：砂糖、小豆、水あめ、寒天">${esc(r.txt)}</textarea></label>
+   <label class="field"><span>アレルゲン（一括表示用）</span><input value="${esc(r.alg||"")}" oninput="setV('${r.id}','alg',this.value)" placeholder="例：卵、小麦（無ければ空欄）"></label>
    <label class="field"><span>根拠（区分／URL）</span><input value="${esc(r.src)}" oninput="setV('${r.id}','src',this.value)" placeholder="package / manufacturer など"></label>
    ${r.url?`<p class="field-help">出典: <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`:"<span></span>"}
   </div>
@@ -445,9 +455,23 @@ function ingredientsText(){
  else fill.forEach(x=>blocks.push({w:x.w,s:asText(x)}));
  return blocks.sort((a,b)=>b.w-a.w).map(x=>x.s).join("、")}
 
+// 原材料名の最後に付ける一括表示。使っている材料のアレルゲンを重複なくまとめる。
+// ※出るのは入力されたものだけ。書いていない材料があれば当然もれるので、必ず現物と照合すること。
+function allergenText(){
+ const set=new Set();
+ rows.filter(r=>r.name.trim()&&num(r.w)>0).forEach(r=>{
+  String(r.alg||"").split(/[、,／\/・\s]+/).forEach(a=>{
+   const v=(ALG_FIX[a.trim()]||a.trim());
+   if(v&&v!=="なし"&&v!=="無し")set.add(v)})});
+ if(!set.size)return "";
+ const list=[...set].sort((a,b)=>{
+  const i=ALG_ORDER.indexOf(a),j=ALG_ORDER.indexOf(b);
+  return (i<0?999:i)-(j<0?999:j)});
+ return `（一部に${list.join("・")}を含む）`}
+
 function labelText(){
  const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f||0;
- return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${ingredientsText()||"未登録"}\n内容量　1個\n`+
+ return `名称　どらやき（${$("pname").value||"商品名"}）\n原材料名　${(ingredientsText()||"未登録")+allergenText()}\n内容量　1個\n`+
   `栄養成分表示（100g当たり）　熱量 ${fmt(t.k*f)}kcal　たんぱく質 ${fmt(t.p*f,1)}g　脂質 ${fmt(t.f*f,1)}g　炭水化物 ${fmt(t.c*f,1)}g　食塩相当量 ${fmt(t.s*f,2)}g`}
 
 function drawLabel(){$("backLabel").textContent=labelText()}
@@ -495,7 +519,8 @@ async function scanPhoto(ev){
   addRow({id:uid(),name:d.productName||"",disp:(d.productName||"").replace(/（.*）/,""),sec:"餡・仕上げ",
    w:"",k:per100&&d.calories!=null?d.calories:"",p:per100&&d.protein!=null?d.protein:"",
    f:per100&&d.fat!=null?d.fat:"",c:per100&&d.carbs!=null?d.carbs:"",s:per100&&d.salt!=null?d.salt:"",
-   txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",show:true});
+   txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",
+   alg:Array.isArray(d.allergens)?d.allergens.join("、"):"",show:true});
   // 読み取った行は「使用量」が空なので、そのままでは裏面表示に出ない。入力欄まで移動する。
   setTimeout(()=>{const rs=document.querySelectorAll("#foods .food-row"),last=rs[rs.length-1];
    if(last){const wIn=last.querySelector('.unit-input input');if(wIn){wIn.scrollIntoView({block:"center"});wIn.focus()}}},150);
