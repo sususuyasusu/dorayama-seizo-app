@@ -83,6 +83,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/seibun" or path == "/seibun/":
             self._send(200, (BASE / "templates" / "seibun.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
+        elif path == "/api/seibun/kawa":
+            self._send(200, json.dumps(seibun_layer.kawa_recipe(), ensure_ascii=False))
         elif path == "/api/seibun/usage":
             self._send(200, json.dumps(seibun_layer.usage(), ensure_ascii=False))
         elif path == "/api/manual":

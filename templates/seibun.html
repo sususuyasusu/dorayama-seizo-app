@@ -205,8 +205,8 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
     </div>
 
     <button class="skin-recipe-button" onclick="loadSkin()">
-      <b>皮だけ入れる（1回転・皮120枚）</b>
-      <span>2026-07-26に確認した正本。合計4,335g・皮120枚＝どらやき60個ぶん</span>
+      <b>皮レシピを入れる（1回転・皮120枚）</b>
+      <span>Googleスプレッドシート「共通_皮レシピ」から読み込みます。シートを直せばここも変わります</span>
     </button>
     <p class="field-help">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は 1個あたり 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g。このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>（炭水化物を差引きで求めるため）で、レシピの誤りではありません。たんぱく質は検査値と一致しています。</p>
 
@@ -331,12 +331,25 @@ function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if
 function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;const r=rows.find(x=>x.id===id);
  Object.assign(r,{name:p.n,disp:DISP[p.n]||p.n,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,src:r.src||"標準成分値"});draw()}
 
-function loadSkin(){
+// 皮レシピは Googleスプレッドシート「共通_皮レシピ」から読む。
+// シートを直せばアプリも変わる。読めないときだけ、内蔵の控えを使う。
+async function loadSkin(){
  $("pname").value="どら焼きの皮";$("ycount").value="120";$("fweight").value="";
+ try{
+  const d=await fetch("/api/seibun/kawa").then(r=>r.json());
+  if(d&&d.rows&&d.rows.length){
+   rows=d.rows.map(r=>({id:uid(),name:r.name,disp:r.disp,sec:r.sec,w:String(r.w),
+    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:"",url:"",src:r.src||"シート",show:!!r.show}));
+   draw();
+   say(`シートの皮レシピを読み込みました（${d.rows.length}種・合計${fmt(d.total)}g）`);
+   return;
+  }
+ }catch(e){}
  rows=SKIN.map(([n,w])=>{const p=PRESETS.find(x=>x.n===n)||{};
   return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:String(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
-   txt:"",url:"",src:"標準成分値",show:n!=="浄水"}});
- draw()}
+   txt:"",url:"",src:"内蔵の控え",show:n!=="浄水"}});
+ draw();
+ say("シートを読めなかったため、内蔵の控えを使いました","ng")}
 
 function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
 

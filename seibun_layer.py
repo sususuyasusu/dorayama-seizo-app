@@ -59,6 +59,57 @@ def usage():
         return {"count": 0, "yen": 0.0}
 
 
+# 旬どらレシピ_2026 の「共通_皮レシピ」タブ。ここを直せばアプリの皮レシピも変わる。
+RECIPE_KEY = "190G3d8IZSGd-rNF28guhirjUwtVBgbZyA2lmBpZiqKE"
+RECIPE_TAB = "共通_皮レシピ"
+_kawa_cache = {"at": 0, "data": None}
+
+
+def kawa_recipe():
+    """共通_皮レシピをアプリの行の形にして返す。60秒はキャッシュする。"""
+    if _kawa_cache["data"] and time.time() - _kawa_cache["at"] < 60:
+        return _kawa_cache["data"]
+    try:
+        import data_layer
+        ws = data_layer._client().open_by_key(RECIPE_KEY).worksheet(RECIPE_TAB)
+        vals = ws.get_all_values()
+    except Exception as e:
+        return {"error": f"シートを読めませんでした（{e}）", "rows": []}
+
+    def n(v):
+        try:
+            return float(str(v).replace(",", ""))
+        except Exception:
+            return 0
+
+    rows, total, count = [], 0, 0
+    for r in vals[2:]:
+        r = r + [""] * (14 - len(r))
+        kubun, name = r[0].strip(), r[1].strip()
+        if kubun == "合計" or not name:
+            continue
+        w = n(r[2])
+        if w <= 0:
+            continue
+        total += w
+        count = int(n(r[3])) or count
+        rows.append({
+            "name": name,
+            "disp": r[11].strip() or name,
+            "sec": kubun or "皮",
+            "w": w,
+            "k": n(r[5]), "p": n(r[6]), "f": n(r[7]), "c": n(r[8]), "s": n(r[9]),
+            "src": r[10].strip(),
+            # 水は原材料名に書かないのが通例なので、初期は裏面表示から外す
+            "show": ("水" not in name) or name == "水あめ",
+        })
+    out = {"rows": rows, "total": total, "count": count,
+           "tab": RECIPE_TAB,
+           "url": f"https://docs.google.com/spreadsheets/d/{RECIPE_KEY}/edit#gid={ws.id}"}
+    _kawa_cache.update({"at": time.time(), "data": out})
+    return out
+
+
 def check_access(code):
     """合言葉の照合。(通ってよいか, エラー文, HTTPコード) を返す。"""
     expected = (os.environ.get("ACCESS_CODE") or "").strip()
