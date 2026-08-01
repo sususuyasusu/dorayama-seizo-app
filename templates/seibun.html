@@ -200,17 +200,18 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
 
     <div class="product-fields">
       <label class="field"><span>① 商品名</span><input id="pname" placeholder="例：黒どら"></label>
-      <label class="field"><span>② できあがり個数</span><input id="ycount" type="number" min="1" value="1"></label>
-      <label class="field"><span>③ 完成後の総重量<em>任意</em></span><input id="fweight" type="number" min="0" placeholder="空欄なら材料合計"></label>
+      <label class="field"><span>② 焼き上がりの皮 1個分<em>2枚</em></span><input id="kawaw" type="number" min="0" step="1" value="60"></label>
+      <label class="field"><span>③ 完成品1個の重さ<em>自動</em></span><input id="oneweight" readonly style="background:#eef2e8;font-weight:700"></label>
     </div>
+    <p class="field-help">原材料の使用量は<b>すべて「1個あたりのg数」</b>で入れてください（例：あんこ35g）。できあがり個数は<b>1回転60個で固定</b>です。<br>
+    <b>完成品1個の重さは自動</b>で出ます＝「焼き上がりの皮（既定60g＝1枚30g×2枚）＋ 餡・仕上げに入れたg数の合計」。皮の生地の量ではなく<b>焼き上がりの重さ</b>で計算するので、焼き減りが正しく反映されます。</p>
 
     <button class="skin-recipe-button" onclick="loadSkin()">
       <b>皮レシピを入れる（1回転・皮120枚）</b>
       <span>Googleスプレッドシート「共通_皮レシピ」から読み込みます。シートを直せばここも変わります</span>
     </button>
     <p class="field-help">⚠️ <b>検査値がある商品は、検査値が優先です。</b>黒どらの検査値は<b>100g当たり</b> 271kcal／たんぱく質5.9g／脂質2.1g／炭水化物57.1g／食塩0.41g（1個当たりではありません）。このアプリの計算は<b>まだ検査していない新商品の見積り</b>に使ってください。計算値では脂質がやや高く炭水化物がやや低く出ますが、これは<b>検査の分析方法の違い</b>（炭水化物を差引きで求めるため）で、レシピの誤りではありません。</p>
-    <p class="field-help">🔴 <b>「③ 完成後の総重量」は必ず入れてください。</b>100g当たりの数字はここで決まります。焼くと水分が飛んで軽くなるため、材料合計のままだと薄く出ます。<b>1個の重さ×できあがり個数</b>で入れてください。<br>
-    <b>確定値（2026-08-01）</b>：焼き上がりの皮は<b>1枚30g</b>、1個に2枚で60g。あん35gを足して<b>1個95g</b>。1回転60個なので<b>黒どら・白どらは総重量5,700g</b>、あんバター（＋バター11g/個）は<b>6,360g</b>。</p>
+    <p class="field-help"><b>確定値（2026-08-01）</b>：焼き上がりの皮は<b>1枚30g</b>、1個に2枚で<b>60g</b>。あん<b>35g</b>を足して<b>黒どら1個95g</b>。あんバターは無塩バター11gを足して106g。皮の配合は<b>液卵（卵黄400g＋卵白750g）</b>で計算しています。</p>
 
     <div class="scan-card">
       <div>
@@ -319,7 +320,9 @@ const PRESETS=[
 ];
 // 2026-07-26 本人が画像で確定した「新配合」列そのまま（合計4,275g、米油を入れて4,335g）。
 // 液卵で仕込む場合は「卵1,250g」を 卵黄400g＋卵白750g に置き換える。
-const SKIN=[["卵",1250],["浄水",425],["みりん",325],["水あめ",500],
+// 2026-08-01 本人指示により、より正確な液卵（卵黄400g＋卵白750g）に統一。
+// これはシートの「共通_皮レシピ」と同じ内容。数字は1回転（60個）ぶん。
+const SKIN=[["卵黄",400],["卵白",750],["浄水",425],["みりん",325],["水あめ",500],
  ["砂糖（上白糖）",560],["黒糖",65],["重曹",25],["スーパーバイオレット（薄力粉）",790],
  ["中力粉",335],["米油",60]];
 const DISP={"スーパーバイオレット（薄力粉）":"小麦粉","中力粉":"小麦粉","砂糖（上白糖）":"砂糖","小麦粉（薄力粉）":"小麦粉"};
@@ -348,26 +351,30 @@ function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;c
 
 // 皮レシピは Googleスプレッドシート「共通_皮レシピ」から読む。
 // シートを直せばアプリも変わる。読めないときだけ、内蔵の控えを使う。
+// シートの皮レシピは「1回転（60個）ぶん」で入っているので、60で割って1個あたりに直す。
+const PER = 60;
+const g1 = v => String(Math.round((num(v) / PER) * 100) / 100);
+
 async function loadSkin(){
- $("pname").value="どら焼きの皮";$("ycount").value="120";$("fweight").value="";
+ $("kawaw").value="60";
  try{
   const d=await fetch("/api/seibun/kawa").then(r=>r.json());
   if(d&&d.rows&&d.rows.length){
-   rows=d.rows.map(r=>({id:uid(),name:r.name,disp:r.disp,sec:r.sec,w:String(r.w),
+   rows=d.rows.map(r=>({id:uid(),name:r.name,disp:r.disp,sec:r.sec,w:g1(r.w),
     k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:"",url:"",src:r.src||"シート",alg:r.alg||"",show:!!r.show}));
    draw();
-   say(`シートの皮レシピを読み込みました（${d.rows.length}種・合計${fmt(d.total)}g）`);
+   say(`シートの皮レシピを1個あたりに直して読み込みました（${d.rows.length}種・1回転${fmt(d.total)}g÷${PER}個）`);
    return;
   }
  }catch(e){}
  const ALG={"卵":"卵","卵黄":"卵","卵白":"卵","スーパーバイオレット（薄力粉）":"小麦","中力粉":"小麦","小麦粉（薄力粉）":"小麦"};
  rows=SKIN.map(([n,w])=>{const p=PRESETS.find(x=>x.n===n)||{};
-  return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:String(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
+  return{id:uid(),name:n,disp:DISP[n]||n,sec:"皮",w:g1(w),k:p.k??"",p:p.p??"",f:p.f??"",c:p.c??"",s:p.s??"",
    txt:"",url:"",src:"内蔵の控え",alg:ALG[n]||"",show:n!=="浄水"}});
  draw();
  say("シートを読めなかったため、内蔵の控えを使いました","ng")}
 
-function resetAll(){rows=[blank()];$("pname").value="";$("ycount").value="1";$("fweight").value="";draw()}
+function resetAll(){rows=[blank()];$("pname").value="";$("kawaw").value="60";draw()}
 
 function draw(){
  $("foods").innerHTML=rows.map((r,i)=>`
@@ -375,7 +382,7 @@ function draw(){
   <div class="row-top">
    <div class="row-number">${i+1}</div>
    <label class="field food-name"><span>原材料名</span><input value="${esc(r.name)}" oninput="setV('${r.id}','name',this.value)" placeholder="例：粒あん"></label>
-   <label class="field unit-input"><span>使用量</span><input type="number" min="0" value="${r.w}" oninput="setV('${r.id}','w',this.value)"><b>g</b></label>
+   <label class="field unit-input"><span>1個あたり</span><input type="number" min="0" step="0.1" value="${r.w}" oninput="setV('${r.id}','w',this.value)"><b>g</b></label>
    <label class="field"><span>区分</span><select onchange="setV('${r.id}','sec',this.value)">
      <option${r.sec==="皮"?" selected":""}>皮</option><option${r.sec!=="皮"?" selected":""}>餡・仕上げ</option></select></label>
    <label class="field"><span>100gあたり kcal</span><input type="number" min="0" value="${r.k}" oninput="setV('${r.id}','k',this.value)"></label>
@@ -408,12 +415,16 @@ function drawRowResults(){
  rows.forEach(r=>{const el=document.querySelector(`[data-res="${r.id}"]`);
   if(el)el.textContent=fmt(num(r.w)*num(r.k)/100)})}
 
+// すべて「1個あたり」で入力する方式。
+// 完成品1個の重さ ＝ 焼き上がりの皮（既定60g＝30g×2枚）＋ 餡・仕上げに入れたg数の合計。
+// 皮は生地の量ではなく焼き上がりの重さを使うので、焼き減りが自動で反映される。
 function calc(){
- const t={k:0,p:0,f:0,c:0,s:0};let wsum=0;
- rows.forEach(r=>{const w=num(r.w);wsum+=w;
+ const t={k:0,p:0,f:0,c:0,s:0};let wsum=0,fillw=0;
+ rows.forEach(r=>{const w=num(r.w);wsum+=w;if(r.sec!=="皮")fillw+=w;
   t.k+=w*num(r.k)/100;t.p+=w*num(r.p)/100;t.f+=w*num(r.f)/100;t.c+=w*num(r.c)/100;t.s+=w*num(r.s)/100});
- const div=Math.max(num($("ycount").value),1);
- const fin=num($("fweight").value)||wsum;
+ const div=1;
+ const fin=num($("kawaw").value)+fillw;
+ $("oneweight").value=fin>0?fmt(fin,1)+" g":"";
  const f=fin>0?100/fin:0;
  $("kcal").textContent=fmt(t.k/div);
  $("p1").textContent=fmt(t.p/div,1);$("f1v").textContent=fmt(t.f/div,1);
@@ -421,13 +432,13 @@ function calc(){
  $("k100").textContent=fmt(t.k*f)+" kcal";$("p100").textContent=fmt(t.p*f,1)+" g";
  $("f100v").textContent=fmt(t.f*f,1)+" g";$("c100").textContent=fmt(t.c*f,1)+" g";
  $("s100").textContent=fmt(t.s*f,2)+" g";
- $("base100").textContent=`完成品100gあたり（基準 ${fmt(fin)}g）`;
- $("wsum").textContent=`材料合計 ${fmt(wsum)}g／できあがり ${fmt(div)}個`;
+ $("base100").textContent=`完成品100gあたり（1個 ${fmt(fin,1)}g）`;
+ $("wsum").textContent=`1個あたりの材料 ${fmt(wsum,1)}g（うち餡・仕上げ ${fmt(fillw,1)}g）／焼き上がりの皮 ${fmt(num($("kawaw").value),1)}g`;
  window._t=t;window._f=f;window._div=div;
  drawRowResults();drawLabel();flow()}
 
 function flow(){
- const p1=$("pname").value.trim()!==""&&num($("ycount").value)>0;
+ const p1=$("pname").value.trim()!==""&&num($("kawaw").value)>0;
  const p2=rows.some(r=>r.name.trim()&&num(r.w)>0&&num(r.k)>0);
  $("f1").className="flow-step"+(p1?" done":" active");
  $("f2").className="flow-step"+(p2?" done":(p1?" active":""));
@@ -549,8 +560,8 @@ function loadHist(){try{hist=JSON.parse(localStorage.getItem("seibun-history")||
 function saveHist(){
  const v=rows.filter(r=>r.name.trim()&&num(r.w)>0);
  if(!v.length){say("保存できる原材料がありません","ng");return}
- hist=[{id:uid(),at:new Date().toLocaleString("ja-JP"),pname:$("pname").value,y:$("ycount").value,
-  fw:$("fweight").value,rows:v},...hist].slice(0,10);
+ hist=[{id:uid(),at:new Date().toLocaleString("ja-JP"),pname:$("pname").value,
+  kw:$("kawaw").value,rows:v},...hist].slice(0,10);
  localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist();say("履歴に保存しました")}
 function drawHist(){
  const n=$("histN");n.textContent=hist.length;n.style.display=hist.length?"grid":"none";
@@ -560,11 +571,11 @@ function drawHist(){
   <button class="history-delete" onclick="delHist('${h.id}')" aria-label="削除">×</button></article>`).join("")+`</div>`
   :`<p class="empty-history">まだありません。</p>`}
 function restore(id){const h=hist.find(x=>x.id===id);if(!h)return;
- rows=h.rows.map(r=>({...r,id:uid()}));$("pname").value=h.pname||"";$("ycount").value=h.y||"1";$("fweight").value=h.fw||"";draw();toggleHist()}
+ rows=h.rows.map(r=>({...r,id:uid()}));$("pname").value=h.pname||"";$("kawaw").value=h.kw||"60";draw();toggleHist()}
 function delHist(id){hist=hist.filter(x=>x.id!==id);localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist()}
 function toggleHist(){const b=$("histBox");b.style.display=b.style.display==="block"?"none":"block"}
 
-["pname","ycount","fweight"].forEach(id=>$(id).addEventListener("input",calc));
+["pname","kawaw"].forEach(id=>$(id).addEventListener("input",calc));
 rows=[blank()];draw();loadHist();
 fetch("/api/seibun/usage").then(r=>r.json()).then(u=>{if(u&&u.count)$("usage").textContent=`これまでの読み取り ${u.count} 回・推定 約${Math.round(u.yen)}円（月1,000円が目安）`}).catch(()=>{});
 </script>
