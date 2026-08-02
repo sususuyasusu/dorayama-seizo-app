@@ -5,6 +5,7 @@
   ANTHROPIC_API_KEY : Claude API キー（未設定なら読み取り機能だけ止まる）
   ACCESS_CODE       : どら山スタッフ用の合言葉（未設定なら読み取りを通さない＝開けっ放し防止）
 """
+import datetime
 import json
 import os
 import re
@@ -110,6 +111,259 @@ def kawa_recipe():
            "url": f"https://docs.google.com/spreadsheets/d/{RECIPE_KEY}/edit#gid={ws.id}"}
     _kawa_cache.update({"at": time.time(), "data": out})
     return out
+
+
+# ---- 保存先のタブ（旬どらレシピ_2026 の中） ----
+# 月別管理表 … 旬どら12か月の枠。月を選ぶとその行を上書きする
+# 商品マスタ … 商品ごとの台帳。旬どら以外の新規商品はここに行を足す
+# 計算記録   … 計算するたびに1行ずつ積む履歴。消さない
+TAB_MONTH = "月別管理表"
+TAB_MASTER = "商品マスタ"
+TAB_LOG = "計算記録"
+MONTH_FIRST_ROW = 5          # 5行目が1月、16行目が12月
+LOG_DATA_COL = 19            # S列。復元用の内部データを入れる（人は見なくてよい）
+
+
+def _sheet():
+    import data_layer
+    return data_layer._client().open_by_key(RECIPE_KEY)
+
+
+def _today():
+    return datetime.date.today().isoformat()
+
+
+def products():
+    """保存先の選択肢を作る。月別管理表の12か月と、商品マスタの登録済み商品。"""
+    try:
+        sh = _sheet()
+        mv = sh.worksheet(TAB_MONTH).get_all_values()
+        pv = sh.worksheet(TAB_MASTER).get_all_values()
+    except Exception as e:
+        return {"error": f"シートを読めませんでした（{e}）", "months": [], "items": []}
+
+    months = []
+    for i in range(12):
+        r = mv[MONTH_FIRST_ROW - 1 + i] if len(mv) > MONTH_FIRST_ROW - 1 + i else []
+        r = list(r) + [""] * (13 - len(r))
+        months.append({"row": MONTH_FIRST_ROW + i, "month": r[0].strip(),
+                       "seed": r[1].strip(), "name": r[2].strip(),
+                       "kcal": r[6].strip()})
+
+    items = []
+    for i, r in enumerate(pv[1:], start=2):
+        r = list(r) + [""] * (14 - len(r))
+        if not r[1].strip():
+            continue
+        items.append({"row": i, "pid": r[0].strip(), "name": r[1].strip(),
+                      "kind": r[2].strip(), "kcal": r[3].strip()})
+    return {"months": months, "items": items,
+            "url": f"https://docs.google.com/spreadsheets/d/{RECIPE_KEY}/edit"}
+
+
+TAB_ING = "原材料マスタ_AI"
+ING_FIRST_ROW = 3            # 1行目は見出し、2行目が列名、3行目からデータ
+_pre_cache = {"at": 0, "data": None}
+
+
+def presets(force=False):
+    """プリセット（原材料の候補）を原材料マスタ_AIから読む。60秒はキャッシュする。"""
+    if not force and _pre_cache["data"] and time.time() - _pre_cache["at"] < 60:
+        return _pre_cache["data"]
+    try:
+        vals = _sheet().worksheet(TAB_ING).get_all_values()
+    except Exception as e:
+        return {"error": f"シートを読めませんでした（{e}）", "items": []}
+
+    def n(v):
+        try:
+            return float(str(v).replace(",", ""))
+        except Exception:
+            return ""
+
+    items = []
+    for i, r in enumerate(vals[ING_FIRST_ROW - 1:], start=ING_FIRST_ROW):
+        r = list(r) + [""] * (19 - len(r))
+        if not r[1].strip():
+            continue
+        items.append({
+            "row": i, "iid": r[0].strip(), "n": r[1].strip(),
+            "disp": r[2].strip() or r[1].strip(),
+            "sec": "皮" if r[3].strip() == "皮" else "餡・仕上げ",
+            "k": n(r[4]), "p": n(r[5]), "f": n(r[6]), "c": n(r[7]), "s": n(r[8]),
+            "txt": r[11].strip(), "alg": r[12].strip(),
+            "src": r[13].strip(), "url": r[14].strip(),
+        })
+    out = {"items": items, "tab": TAB_ING}
+    _pre_cache.update({"at": time.time(), "data": out})
+    return out
+
+
+def add_preset(d):
+    """原材料をプリセットに登録する。同じ材料名があればその行を上書きする。"""
+    name = (d.get("n") or "").strip()
+    if not name:
+        return {"ok": False, "msg": "原材料名が空です。"}
+    ws = _sheet().worksheet(TAB_ING)
+    vals = ws.get_all_values()
+
+    def num(v):
+        try:
+            return round(float(v), 3)
+        except Exception:
+            return ""
+
+    body = [name, (d.get("disp") or name).strip(),
+            "皮" if d.get("sec") == "皮" else "餡",
+            num(d.get("k")), num(d.get("p")), num(d.get("f")),
+            num(d.get("c")), num(d.get("s"))]
+    extra = [(d.get("txt") or "").strip(), (d.get("alg") or "").strip(),
+             (d.get("src") or "アプリ登録").strip(), (d.get("url") or "").strip()]
+
+    target = None
+    used = []
+    for i, r in enumerate(vals[ING_FIRST_ROW - 1:], start=ING_FIRST_ROW):
+        if len(r) > 1 and r[1].strip():
+            used.append(r[0].strip())
+            if r[1].strip() == name:
+                target = i
+
+    if target:
+        ws.update(range_name=f"B{target}:I{target}", values=[body],
+                  value_input_option="USER_ENTERED")
+        ws.update(range_name=f"L{target}:O{target}", values=[extra],
+                  value_input_option="USER_ENTERED")
+        ws.update(range_name=f"Q{target}:R{target}", values=[[_today(), "アプリ登録"]],
+                  value_input_option="USER_ENTERED")
+        msg = f"「{name}」を上書きしました（{target}行目）"
+    else:
+        mx = 0
+        for u in used:
+            digits = "".join(ch for ch in u if ch.isdigit())
+            if u.startswith("I") and digits:
+                mx = max(mx, int(digits))
+        iid = f"I{mx + 1:03d}"
+        row = [iid] + body + ["", ""] + extra + ["", _today(), "アプリ登録", ""]
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        msg = f"「{name}」をプリセットに追加しました（{iid}）"
+
+    _pre_cache.update({"at": 0, "data": None})
+    return {"ok": True, "msg": msg}
+
+
+def history(limit=10):
+    """計算記録タブの新しい順。端末が変わっても同じものが見える。"""
+    try:
+        vals = _sheet().worksheet(TAB_LOG).get_all_values()
+    except Exception as e:
+        return {"error": f"シートを読めませんでした（{e}）", "items": []}
+    out = []
+    for i in range(len(vals) - 1, 0, -1):
+        r = list(vals[i]) + [""] * (LOG_DATA_COL - len(vals[i]))
+        if not r[1].strip():
+            continue
+        try:
+            data = json.loads(r[LOG_DATA_COL - 1] or "null")
+        except Exception:
+            data = None
+        out.append({"row": i + 1, "at": r[0], "name": r[1], "kcal": r[2], "data": data})
+        if len(out) >= limit:
+            break
+    return {"items": out}
+
+
+def _new_pid(pv, kind):
+    """商品IDの自動採番。旬どら=D、生どら=N、それ以外=P。"""
+    head = {"旬どら": "D", "生どら": "N"}.get(kind, "P")
+    used = [r[0].strip() for r in pv[1:] if r and r[0].strip().startswith(head)]
+    mx = 0
+    for u in used:
+        digits = "".join(ch for ch in u if ch.isdigit())
+        if digits:
+            mx = max(mx, int(digits))
+    return f"{head}{mx + 1:03d}"
+
+
+def save_result(d):
+    """計算結果をシートに保存する。計算記録には必ず1行積み、
+    選ばれた保存先（月別管理表の月／商品マスタの既存行／新規行）を上書きする。"""
+    name = (d.get("name") or "").strip()
+    if not name:
+        return {"ok": False, "msg": "商品名が空です。"}
+    p100 = d.get("per100") or {}
+    p1 = d.get("per1") or {}
+
+    def v(src, key, digits):
+        try:
+            return round(float(src.get(key) or 0), digits)
+        except Exception:
+            return 0
+
+    n100 = [v(p100, k, dg) for k, dg in
+            (("k", 0), ("p", 1), ("f", 1), ("c", 1), ("s", 2))]
+    now = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+    sh = _sheet()
+    done = []
+
+    # ① 計算記録に1行積む（これが履歴の本体。上書きはしない）
+    log = sh.worksheet(TAB_LOG)
+    if log.col_count < LOG_DATA_COL:      # 復元用の列がまだ無ければ1列足す
+        log.add_cols(LOG_DATA_COL - log.col_count)
+    if len(log.row_values(1) or []) < LOG_DATA_COL:
+        log.update_cell(1, LOG_DATA_COL, "アプリ内部データ（復元用・編集不要）")
+    log.append_row([
+        now, name, v(p1, "k", 0), v(p1, "p", 1), v(p1, "f", 1), v(p1, "c", 1),
+        v(p1, "s", 2), 60, round(float(d.get("oneWeight") or 0) * 60, 1),
+        d.get("ingredients") or "", round(float(d.get("matSum") or 0), 1),
+        n100[0], "", "", "アプリ計算", "", _today(),
+        d.get("allergen") or "",
+        json.dumps({"kw": d.get("kawaW") or 60, "rows": d.get("rows") or []},
+                   ensure_ascii=False),
+    ], value_input_option="USER_ENTERED")
+    done.append("計算記録に1行追加")
+
+    mode = d.get("mode")
+    if mode == "shun":
+        row = int(d.get("row") or 0)
+        if not MONTH_FIRST_ROW <= row <= MONTH_FIRST_ROW + 11:
+            return {"ok": False, "msg": "月の指定が正しくありません。"}
+        ws = sh.worksheet(TAB_MONTH)
+        ws.update(range_name=f"C{row}", values=[[name]], value_input_option="USER_ENTERED")
+        ws.update(range_name=f"F{row}:K{row}",
+                  values=[[d.get("allergenPlain") or ""] + n100],
+                  value_input_option="USER_ENTERED")
+        ws.update(range_name=f"M{row}", values=[[_today()]], value_input_option="USER_ENTERED")
+        done.append(f"月別管理表 {row - MONTH_FIRST_ROW + 1}月の行を更新")
+        mode = "master_by_name"
+
+    mst = sh.worksheet(TAB_MASTER)
+    pv = mst.get_all_values()
+    target = None
+    if mode == "existing":
+        target = int(d.get("row") or 0) or None
+    elif mode == "master_by_name":
+        for i, r in enumerate(pv[1:], start=2):
+            if len(r) > 1 and r[1].strip() == name:
+                target = i
+                break
+
+    if target:
+        mst.update(range_name=f"D{target}:H{target}", values=[n100],
+                   value_input_option="USER_ENTERED")
+        mst.update(range_name=f"I{target}:K{target}",
+                   values=[["アプリ計算", _today(), "成分ノート"]],
+                   value_input_option="USER_ENTERED")
+        done.append(f"商品マスタ {target}行目を更新")
+    elif mode in ("new", "master_by_name"):
+        kind = (d.get("kind") or "その他").strip()
+        pid = _new_pid(pv, kind)
+        mst.append_row([pid, name, kind] + n100 +
+                       ["アプリ計算", _today(), "成分ノート", "", "要根拠確認",
+                        d.get("allergenPlain") or ""],
+                       value_input_option="USER_ENTERED")
+        done.append(f"商品マスタに新規追加（{pid}）")
+
+    return {"ok": True, "msg": "／".join(done)}
 
 
 def check_access(code):

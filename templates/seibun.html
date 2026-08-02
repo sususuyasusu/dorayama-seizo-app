@@ -80,6 +80,8 @@ button{color:inherit}
 .preset-strip{margin:12px 0 0 53px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .preset-strip span{font-size:10px;color:var(--muted)}
 .preset-strip select{border:1px solid #dce2dc;border-radius:20px;padding:5px 9px;background:#f6f8f4;font-size:10px;cursor:pointer}
+.preset-add{border:1px solid var(--green);border-radius:20px;padding:5px 10px;background:#fff;color:var(--green);font-size:10px;font-weight:700;cursor:pointer}
+.preset-add:hover{background:var(--green);color:#fff}
 .preset-strip label{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .pfc-fields{margin:15px 0 0 53px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;background:#f4f6f1}
 .pfc-fields em{margin-right:5px;color:var(--green);font-style:normal;font-weight:900}
@@ -277,7 +279,7 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
     <div style="margin-top:18px">
       <button class="copy-button" onclick="copyItem()">1個あたりをコピー</button>
       <button class="copy-button" onclick="copyBack()">商品裏面用をコピー</button>
-      <button class="save-button" onclick="saveHist()">履歴に保存</button>
+      <button class="save-button" onclick="openSave()">スプレッドシートに保存</button>
       <button class="reset-button" onclick="resetAll()">全部消す</button>
     </div>
     <p class="saved-message" id="copyMsg"></p>
@@ -287,7 +289,13 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
 
 <section class="history-panel" id="histBox">
   <div class="history-heading"><h2>履歴（最新10件）</h2><button onclick="toggleHist()">×</button></div>
+  <p class="section-help" style="margin:6px 0 0">スプレッドシートの「計算記録」に入っています。どの端末からも同じものが見えます。</p>
   <div id="histList"></div>
+</section>
+
+<section class="history-panel" id="saveBox">
+  <div class="history-heading"><h2>スプレッドシートに保存</h2><button onclick="toggleSave()">×</button></div>
+  <div id="saveBody"><p class="empty-history">読み込み中…</p></div>
 </section>
 
 <footer>
@@ -297,7 +305,10 @@ footer{max-width:1180px;margin:0 auto;padding:25px 24px 35px;border-top:1px soli
 </div>
 
 <script>
-const PRESETS=[
+// プリセットはスプレッドシートの「原材料マスタ_AI」が本体。
+// 起動時にそこから読み、読めなかったときだけ下の内蔵の控えを使う。
+let PRESETS=[];
+const BUILTIN_PRESETS=[
  {n:"小麦粉（薄力粉）",k:349,p:8.3,f:1.5,c:75.8,s:0},
  {n:"スーパーバイオレット（薄力粉）",k:349,p:8.3,f:1.5,c:75.8,s:0},
  {n:"中力粉",k:368,p:9,f:1.8,c:74.8,s:0},
@@ -318,6 +329,7 @@ const PRESETS=[
  {n:"無塩バター",k:720,p:0.5,f:83,c:0.2,s:0},
  {n:"生クリーム",k:404,p:1.9,f:43,c:3.1,s:0.1}
 ];
+PRESETS=BUILTIN_PRESETS;
 // 2026-07-26 本人が画像で確定した「新配合」列そのまま（合計4,275g、米油を入れて4,335g）。
 // 液卵で仕込む場合は「卵1,250g」を 卵黄400g＋卵白750g に置き換える。
 // 2026-08-01 本人指示により、より正確な液卵（卵黄400g＋卵白750g）に統一。
@@ -347,7 +359,33 @@ function addRow(r){rows.push(r||blank());draw()}
 function delRow(id){rows=rows.filter(x=>x.id!==id);if(!rows.length)rows=[blank()];draw()}
 function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec"||key==="disp"||key==="txt"||key==="alg")drawLabel();if(key==="w"||key==="k")drawRowResults()}}
 function applyPreset(id,name){const p=PRESETS.find(x=>x.n===name);if(!p)return;const r=rows.find(x=>x.id===id);
- Object.assign(r,{name:p.n,disp:DISP[p.n]||p.n,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,src:r.src||"標準成分値"});draw()}
+ Object.assign(r,{name:p.n,disp:p.disp||DISP[p.n]||p.n,sec:p.sec||r.sec,k:p.k,p:p.p,f:p.f,c:p.c,s:p.s,
+  txt:p.txt??r.txt,alg:p.alg??r.alg,url:p.url??r.url,src:p.src||r.src||"標準成分値"});draw()}
+
+/* ---- プリセット（スプレッドシート「原材料マスタ_AI」）---- */
+async function loadPresets(){
+ try{
+  const d=await (await fetch("/api/seibun/presets")).json();
+  if(d&&d.items&&d.items.length){PRESETS=d.items;draw()}
+ }catch(e){}}
+
+// いま入力している原材料を、そのままプリセットへ登録する。
+// 同じ名前がすでにあればその行を上書きするので、二重に増えない。
+async function addPreset(id){
+ const r=rows.find(x=>x.id===id);
+ if(!r||!r.name.trim()){say("原材料名を先に入れてください","ng");return}
+ const code=askCode();if(!code)return;
+ say(`「${r.name}」を登録しています…`);
+ try{
+  const res=await fetch("/api/seibun/preset/add",{method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({accessCode:code,n:r.name.trim(),disp:r.disp,sec:r.sec,
+    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:r.txt,alg:r.alg,src:r.src,url:r.url})});
+  const j=await res.json();
+  if(res.status===401){localStorage.removeItem(CODE_KEY);throw new Error("合言葉が違います。もう一度お試しください。")}
+  if(!j.ok)throw new Error(j.msg||j.error||"登録できませんでした");
+  say(j.msg);await loadPresets();
+ }catch(e){say(e.message,"ng")}}
 
 // 皮レシピは Googleスプレッドシート「共通_皮レシピ」から読む。
 // シートを直せばアプリも変わる。読めないときだけ、内蔵の控えを使う。
@@ -392,7 +430,8 @@ function draw(){
   <div class="preset-strip">
    <span>プリセット</span>
    <select onchange="applyPreset('${r.id}',this.value)">
-    <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${p.n}</option>`).join("")}</select>
+    <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${esc(p.n)}</option>`).join("")}</select>
+   <button type="button" class="preset-add" onclick="addPreset('${r.id}')" title="この原材料をスプレッドシートのプリセットに登録します">＋プリセットに追加</button>
    <label><input type="checkbox" ${r.show?"checked":""} onchange="setV('${r.id}','show',this.checked)">裏面の原材料名に載せる</label>
   </div>
   <div class="pfc-fields">
@@ -475,20 +514,22 @@ function ingredientsText(){
 
 // 原材料名の最後に付ける一括表示。使っている材料のアレルゲンを重複なくまとめる。
 // ※出るのは入力されたものだけ。書いていない材料があれば当然もれるので、必ず現物と照合すること。
-function allergenText(){
- // 個別表示（原材料名に「卵」「小麦粉」等がそのまま出ている）と一括表示は併用できない。
- // 現行の黒どらラベルは個別表示なので、その場合は「付けない」を選ぶ。
- if((($("amode")||{}).value||"batch")==="none")return "";
+function allergenList(){
  const set=new Set();
  rows.filter(r=>r.name.trim()&&num(r.w)>0).forEach(r=>{
   String(r.alg||"").split(/[、,／\/・\s]+/).forEach(a=>{
    const v=(ALG_FIX[a.trim()]||a.trim());
    if(v&&v!=="なし"&&v!=="無し")set.add(v)})});
- if(!set.size)return "";
- const list=[...set].sort((a,b)=>{
+ return [...set].sort((a,b)=>{
   const i=ALG_ORDER.indexOf(a),j=ALG_ORDER.indexOf(b);
-  return (i<0?999:i)-(j<0?999:j)});
- return `（一部に${list.join("・")}を含む）`}
+  return (i<0?999:i)-(j<0?999:j)})}
+
+function allergenText(){
+ // 個別表示（原材料名に「卵」「小麦粉」等がそのまま出ている）と一括表示は併用できない。
+ // 現行の黒どらラベルは個別表示なので、その場合は「付けない」を選ぶ。
+ if((($("amode")||{}).value||"batch")==="none")return "";
+ const list=allergenList();
+ return list.length?`（一部に${list.join("・")}を含む）`:""}
 
 function labelText(){
  const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f||0;
@@ -555,28 +596,97 @@ async function scanPhoto(ev){
  }catch(e){$("scanMsg").textContent=e.message||"画像を読み取れませんでした。手入力で続けてください。"}
  finally{ev.target.value=""}}
 
-/* ---- 履歴 ---- */
-function loadHist(){try{hist=JSON.parse(localStorage.getItem("seibun-history")||"[]")}catch{hist=[]}drawHist()}
-function saveHist(){
- const v=rows.filter(r=>r.name.trim()&&num(r.w)>0);
- if(!v.length){say("保存できる原材料がありません","ng");return}
- hist=[{id:uid(),at:new Date().toLocaleString("ja-JP"),pname:$("pname").value,
-  kw:$("kawaw").value,rows:v},...hist].slice(0,10);
- localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist();say("履歴に保存しました")}
+/* ---- 履歴（スプレッドシートの「計算記録」タブ） ----
+   端末のブラウザではなくシートに残るので、他のスタッフの端末からも同じものが見える。 */
+async function loadHist(){
+ try{const r=await fetch("/api/seibun/history");hist=(await r.json()).items||[]}
+ catch{hist=[]}
+ drawHist()}
 function drawHist(){
  const n=$("histN");n.textContent=hist.length;n.style.display=hist.length?"grid":"none";
  $("histList").innerHTML=hist.length?`<div class="history-list">`+hist.map(h=>`<article>
-  <button class="history-load" onclick="restore('${h.id}')"><strong>${esc(h.pname||"（無題）")}</strong>
-   <span>${h.at}・原材料${h.rows.length}件</span></button>
-  <button class="history-delete" onclick="delHist('${h.id}')" aria-label="削除">×</button></article>`).join("")+`</div>`
+  <button class="history-load" onclick="restore(${h.row})"><strong>${esc(h.name||"（無題）")}</strong>
+   <span>${esc(h.at)}${h.kcal?"・1個 "+esc(h.kcal)+"kcal":""}${(h.data&&h.data.rows)?"":"（呼び出し不可）"}</span></button>
+  </article>`).join("")+`</div>`
   :`<p class="empty-history">まだありません。</p>`}
-function restore(id){const h=hist.find(x=>x.id===id);if(!h)return;
- rows=h.rows.map(r=>({...r,id:uid()}));$("pname").value=h.pname||"";$("kawaw").value=h.kw||"60";draw();toggleHist()}
-function delHist(id){hist=hist.filter(x=>x.id!==id);localStorage.setItem("seibun-history",JSON.stringify(hist));drawHist()}
-function toggleHist(){const b=$("histBox");b.style.display=b.style.display==="block"?"none":"block"}
+function restore(row){const h=hist.find(x=>x.row===row);
+ if(!h||!h.data||!(h.data.rows||[]).length){say("この記録は呼び出せません","ng");return}
+ rows=h.data.rows.map(r=>({...r,id:uid()}));$("pname").value=h.name||"";
+ $("kawaw").value=h.data.kw||"60";draw();toggleHist()}
+function toggleHist(){const b=$("histBox");
+ if(b.style.display!=="block"){loadHist();$("saveBox").style.display="none"}
+ b.style.display=b.style.display==="block"?"none":"block"}
+
+/* ---- スプレッドシートへの保存 ----
+   旬どら … 月別管理表の該当月の行を上書き（同名の商品マスタ行もあれば一緒に更新）
+   既存   … 商品マスタの選んだ行を上書き
+   新規   … 商品マスタに行を追加（商品IDは自動で採番）
+   どれを選んでも「計算記録」には必ず1行積む。上書きされない記録がここに残る。 */
+function toggleSave(){const b=$("saveBox");b.style.display=b.style.display==="block"?"none":"block"}
+
+async function openSave(){
+ if(!rows.some(r=>r.name.trim()&&num(r.w)>0)){say("保存できる原材料がありません","ng");return}
+ const b=$("saveBox");b.style.display="block";$("histBox").style.display="none";
+ $("saveBody").innerHTML=`<p class="empty-history">読み込み中…</p>`;
+ let d;
+ try{d=await (await fetch("/api/seibun/products")).json()}
+ catch{d={error:"通信できませんでした"}}
+ if(d.error){$("saveBody").innerHTML=`<p class="empty-history">${esc(d.error)}</p>`;return}
+ const nm=$("pname").value.trim();
+ const mo=d.months.map(m=>`<option value="${m.row}"${m.name===nm?" selected":""}>${esc(m.month)}　${esc(m.name||m.seed||"（未設定）")}</option>`).join("");
+ const it=d.items.map(x=>`<option value="${x.row}"${x.name===nm?" selected":""}>${esc(x.name)}（${esc(x.kind||"—")}）</option>`).join("");
+ $("saveBody").innerHTML=`
+ <p class="section-help" style="margin:14px 0 4px">保存する商品名：<b>${esc(nm||"（未入力）")}</b></p>
+ <label class="field" style="margin-top:12px"><span>保存のしかた</span>
+  <select id="svmode" onchange="svSwitch()">
+   <option value="shun">旬どら — 月別管理表の月に登録する</option>
+   <option value="existing">登録済みの商品を更新する</option>
+   <option value="new">新しい商品として作る</option>
+  </select></label>
+ <label class="field" id="svShun"><span>どの月に入れますか</span><select id="svMonth">${mo}</select></label>
+ <label class="field" id="svExist" style="display:none"><span>どの商品を更新しますか</span><select id="svItem">${it}</select></label>
+ <label class="field" id="svNew" style="display:none"><span>区分</span>
+  <select id="svKind"><option>旬どら</option><option>定番</option><option>生どら</option><option>その他</option></select></label>
+ <p class="section-help" style="margin:12px 0">シートに入るのは<b>100gあたり</b>の値です（月別管理表・商品マスタがその形式のため）。1個あたりの値は「計算記録」に残ります。</p>
+ <button class="save-button" style="width:100%" onclick="doSave()">この内容で保存する</button>
+ <p class="saved-message" id="svMsg"></p>`;
+ svSwitch()}
+
+function svSwitch(){const m=$("svmode").value;
+ $("svShun").style.display=m==="shun"?"":"none";
+ $("svExist").style.display=m==="existing"?"":"none";
+ $("svNew").style.display=m==="new"?"":"none"}
+
+async function doSave(){
+ const code=askCode();if(!code)return;
+ const t=window._t||{k:0,p:0,f:0,c:0,s:0},f=window._f||0;
+ const mode=$("svmode").value;
+ const body={accessCode:code,mode,
+  name:$("pname").value.trim(),
+  row:mode==="shun"?Number($("svMonth").value):mode==="existing"?Number($("svItem").value):0,
+  kind:mode==="new"?$("svKind").value:"",
+  per1:{k:t.k,p:t.p,f:t.f,c:t.c,s:t.s},
+  per100:{k:t.k*f,p:t.p*f,f:t.f*f,c:t.c*f,s:t.s*f},
+  kawaW:num($("kawaw").value),
+  oneWeight:num($("kawaw").value)+rows.filter(r=>r.sec!=="皮").reduce((a,r)=>a+num(r.w),0),
+  matSum:rows.reduce((a,r)=>a+num(r.w),0),
+  ingredients:ingredientsText(),
+  allergen:allergenText(),
+  allergenPlain:allergenList().join("・"),
+  rows:rows.filter(r=>r.name.trim()&&num(r.w)>0)};
+ const el=$("svMsg");el.className="saved-message";el.textContent="保存しています…";
+ try{
+  const r=await fetch("/api/seibun/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(r.status===401){localStorage.removeItem(CODE_KEY);throw new Error("合言葉が違います。もう一度お試しください。")}
+  if(!j.ok)throw new Error(j.msg||j.error||"保存できませんでした");
+  el.textContent="保存しました：" + j.msg;
+  say("スプレッドシートに保存しました");
+  loadHist();
+ }catch(e){el.className="saved-message ng";el.textContent=e.message}}
 
 ["pname","kawaw"].forEach(id=>$(id).addEventListener("input",calc));
-rows=[blank()];draw();loadHist();
+rows=[blank()];draw();loadPresets();loadHist();
 fetch("/api/seibun/usage").then(r=>r.json()).then(u=>{if(u&&u.count)$("usage").textContent=`これまでの読み取り ${u.count} 回・推定 約${Math.round(u.yen)}円（月1,000円が目安）`}).catch(()=>{});
 </script>
 </body>

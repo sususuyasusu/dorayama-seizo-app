@@ -87,6 +87,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(seibun_layer.kawa_recipe(), ensure_ascii=False))
         elif path == "/api/seibun/usage":
             self._send(200, json.dumps(seibun_layer.usage(), ensure_ascii=False))
+        elif path == "/api/seibun/products":
+            self._send(200, json.dumps(seibun_layer.products(), ensure_ascii=False))
+        elif path == "/api/seibun/history":
+            self._send(200, json.dumps(seibun_layer.history(), ensure_ascii=False))
+        elif path == "/api/seibun/presets":
+            self._send(200, json.dumps(seibun_layer.presets(), ensure_ascii=False))
         elif path == "/api/manual":
             self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
@@ -182,6 +188,27 @@ class Handler(BaseHTTPRequestHandler):
             )
             self._send(int(r.pop("status", 200)) if "error" in r else 200,
                        json.dumps(r, ensure_ascii=False))
+        elif path == "/api/seibun/save":
+            # シートを書き換えるので、読み取りと同じ合言葉を必須にする
+            ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            try:
+                r = seibun_layer.save_result(data)
+            except Exception as e:
+                r = {"ok": False, "msg": f"保存できませんでした（{e}）"}
+            self._send(200, json.dumps(r, ensure_ascii=False))
+        elif path == "/api/seibun/preset/add":
+            ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            try:
+                r = seibun_layer.add_preset(data)
+            except Exception as e:
+                r = {"ok": False, "msg": f"登録できませんでした（{e}）"}
+            self._send(200, json.dumps(r, ensure_ascii=False))
         elif path == "/api/manual/add":
             self._send(200, json.dumps(manual_layer.add_entry(data), ensure_ascii=False))
         elif path == "/api/manual/announce":
