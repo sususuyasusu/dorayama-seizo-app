@@ -165,6 +165,86 @@ TAB_ING = "原材料マスタ_AI"
 ING_FIRST_ROW = 3            # 1行目は見出し、2行目が列名、3行目からデータ
 _pre_cache = {"at": 0, "data": None}
 
+# === 写真の保管 ===
+# サービスアカウントはGoogleドライブに保存できない（容量ゼロと明示される）ため、
+# 写真そのものをスプレッドシートの「画像保管」タブに文字として分割保存する。
+# 表示はアプリが画像として配信し、セルの =IMAGE() から読み込ませる。
+TAB_PHOTO = "画像保管"
+PHOTO_HEAD = ["画像ID", "登録日時", "原材料名", "形式", "文字数",
+              "↓ここから右は写真データ（触らないでください）"]
+PHOTO_FIRST_COL = 6          # F列から写真データが始まる
+PHOTO_CHUNK = 45000          # 1セルの上限50,000字に対する安全幅
+PHOTO_MAX = 40               # 1枚あたりの最大セル数（およそ1.3MBまで）
+_BASE_URL = (os.environ.get("RENDER_EXTERNAL_URL")
+             or "https://dorayama-seizo-app-1.onrender.com").rstrip("/")
+
+
+def _photo_tab(sh):
+    """画像保管タブを用意する（無ければ見出し付きで作る）。"""
+    try:
+        return sh.worksheet(TAB_PHOTO)
+    except Exception:
+        ws = sh.add_worksheet(title=TAB_PHOTO, rows=500,
+                              cols=PHOTO_FIRST_COL + PHOTO_MAX)
+        ws.update(range_name="A1", values=[PHOTO_HEAD],
+                  value_input_option="USER_ENTERED")
+        return ws
+
+
+def save_photo(b64, mime="image/jpeg", label=""):
+    """写真をシートに保存し、表示用URLを返す。"""
+    b64 = (b64 or "").strip()
+    if not b64:
+        return {"ok": False, "msg": "写真が空です。"}
+    chunks = [b64[i:i + PHOTO_CHUNK] for i in range(0, len(b64), PHOTO_CHUNK)]
+    if len(chunks) > PHOTO_MAX:
+        return {"ok": False, "msg": "写真が大きすぎます。もう少し小さくして再送してください。"}
+    ws = _photo_tab(_sheet())
+    if ws.col_count < PHOTO_FIRST_COL - 1 + len(chunks):
+        ws.add_cols(PHOTO_FIRST_COL - 1 + len(chunks) - ws.col_count)
+    pid = "G" + datetime.datetime.now().strftime("%y%m%d%H%M%S%f")[:-3]
+    ws.append_row([pid, datetime.datetime.now().strftime("%Y/%m/%d %H:%M"),
+                   (label or "").strip(), mime, len(b64)] + chunks,
+                  value_input_option="RAW")
+    return {"ok": True, "id": pid, "url": photo_url(pid)}
+
+
+def photo_url(pid):
+    return f"{_BASE_URL}/seibun/photo/{pid}.jpg"
+
+
+def get_photo(pid):
+    """保存した写真を取り出す。(バイト列, 形式) を返す。無ければ (None, None)。"""
+    import base64
+    if not re.fullmatch(r"G\d{6,20}", pid or ""):
+        return None, None
+    try:
+        vals = _photo_tab(_sheet()).get_all_values()
+    except Exception:
+        return None, None
+    for r in vals[1:]:
+        if r and r[0].strip() == pid:
+            mime = (r[3].strip() if len(r) > 3 else "") or "image/jpeg"
+            data = "".join(r[PHOTO_FIRST_COL - 1:]).strip()
+            if not data:
+                return None, None
+            try:
+                return base64.b64decode(data), mime
+            except Exception:
+                return None, None
+    return None, None
+
+
+def _set_row_height(ws, row, px):
+    """=IMAGE() の写真が潰れないように行の高さを広げる。"""
+    try:
+        ws.spreadsheet.batch_update({"requests": [{"updateDimensionProperties": {
+            "range": {"sheetId": ws.id, "dimension": "ROWS",
+                      "startIndex": row - 1, "endIndex": row},
+            "properties": {"pixelSize": px}, "fields": "pixelSize"}}]})
+    except Exception:
+        pass
+
 
 def presets(force=False):
     """プリセット（原材料の候補）を原材料マスタ_AIから読む。60秒はキャッシュする。"""
@@ -219,6 +299,9 @@ def add_preset(d):
             num(d.get("c")), num(d.get("s"))]
     extra = [(d.get("txt") or "").strip(), (d.get("alg") or "").strip(),
              (d.get("src") or "アプリ登録").strip(), (d.get("url") or "").strip()]
+    # P列「画像保管先」。写真があればセルの中に写真そのものを表示する。
+    purl = (d.get("photoUrl") or "").strip()
+    pcell = f'=IMAGE("{purl}",4,110,150)' if purl.startswith("http") else ""
 
     target = None
     used = []
@@ -245,7 +328,14 @@ def add_preset(d):
         iid = f"I{mx + 1:03d}"
         row = [iid] + body + ["", ""] + extra + ["", _today(), "アプリ登録", ""]
         ws.append_row(row, value_input_option="USER_ENTERED")
+        target = len(ws.get_all_values())
         msg = f"「{name}」をプリセットに追加しました（{iid}）"
+
+    if pcell:
+        ws.update(range_name=f"P{target}", values=[[pcell]],
+                  value_input_option="USER_ENTERED")
+        _set_row_height(ws, target, 118)
+        msg += "・写真も貼り付けました"
 
     _pre_cache.update({"at": 0, "data": None})
     return {"ok": True, "msg": msg}
@@ -284,6 +374,18 @@ def _new_pid(pv, kind):
     return f"{head}{mx + 1:03d}"
 
 
+def _ensure_head(ws, row, col, title):
+    """新しく使う列の見出しを、無ければ入れる。"""
+    try:
+        if ws.col_count < col:
+            ws.add_cols(col - ws.col_count)
+        cur = ws.cell(row, col).value
+        if not (cur or "").strip():
+            ws.update_cell(row, col, title)
+    except Exception:
+        pass
+
+
 def save_result(d):
     """計算結果をシートに保存する。計算記録には必ず1行積み、
     選ばれた保存先（月別管理表の月／商品マスタの既存行／新規行）を上書きする。"""
@@ -311,16 +413,19 @@ def save_result(d):
         log.add_cols(LOG_DATA_COL - log.col_count)
     if len(log.row_values(1) or []) < LOG_DATA_COL:
         log.update_cell(1, LOG_DATA_COL, "アプリ内部データ（復元用・編集不要）")
+    # この回に使った原材料写真（読み取り時にシートへ保管したもの）のURL
+    photos = [str(r.get("photoUrl") or "").strip()
+              for r in (d.get("rows") or []) if str(r.get("photoUrl") or "").startswith("http")]
     log.append_row([
         now, name, v(p1, "k", 0), v(p1, "p", 1), v(p1, "f", 1), v(p1, "c", 1),
         v(p1, "s", 2), 60, round(float(d.get("oneWeight") or 0) * 60, 1),
         d.get("ingredients") or "", round(float(d.get("matSum") or 0), 1),
-        n100[0], "", "", "アプリ計算", "", _today(),
+        n100[0], "", "", "アプリ計算", "\n".join(photos), _today(),
         d.get("allergen") or "",
         json.dumps({"kw": d.get("kawaW") or 60, "rows": d.get("rows") or []},
                    ensure_ascii=False),
     ], value_input_option="USER_ENTERED")
-    done.append("計算記録に1行追加")
+    done.append("計算記録に1行追加" + (f"（写真{len(photos)}枚）" if photos else ""))
 
     mode = d.get("mode")
     if mode == "shun":
@@ -328,15 +433,20 @@ def save_result(d):
         if not MONTH_FIRST_ROW <= row <= MONTH_FIRST_ROW + 11:
             return {"ok": False, "msg": "月の指定が正しくありません。"}
         ws = sh.worksheet(TAB_MONTH)
+        _ensure_head(ws, 4, 14, "原材料名")      # N列
         ws.update(range_name=f"C{row}", values=[[name]], value_input_option="USER_ENTERED")
         ws.update(range_name=f"F{row}:K{row}",
                   values=[[d.get("allergenPlain") or ""] + n100],
                   value_input_option="USER_ENTERED")
-        ws.update(range_name=f"M{row}", values=[[_today()]], value_input_option="USER_ENTERED")
-        done.append(f"月別管理表 {row - MONTH_FIRST_ROW + 1}月の行を更新")
+        ws.update(range_name=f"M{row}:N{row}",
+                  values=[[_today(), d.get("ingredients") or ""]],
+                  value_input_option="USER_ENTERED")
+        done.append(f"月別管理表 {row - MONTH_FIRST_ROW + 1}月の行を更新（原材料名も記入）")
         mode = "master_by_name"
 
     mst = sh.worksheet(TAB_MASTER)
+    _ensure_head(mst, 1, 15, "原材料名")          # O列
+    _ensure_head(mst, 1, 16, "アレルギー表記")     # P列
     pv = mst.get_all_values()
     target = None
     if mode == "existing":
@@ -347,21 +457,25 @@ def save_result(d):
                 target = i
                 break
 
+    ing = d.get("ingredients") or ""
+    alg = d.get("allergenPlain") or ""
     if target:
         mst.update(range_name=f"D{target}:H{target}", values=[n100],
                    value_input_option="USER_ENTERED")
         mst.update(range_name=f"I{target}:K{target}",
                    values=[["アプリ計算", _today(), "成分ノート"]],
                    value_input_option="USER_ENTERED")
-        done.append(f"商品マスタ {target}行目を更新")
+        mst.update(range_name=f"O{target}:P{target}", values=[[ing, alg]],
+                   value_input_option="USER_ENTERED")
+        done.append(f"商品マスタ {target}行目を更新（原材料名も記入）")
     elif mode in ("new", "master_by_name"):
         kind = (d.get("kind") or "その他").strip()
         pid = _new_pid(pv, kind)
         mst.append_row([pid, name, kind] + n100 +
-                       ["アプリ計算", _today(), "成分ノート", "", "要根拠確認",
-                        d.get("allergenPlain") or ""],
+                       ["アプリ計算", _today(), "成分ノート", "", "要根拠確認", "",
+                        ing, alg],
                        value_input_option="USER_ENTERED")
-        done.append(f"商品マスタに新規追加（{pid}）")
+        done.append(f"商品マスタに新規追加（{pid}・原材料名も記入）")
 
     return {"ok": True, "msg": "／".join(done)}
 

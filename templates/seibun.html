@@ -81,6 +81,7 @@ button{color:inherit}
 .preset-strip span{font-size:10px;color:var(--muted)}
 .preset-strip select{border:1px solid #dce2dc;border-radius:20px;padding:5px 9px;background:#f6f8f4;font-size:10px;cursor:pointer}
 .preset-add{border:1px solid var(--green);border-radius:20px;padding:5px 10px;background:#fff;color:var(--green);font-size:10px;font-weight:700;cursor:pointer}
+.photo-tag{border-radius:20px;padding:5px 10px;background:var(--lime);color:var(--green);font-size:10px;font-weight:700;text-decoration:none;white-space:nowrap}
 .preset-add:hover{background:var(--green);color:#fff}
 .preset-strip label{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
 .pfc-fields{margin:15px 0 0 53px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;background:#f4f6f1}
@@ -354,7 +355,7 @@ const ALG_ORDER=["えび","かに","くるみ","小麦","そば","卵","乳成�
 const ALG_FIX={"乳":"乳成分","牛乳":"乳成分","乳製品":"乳成分","鶏卵":"卵","たまご":"卵","小麦粉":"小麦",
  "落花生（ピーナッツ）":"落花生","ピーナッツ":"落花生","大豆由来":"大豆"};
 
-function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",alg:"",show:true}}
+function blank(){return{id:uid(),name:"",disp:"",sec:"餡・仕上げ",w:"",k:"",p:"",f:"",c:"",s:"",txt:"",url:"",src:"",alg:"",photoUrl:"",show:true}}
 function addRow(r){rows.push(r||blank());draw()}
 function delRow(id){rows=rows.filter(x=>x.id!==id);if(!rows.length)rows=[blank()];draw()}
 function setV(id,key,v){const r=rows.find(x=>x.id===id);if(r){r[key]=v;calc();if(key==="show"||key==="sec"||key==="disp"||key==="txt"||key==="alg")drawLabel();if(key==="w"||key==="k")drawRowResults()}}
@@ -380,7 +381,8 @@ async function addPreset(id){
   const res=await fetch("/api/seibun/preset/add",{method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify({accessCode:code,n:r.name.trim(),disp:r.disp,sec:r.sec,
-    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:r.txt,alg:r.alg,src:r.src,url:r.url})});
+    k:r.k,p:r.p,f:r.f,c:r.c,s:r.s,txt:r.txt,alg:r.alg,src:r.src,url:r.url,
+    photoUrl:r.photoUrl||""})});
   const j=await res.json();
   if(res.status===401){localStorage.removeItem(CODE_KEY);throw new Error("合言葉が違います。もう一度お試しください。")}
   if(!j.ok)throw new Error(j.msg||j.error||"登録できませんでした");
@@ -432,6 +434,7 @@ function draw(){
    <select onchange="applyPreset('${r.id}',this.value)">
     <option value="">選択…</option>${PRESETS.map(p=>`<option${p.n===r.name?" selected":""}>${esc(p.n)}</option>`).join("")}</select>
    <button type="button" class="preset-add" onclick="addPreset('${r.id}')" title="この原材料をスプレッドシートのプリセットに登録します">＋プリセットに追加</button>
+   ${r.photoUrl?`<a class="photo-tag" href="${esc(r.photoUrl)}" target="_blank" rel="noopener" title="スプレッドシートに保管した写真を開きます">📷 写真あり</a>`:""}
    <label><input type="checkbox" ${r.show?"checked":""} onchange="setV('${r.id}','show',this.checked)">裏面の原材料名に載せる</label>
   </div>
   <div class="pfc-fields">
@@ -552,16 +555,28 @@ function askCode(){let c=localStorage.getItem(CODE_KEY);if(c)return c;
 
 // 写真は長辺2576pxまでに縮めて送る。読み取り精度はこの大きさで頭打ちなので、
 // 落ちるのは通信量と待ち時間だけ。スマホの大きな写真でも失敗しにくくなる。
-function shrink(file){
+function shrink(file,M,q){
+ M=M||2576;q=q||0.88;
  return new Promise((res,rej)=>{
   const img=new Image(),url=URL.createObjectURL(file);
-  img.onload=()=>{const M=2576;let w=img.width,h=img.height;
+  img.onload=()=>{let w=img.width,h=img.height;
    if(Math.max(w,h)>M){const r=M/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r)}
    const c=document.createElement("canvas");c.width=w;c.height=h;
    c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
-   res(c.toDataURL("image/jpeg",0.88))};
+   res(c.toDataURL("image/jpeg",q))};
   img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("画像を開けません"))};
   img.src=url})}
+
+// 撮った写真を根拠としてスプレッドシートに保管する。
+// 保管用は長辺1400px。裏面の細かい字が読める大きさで、シートのセルにも収まる。
+async function keepPhoto(file,label,code){
+ try{
+  const d=await shrink(file,1400,0.72);
+  const r=await fetch("/api/seibun/photo",{method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({accessCode:code,image:d.split(",")[1],mediaType:"image/jpeg",label:label||""})});
+  const j=await r.json();
+  return j&&j.ok?j.url:"";
+ }catch(e){return ""}}
 
 async function scanPhoto(ev){
  const file=ev.target.files&&ev.target.files[0];if(!file)return;
@@ -578,11 +593,14 @@ async function scanPhoto(ev){
   const d=await resp.json();
   if(!resp.ok)throw new Error(d.error||"画像を読み取れませんでした");
   const per100=d.basis==="per100g";
-  addRow({id:uid(),name:d.productName||"",disp:(d.productName||"").replace(/（.*）/,""),sec:"餡・仕上げ",
+  const nr={id:uid(),name:d.productName||"",disp:(d.productName||"").replace(/（.*）/,""),sec:"餡・仕上げ",
    w:"",k:per100&&d.calories!=null?d.calories:"",p:per100&&d.protein!=null?d.protein:"",
    f:per100&&d.fat!=null?d.fat:"",c:per100&&d.carbs!=null?d.carbs:"",s:per100&&d.salt!=null?d.salt:"",
    txt:d.ingredientsText||"",url:d.sourceUrl||"",src:d.sourceType||"",
-   alg:Array.isArray(d.allergens)?d.allergens.join("、"):"",show:true});
+   alg:Array.isArray(d.allergens)?d.allergens.join("、"):"",photoUrl:"",show:true};
+  addRow(nr);
+  // 読み取りに使った写真を、そのまま根拠としてシートへ保管する
+  keepPhoto(file,nr.name,code).then(u=>{if(u){nr.photoUrl=u;draw()}});
   // 読み取った行は「使用量」が空なので、そのままでは裏面表示に出ない。入力欄まで移動する。
   setTimeout(()=>{const rs=document.querySelectorAll("#foods .food-row"),last=rs[rs.length-1];
    if(last){const wIn=last.querySelector('.unit-input input');if(wIn){wIn.scrollIntoView({block:"center"});wIn.focus()}}},150);

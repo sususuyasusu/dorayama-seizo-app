@@ -93,6 +93,20 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(seibun_layer.history(), ensure_ascii=False))
         elif path == "/api/seibun/presets":
             self._send(200, json.dumps(seibun_layer.presets(), ensure_ascii=False))
+        elif path.startswith("/seibun/photo/"):
+            # シートに保管した原材料写真を画像として返す。セルの =IMAGE() から
+            # Google側が取りに来るので、ここだけは合言葉を求めない。
+            pid = path[len("/seibun/photo/"):].split(".")[0]
+            body, mime = seibun_layer.get_photo(pid)
+            if not body:
+                self._send(404, "not found", "text/plain; charset=utf-8")
+            else:
+                self.send_response(200)
+                self.send_header("Content-Type", mime or "image/jpeg")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "public, max-age=604800")
+                self.end_headers()
+                self.wfile.write(body)
         elif path == "/api/manual":
             self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
@@ -188,6 +202,19 @@ class Handler(BaseHTTPRequestHandler):
             )
             self._send(int(r.pop("status", 200)) if "error" in r else 200,
                        json.dumps(r, ensure_ascii=False))
+        elif path == "/api/seibun/photo":
+            # 読み取った原材料写真を、そのままシートに保管する
+            ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            try:
+                r = seibun_layer.save_photo(data.get("image"),
+                                            data.get("mediaType") or "image/jpeg",
+                                            data.get("label") or "")
+            except Exception as e:
+                r = {"ok": False, "msg": f"写真を保管できませんでした（{e}）"}
+            self._send(200, json.dumps(r, ensure_ascii=False))
         elif path == "/api/seibun/save":
             # シートを書き換えるので、読み取りと同じ合言葉を必須にする
             ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
