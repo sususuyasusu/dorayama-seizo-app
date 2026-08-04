@@ -117,6 +117,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(week_payload(tab), ensure_ascii=False))
         elif path == "/api/eggs":
             self._send(200, json.dumps(egg_layer.get_egg_nav(tab), ensure_ascii=False))
+        elif path == "/api/eggsync":
+            import egg_stock_sync
+            self._send(200, json.dumps(egg_stock_sync.status, ensure_ascii=False))
         elif path == "/api/cost":
             self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
         elif path == "/api/materials":
@@ -250,4 +253,6 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8765))
     host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
+    import egg_stock_sync
+    egg_stock_sync.start()   # AppSheet在庫→製造表の10分同期（Apps Scriptトリガ停止の恒久対策）
     ThreadingHTTPServer((host, port), Handler).serve_forever()
