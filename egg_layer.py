@@ -15,6 +15,12 @@ import data_layer
 _DAY_IDX = {"月": 0, "火": 1, "水": 2, "木": 3, "金": 4, "土": 5, "日": 6}
 
 
+def _today_jst():
+    """日本時間の今日。サーバー(Render=UTC)の date.today() を使うと日本の早朝に
+    前日扱いになり、当日の発注指示が「未来日」として伏せられるバグになる。"""
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date()
+
+
 def _kaiten_row(vals):
     """A列から「回転数（切上げ）」ラベルの行(1始まり)を探す。
     週タブは催事ブロックの増減で集計行がズレる(例: 0727は39→50行)ため、行番号決め打ちは禁止。"""
@@ -34,7 +40,7 @@ def _next_week_kaiten(cur_tab):
     if not m:
         return None, None, None
     mon_month, mon_day = int(m.group(1)), int(m.group(2))
-    today = date.today()
+    today = _today_jst()
     for year in [today.year, today.year - 1]:
         try:
             cur_monday = date(year, mon_month, mon_day)
@@ -326,7 +332,7 @@ def get_egg_nav(tab=None):
                 col["tw"] = c
 
     days = []
-    today = datetime.date.today()
+    today = _today_jst()
     krow = _kaiten_row(vals)   # 「回転数（切上げ）」の行。タブごとにズレるためラベルで特定
     if hrow and "date" in col:
         for r in range(hrow + 1, hrow + 9):

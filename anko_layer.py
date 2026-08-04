@@ -51,7 +51,7 @@ def _daily_counts(tab):
 def _tab_after(cur, days):
     try:
         mm, dd = int(cur[:2]), int(cur[2:])
-        base = datetime.date(datetime.date.today().year, mm, dd)
+        base = datetime.date(datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date().year, mm, dd)
         nd = base + datetime.timedelta(days=days)
         name = "%02d%02d" % (nd.month, nd.day)
         return name if name in data_layer.list_tabs() else None

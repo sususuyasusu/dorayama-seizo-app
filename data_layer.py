@@ -6,7 +6,7 @@ import os
 import json
 import re
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -78,7 +78,8 @@ def invalidate(tab=None):
 
 
 def current_week_tab(today=None):
-    today = today or date.today()
+    # 日本時間の今日を使う（サーバー=UTCのdate.today()だと日本の早朝に前日=前週扱いになる）
+    today = today or datetime.now(timezone(timedelta(hours=9))).date()
     monday = today - timedelta(days=today.weekday())
     cands = [f"{monday.month:02d}{monday.day:02d}", f"{monday.month}{monday.day:02d}",
              f"{monday.month:02d}{monday.day}"]
