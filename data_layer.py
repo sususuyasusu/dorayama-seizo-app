@@ -45,8 +45,12 @@ def _client():
 # === 読み取り削減キャッシュ（Google Sheets APIの分間上限=429対策） ===
 _SH = None            # Spreadsheet object（メタ情報の読み直しを避ける）
 _VC = {}              # {タブ名: (取得時刻, 全セル値)}
-_VC_TTL = 20.0        # 秒。同一画面の複数取得や連打・週の行き来はこの間1回の読み取りを共有。
+_VC_TTL = 45.0        # 秒。同一画面の複数取得や連打・週の行き来はこの間1回の読み取りを共有。
                       # 自分の編集は set_cell/made が invalidate するので即反映される（鮮度は保たれる）。
+# タブ一覧のキャッシュ。gspreadは worksheet(名前) を呼ぶたびシート全体のメタ情報を
+# 取りに行く。週タブが50枚あるので、これが表示の遅さと 429（読み取り上限）の主因だった。
+_WS = {"t": 0.0, "map": None}
+_WS_TTL = 300.0       # 秒。週タブが増えるのは週1回なので5分で十分。
 
 
 def _spreadsheet(refresh=False):
@@ -54,6 +58,36 @@ def _spreadsheet(refresh=False):
     if _SH is None or refresh:
         _SH = _client().open_by_key(SHEET_ID)
     return _SH
+
+
+def worksheets(refresh=False):
+    """全タブを1回だけ取ってきて使い回す（メタ情報の取り直しをやめる）。"""
+    now = time.time()
+    if not refresh and _WS["map"] is not None and now - _WS["t"] < _WS_TTL:
+        return _WS["map"]
+    m = {w.title: w for w in _spreadsheet(refresh=refresh).worksheets()}
+    _WS.update({"t": now, "map": m})
+    return m
+
+
+def get_ws(title, refresh=False):
+    """タブ名からワークシートを取る。見つからなければ1度だけ取り直す。"""
+    m = worksheets(refresh)
+    if title in m:
+        return m[title]
+    if not refresh:
+        return get_ws(title, refresh=True)
+    return None
+
+
+def kaiten_row(vals, label="回転数（実数）"):
+    """『回転数』行はタブごとに位置が違う（催事ブロックの増減でズレる）。
+    古い週では33〜46行目に散らばっていたので、行番号の決め打ちは禁止。A列のラベルで探す。"""
+    for r, row in enumerate(vals, start=1):
+        a = str(row[0]).strip() if row else ""
+        if a.startswith(label) or a.startswith("合計" + label):
+            return r
+    return 38
 
 
 def cached_values(ws):
@@ -89,24 +123,22 @@ def current_week_tab(today=None):
 def open_ws(tab=None, today=None):
     """指定タブ（週）を開く。未指定なら今週タブ。Spreadsheet objectは使い回す。"""
     cands = [tab] if tab else current_week_tab(today)[1]
-    for attempt in (0, 1):
-        sh = _spreadsheet(refresh=(attempt == 1))
+    for refresh in (False, True):
+        m = worksheets(refresh)
         for c in cands:
-            try:
-                return sh.worksheet(c)
-            except gspread.WorksheetNotFound:
-                continue
+            if c in m:
+                return m[c]
     raise RuntimeError(f"タブが見つからない（候補 {cands}）")
 
 
 def list_tabs():
     """週タブ名の一覧（古い順）。アプリ用の内部タブ(_app_made/_app_labor/_app_config 等)は除く。"""
-    return [w.title for w in _spreadsheet().worksheets() if not w.title.startswith("_")]
+    return [t for t in worksheets() if not t.startswith("_")]
 
 
 def list_gids():
     """週タブ名→シート内部番号(gid) の一覧。全データ画面の週切替で使う。"""
-    return [[w.title, w.id] for w in _spreadsheet().worksheets() if not w.title.startswith("_")]
+    return [[t, w.id] for t, w in worksheets().items() if not t.startswith("_")]
 
 
 def get_raw(tab=None):
@@ -130,18 +162,15 @@ def _md(s):
 
 
 def get_week_store_data(today=None):
-    gc = _client()
-    sh = gc.open_by_key(SHEET_ID)
     monday, cands = current_week_tab(today)
-    ws = None
-    for c in cands:
-        try:
-            ws = sh.worksheet(c); break
-        except gspread.WorksheetNotFound:
-            continue
+    m = worksheets()
+    ws = next((m[c] for c in cands if c in m), None)
+    if ws is None:
+        m = worksheets(refresh=True)
+        ws = next((m[c] for c in cands if c in m), None)
     if ws is None:
         raise RuntimeError(f"今週タブが見つからない（候補 {cands}）")
-    vals = ws.get_all_values()
+    vals = cached_values(ws)   # 同じ週タブを何度も読み直さない
 
     def cell(r, c):
         return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""
@@ -164,7 +193,7 @@ def get_week_store_data(today=None):
         act = [num(cell(row, c)) for c in ACT_COLS]
         products.append({"name": name, "plan": plan, "actual": act})
 
-    kaiten = [num(cell(38, c)) for c in ACT_COLS]   # 回転数（実数）実績側
+    kaiten = [num(cell(kaiten_row(vals), c)) for c in ACT_COLS]  # 回転数（実数）実績側。行はラベルで探す
 
     return {"tab": ws.title, "monday": monday.isoformat(), "days": days,
             "products": products, "kaiten": kaiten}
@@ -217,7 +246,7 @@ def get_week_blocks(tab=None, today=None):
 
     days = [{"label": (f"{WEEKDAYS[i]}{daydates[i]}" if daydates and daydates[i] else WEEKDAYS[i]),
              "date": (daydates[i] if daydates else "")} for i in range(7)]
-    kaiten = [num(cell(38, c)) for c in ACT_COLS]
+    kaiten = [num(cell(kaiten_row(vals), c)) for c in ACT_COLS]  # 行はラベルで探す
     return {"tab": ws.title, "gid": ws.id, "days": days, "blocks": blocks, "kaiten": kaiten}
 
 

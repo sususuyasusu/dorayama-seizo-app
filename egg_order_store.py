@@ -26,14 +26,13 @@ _TTL = 15.0
 
 
 def _ws():
-    sh = data_layer._spreadsheet()
-    try:
-        return sh.worksheet(TAB)
-    except Exception:
-        ws = sh.add_worksheet(title=TAB, rows=400, cols=len(HEAD))
-        ws.update(range_name="A1", values=[HEAD], value_input_option="RAW")
-        data_layer._spreadsheet(refresh=True)
-        return sh.worksheet(TAB)
+    ws = data_layer.get_ws(TAB)      # タブ一覧のキャッシュ経由（毎回メタ情報を取りに行かない）
+    if ws is not None:
+        return ws
+    ws = data_layer._spreadsheet().add_worksheet(title=TAB, rows=400, cols=len(HEAD))
+    ws.update(range_name="A1", values=[HEAD], value_input_option="RAW")
+    data_layer.worksheets(refresh=True)
+    return ws
 
 
 def _parse_date(s):
@@ -91,10 +90,12 @@ def set_ordered(key, date_str, yolk_bags, white_bags):
     except (TypeError, ValueError):
         return {"ok": False, "msg": "袋数が数字ではありません。"}
 
-    sh = data_layer._spreadsheet()
-    tab_map = {t.title: t for t in sh.worksheets()}
     cands = _tab_for(d)
+    tab_map = data_layer.worksheets()
     ws = next((tab_map[c] for c in cands if c in tab_map), None)
+    if ws is None:
+        tab_map = data_layer.worksheets(refresh=True)
+        ws = next((tab_map[c] for c in cands if c in tab_map), None)
     if ws is None:
         return {"ok": False, "msg": f"配達日の週タブが見つかりません（候補 {cands}）。"}
 

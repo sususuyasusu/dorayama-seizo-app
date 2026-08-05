@@ -10,14 +10,14 @@ _TTL = 30.0
 
 
 def _ws():
+    ws = data_layer.get_ws(TAB)      # タブ一覧のキャッシュ経由（毎回メタ情報を取りに行かない）
+    if ws is not None:
+        return ws
     sh = data_layer._spreadsheet()
-    try:
-        return sh.worksheet(TAB)
-    except Exception:
-        ws = sh.add_worksheet(title=TAB, rows=50, cols=2)
-        ws.update(range_name="A1", values=[["key", "value"]], value_input_option="RAW")
-        data_layer._spreadsheet(refresh=True)
-        return sh.worksheet(TAB)
+    ws = sh.add_worksheet(title=TAB, rows=50, cols=2)
+    ws.update(range_name="A1", values=[["key", "value"]], value_input_option="RAW")
+    data_layer.worksheets(refresh=True)
+    return ws
 
 
 def _all():

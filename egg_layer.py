@@ -51,8 +51,7 @@ def _next_week_kaiten(cur_tab):
         return None, None, None
     next_mon = cur_monday + timedelta(days=7)
     cands = [f"{next_mon.month:02d}{next_mon.day:02d}", f"{next_mon.month}{next_mon.day:02d}"]
-    sh = data_layer._spreadsheet()
-    tab_map = {w.title: w for w in sh.worksheets()}
+    tab_map = data_layer.worksheets()      # タブ一覧はキャッシュを使う（毎回取り直さない）
     next_ws = next((tab_map[c] for c in cands if c in tab_map), None)
     if not next_ws:
         return None, None, None

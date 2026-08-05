@@ -3,6 +3,7 @@
 読み: 予定・売れた数・回転数 を製造表から（サービスアカウント）。
 書き: 作った数 をアプリ専用ストアへ。製造表/エアレジ同期には触れない。"""
 import os
+import gzip
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -61,8 +62,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, code, body, ctype="application/json"):
         b = body.encode("utf-8") if isinstance(body, str) else body
+        # 画面のHTMLもデータも文字ばかりで、圧縮すると1/4以下になる。
+        # 店舗のスマホ回線での待ち時間短縮に効く（サーバー費用は増えない）。
+        enc = None
+        if len(b) > 1024 and "gzip" in (self.headers.get("Accept-Encoding") or ""):
+            try:
+                b = gzip.compress(b, 6)
+                enc = "gzip"
+            except Exception:
+                enc = None
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        if enc:
+            self.send_header("Content-Encoding", enc)
         self.send_header("Content-Length", str(len(b)))
         self.end_headers()
         self.wfile.write(b)

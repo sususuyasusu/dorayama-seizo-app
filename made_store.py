@@ -12,14 +12,13 @@ HEADER = ["週", "ブロック", "商品", "月", "火", "水", "木", "金", "�
 
 
 def _ws():
-    sh = data_layer._spreadsheet()
-    try:
-        return sh.worksheet(TAB)
-    except Exception:
-        ws = sh.add_worksheet(title=TAB, rows=400, cols=12)
-        ws.update(range_name="A1", values=[HEADER])
-        data_layer._spreadsheet(refresh=True)  # メタ情報に新タブを反映
+    ws = data_layer.get_ws(TAB)      # タブ一覧のキャッシュ経由（毎回メタ情報を取りに行かない）
+    if ws is not None:
         return ws
+    ws = data_layer._spreadsheet().add_worksheet(title=TAB, rows=400, cols=12)
+    ws.update(range_name="A1", values=[HEADER])
+    data_layer.worksheets(refresh=True)  # タブ一覧に新タブを反映
+    return ws
 
 
 def _to_int(s):
