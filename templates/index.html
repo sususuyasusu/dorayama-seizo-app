@@ -287,6 +287,69 @@
   @media (min-width:1180px){
     #egg .bulkorder .bbrow{display:inline-block;vertical-align:top;width:calc(33.333% - 10px);margin:8px 4px 0;}
   }
+
+  /* 全ページ共通リニューアル: 機能・計算を変えず表示だけ統一 */
+  .sec{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:#3d332b;letter-spacing:.04em;}
+  .legend,.matnote{border-left:3px solid #a18459;background:#f2ece2;color:#625950;line-height:1.6;}
+  #make .blks{padding-top:14px;}
+  #make .blk{min-height:38px;padding:9px 15px;border-radius:999px;border-color:#cbbdab;background:#fffdf8;}
+  #make .blk.on{background:#8b3d39;border-color:#8b3d39;color:#fff8ef;}
+  #make .days{padding-top:12px;}
+  #make .day{min-width:64px;padding:9px 10px;border-radius:10px;}
+  #make .day.on{background:#eee0cc;color:#71322f;box-shadow:inset 0 3px 0 #8b3d39;}
+  #make .wxline{margin:8px 14px;padding:10px 13px;border-left:3px solid #a18459;background:#f9f3e8;color:#66513a;}
+  #make #rows{display:grid;grid-template-columns:1fr;}
+  #make .row{min-height:66px;background:#fffdf8;}
+  #make .nm .t{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;}
+  #make .stp button{width:40px;height:40px;border-color:#c6b7a4;background:#eee2d1;}
+  #make .val{width:74px;font-size:24px;border-bottom-color:#a18459;}
+  #make .sum{padding:14px;background:#332b25;}
+  #make .sum .card{padding:14px 16px;background:#44372d;color:#fff7ed;}
+  #make .sum .card .l{color:#d7c9ba;}#make .sum .card .n{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:28px;}
+  #sales,#anko,#mat{padding:8px 0 24px;background:#f6f2ea;}
+  #sales .sec,#anko .sec,#mat .sec{margin:15px 14px 8px;padding:0 0 8px;border-bottom:2px solid #3b312a;font-size:18px;}
+  #sales .scard{margin:9px 14px;padding:15px;border-color:#d8cdbf;border-radius:13px;background:#fffdf8;box-shadow:0 5px 16px rgba(70,51,30,.06);}
+  #sales .scard .sl{width:155px;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;}
+  #sales .scard .sa{color:#8b3d39;font-size:19px;}
+  #salesdays{display:grid;grid-template-columns:1fr;gap:10px;padding:0 14px;}
+  #salesdays .ecard{margin:0;border-color:#d8cdbf;border-radius:13px;background:#fffdf8;}
+  #salesdays .ecard .eh{padding:11px 14px;background:#eee6da;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;}
+  #salesdays .erow{padding:11px 14px;}
+  #anko .aalert{margin:10px 14px;border-radius:12px;}
+  #anko .ankocard{margin:10px 14px;border-color:#d8cdbf;border-radius:14px;background:#fffdf8;box-shadow:0 5px 18px rgba(70,51,30,.07);}
+  #anko .ankocard .ah{padding:13px 15px;background:#eee6da;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:17px;}
+  #anko .arow{padding:10px 15px;}#anko .aorder{padding:13px 15px;background:#efe0d3;color:#6d302e;}
+  #mat .ordergrp,#mat .matwrap{border-color:#d8cdbf;border-radius:13px;background:#fffdf8;box-shadow:0 5px 16px rgba(70,51,30,.06);}
+  #mat .ordergrp .ogh{padding:12px 14px;background:#eee6da;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:15px;}
+  #mat .orderrow,#mat .invrow{padding:12px 14px;background:#fffdf8;}
+  #mat .orderrow.need,#mat .invrow.need{background:#fff3ed;}
+  #mat .matwrap .matrow{border-left-color:#8b3d39;}
+  @media (min-width:768px){
+    #make #rows{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #make .row:nth-child(even){border-left:1px solid var(--line);}
+    #salesdays{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #anko #ankolist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
+  @media (min-width:900px){
+    #make,#sales,#anko,#mat{padding:16px 24px 28px;}
+    #make .blks,#make .days{padding-left:0;padding-right:0;}
+    #make .legend,#make .wxline{margin-left:0;margin-right:0;}
+    #make #rows{border:1px solid #d8cdbf;border-radius:14px;overflow:hidden;}
+    #make .sum{border-radius:0 0 14px 14px;}
+    #sales .sec,#anko .sec,#mat .sec{margin-left:0;margin-right:0;}
+    #sales .legend{margin-left:0;margin-right:0;}
+    #sales #salessum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+    #sales .scard{margin:6px;}
+    #salesdays{padding:0;}
+    #anko .aalert,#anko .ankocard{margin:8px 6px;}
+    #mat .ordergrp,#mat .matwrap{margin-left:0;margin-right:0;}
+    body:has(#raw:not(.hide)){--appw:840px;}
+    body:has(#raw:not(.hide)) .wrap{max-width:840px;padding-left:0;background:#fff;box-shadow:0 0 0 1px var(--line),0 8px 34px rgba(70,55,30,.09);}
+    body:has(#raw:not(.hide)) .nav{position:fixed;top:auto;bottom:0;left:0;right:0;width:auto;max-width:840px;margin:0 auto;padding:0;display:flex;flex-direction:row;gap:0;background:#fff;border-top:1px solid var(--line);}
+    body:has(#raw:not(.hide)) .nav:before{display:none;}
+    body:has(#raw:not(.hide)) .nav button{flex:1;width:auto;min-height:0;padding:9px 0;display:flex;flex-direction:column;gap:2px;border-radius:0;text-align:center;color:var(--muted);font-size:10px;}
+    body:has(#raw:not(.hide)) .nav button.on{background:transparent;color:var(--info);}
+  }
 </style>
 </head>
 <body>
