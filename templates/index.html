@@ -244,6 +244,49 @@
     :root{--appw:1080px;}
     #eggdaylist{grid-template-columns:repeat(2,minmax(0,1fr));}
   }
+
+  /* 当初デザインの正本: 左ナビ＋横長の週間一覧＋発注作業エリア */
+  @media (min-width:900px){
+    :root{--appw:1200px;}
+    body{background:#ebe6dd;}
+    .wrap{position:relative;max-width:1200px;padding-left:176px;background:#f6f2ea;box-shadow:0 18px 60px rgba(56,39,24,.14);}
+    .hd{min-height:74px;padding:14px 24px;background:#fffdf8;border-bottom-color:#d9cfc1;}
+    .hd #logo{height:42px;}
+    .hd b{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:25px;letter-spacing:.08em;}
+    .hd select{height:42px;padding:0 38px 0 14px;border-color:#bcae9a;border-radius:9px;background:#fffdf8;font-size:14px;}
+    #refreshbtn{width:42px;height:42px;border-color:#bcae9a;background:#f1e7d8;font-size:18px;}
+    .nav{position:absolute;z-index:20;top:0;bottom:0;left:0;right:auto;width:176px;max-width:none;margin:0;padding:104px 14px 20px;display:flex;flex-direction:column;justify-content:flex-start;gap:5px;background:#2d2925;border:0;color:#fbf4ea;box-shadow:none;}
+    .nav:before{content:"門仲どらやき\Aどら山 製造管理";white-space:pre;position:absolute;top:22px;left:14px;right:14px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.16);font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;line-height:1.45;text-align:center;letter-spacing:.06em;color:#fbf4ea;}
+    .nav button{flex:0 0 auto;width:100%;min-height:48px;padding:8px 10px;border-radius:10px;display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px;text-align:left;color:#f5eee6;font-size:13px;}
+    .nav button .ic{font-size:18px;text-align:center;}
+    .nav button.on{background:#8b3d39;color:#fff9f0;}
+    #egg{padding:18px 24px 30px;background:#f6f2ea;}
+    #egg .note{margin:0 0 10px;}
+    #egg .eggrule{margin:0 0 16px;display:grid;grid-template-columns:1fr;}
+    #eggdaylist{display:grid;grid-template-columns:1fr;gap:10px;padding:0;}
+    #egg .ecard{display:grid;grid-template-columns:118px minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto;margin:0;border-radius:13px;overflow:hidden;}
+    #egg .ecard .eh{grid-column:1;grid-row:1/3;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:8px;min-height:0;padding:16px 14px;border-right:1px solid #ded3c4;border-bottom:0;background:#eee6da;font-size:17px;}
+    #egg .ecard .eh .chip{margin:0!important;order:2;}
+    #egg .ecard .pbadge{margin:0;padding:4px 8px;order:3;white-space:normal;}
+    #egg .ecard>.erow:nth-child(2){grid-column:2;grid-row:1;}
+    #egg .ecard>.todoln:nth-child(3){grid-column:2;grid-row:2;}
+    #egg .ecard>.erow:nth-child(4){grid-column:3;grid-row:1;border-left:1px solid #e5ddd2;}
+    #egg .ecard>.todoln:nth-child(5){grid-column:3;grid-row:2;}
+    #egg .ecard .erow{padding:12px 14px;border-top:0;}
+    #egg .ecard .kv{grid-template-columns:repeat(3,minmax(56px,1fr));}
+    #egg .todoln{margin:0 12px 12px;padding:9px 10px;}
+    #egg .sec{margin:24px 0 10px;padding:0 0 9px;}
+    #eggbatches{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0;}
+    #egg .bulkorder{grid-column:1/-1;padding:16px;}
+    #egg .bulkorder .bbrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:auto;margin:8px 0 0;}
+    #egg .bulkorder .bbrow .bn,#egg .bulkorder .bbrow .bd,#egg .bulkorder .bbrow .eggorder{grid-column:1/-1;}
+    #egg .bulkorder .eggorder{display:grid;grid-template-columns:1fr 1fr;}
+    #egg .bulkorder .eggorder .smsbody{grid-column:1/-1;}
+    #egg .rules{margin:12px 0;}
+  }
+  @media (min-width:1180px){
+    #egg .bulkorder .bbrow{display:inline-block;vertical-align:top;width:calc(33.333% - 10px);margin:8px 4px 0;}
+  }
 </style>
 </head>
 <body>
