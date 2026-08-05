@@ -432,6 +432,14 @@ def get_egg_nav(tab=None):
     ruleY = g(hrow, col["ty"]).replace("\n", " ").strip() if (hrow and "ty" in col) else ""
     ruleW = g(hrow, col["tw"]).replace("\n", " ").strip() if (hrow and "tw" in col) else ""
 
+    # 「発注済にした」控え。端末ではなく製造表に持つので全員に同じものが見える。
+    try:
+        import egg_order_store
+        ordered = egg_order_store.all_ordered()
+    except Exception:
+        ordered = {}
+
     return {"tab": ws.title, "title": title, "note": note,
             "syCol": syCol, "swCol": swCol, "ruleY": ruleY, "ruleW": ruleW,
-            "days": days, "batches": batches, "guide": guide, "rules": rules}
+            "days": days, "batches": batches, "guide": guide, "rules": rules,
+            "ordered": ordered}

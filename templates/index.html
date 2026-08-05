@@ -256,12 +256,32 @@ function eggKey(batch,kind){return eggTab+'|'+batch+'|'+kind;}
 function eggOverride(batch,kind,def){const v=eggEdits[eggKey(batch,kind)];return (v===undefined||v===null||v==='')?def:v;}
 function saveEggEdit(batch,kind,val){eggEdits[eggKey(batch,kind)]=val;try{localStorage.setItem('eggEdits',JSON.stringify(eggEdits));}catch(e){}}
 function clearEggEdit(batch){delete eggEdits[eggKey(batch,'y')];delete eggEdits[eggKey(batch,'w')];try{localStorage.setItem('eggEdits',JSON.stringify(eggEdits));}catch(e){}}
-// 「発注済み」ボタンで押した実発注（袋数）を端末内に保持。週(eggTab)+便で保存。押すまで未発注。
-let eggOrdered={};try{eggOrdered=JSON.parse(localStorage.getItem('eggOrdered')||'{}')||{};}catch(e){eggOrdered={};}
+// 「発注済み」ボタンで押した実発注（袋数）は、端末ではなく製造表に記録する。
+// 以前はブラウザのlocalStorageだけに残していたため、他のスタッフの画面に
+// まったく反映されなかった（2026-08-05 土便で発覚）。
+let eggOrdered={};
 function ordKey(batch){return eggTab+'|'+batch;}
 function getOrdered(batch){return eggOrdered[ordKey(batch)]||null;}
-function setOrdered(batch,y,w){eggOrdered[ordKey(batch)]={y:y,w:w};try{localStorage.setItem('eggOrdered',JSON.stringify(eggOrdered));}catch(e){}}
-function clearOrdered(batch){delete eggOrdered[ordKey(batch)];try{localStorage.setItem('eggOrdered',JSON.stringify(eggOrdered));}catch(e){}}
+// 配達日をYYYY-MM-DDで求める。今週の便は今週月曜から、翌週分は+7日。
+function delivISO(name){
+  const off=_binOffset(name);if(off==null)return '';
+  const base=_ymd(eggMonDate);if(!base)return '';
+  const d=new Date(base.getTime());d.setDate(d.getDate()+(/今週/.test(name)?0:7)+off);
+  const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+async function postOrdered(batch,y,w){
+  const body={key:ordKey(batch),date:delivISO(batch),yolkBags:y,whiteBags:w};
+  const r=await fetch('/api/eggs/ordered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+async function postUnordered(batch){
+  const r=await fetch('/api/eggs/ordered',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:ordKey(batch),clear:true})});
+  return r.json();
+}
+function eggSay(msg,ng){const el=document.getElementById('eggnote');if(!el)return;
+  el.textContent=msg;el.style.color=ng?'#c0392b':'';}
 const SC=['make','sales','egg','anko','mat','raw'],TT={make:'製造計画',sales:'製造実績',egg:'卵発注',anko:'あんこ発注',mat:'その他材料',raw:'全データ'};
 function show(s){SC.forEach(x=>{document.getElementById(x).classList.toggle('hide',x!==s);document.getElementById('nav-'+x).classList.toggle('on',x===s);});document.getElementById('title').textContent=TT[s];if(s==='raw')setSheet();}
 // 無料サーバーは無操作が続くと眠る。起こすのに最大1分ほどかかるので、
@@ -439,14 +459,11 @@ function renderEgg(E){
   if(!E||!E.days||!E.batches)return;   // 取得失敗で欠けたデータでは再描画せず、今の表示を保つ
   eggTab=E.tab||'';
   eggMonDate=((E.days||[]).find(d=>d.wd==='月')||{}).date||'';
-  // 発注済みにした今週の変更便は、その袋数を「正」として届く(回転)に固定反映する。
-  // 以後 発注作業の数字を変えても、届く・発注済は変わらない。木便→木曜/土便→土曜。
-  const _wkOrdMap={'木':'今週の木便','土':'今週の土便'};
-  (E.days||[]).forEach(d=>{
-    const o=getOrdered(_wkOrdMap[d.wd]); if(!o)return;
-    if(d.yolk)d.yolk.incoming=String(Math.round(o.y*12.5*10)/10);      // 1袋=5kg=12.5回転(卵黄)
-    if(d.white)d.white.incoming=String(Math.round(o.w*(5000/750)*10)/10); // 1袋=5kg≒6.67回転(卵白)
-  });
+  // 発注済の控えはサーバー（製造表）から受け取る。全員が同じものを見る。
+  eggOrdered=E.ordered||{};
+  // 「届く(回転)」はシートの値をそのまま使う。発注済みにした時点でシートの
+  // W/Y列へ書き込んでいるので、上書きは不要（かつては端末の値で上書きしていて、
+  // SMSの「変更なし」判定が実際の発注数とずれる原因になっていた）。
   document.getElementById('eggnote').textContent=E.note||'';
   document.getElementById('eggrule').innerHTML=(E.ruleY?esc(E.ruleY):'')+(E.ruleW?'<br>'+esc(E.ruleW):'');
   const dl=document.getElementById('eggdaylist');dl.innerHTML='';
@@ -597,9 +614,18 @@ function bindEggSms(root){
     const rst=box.querySelector('.eggreset');
     if(rst)rst.onclick=(e)=>{e.preventDefault();clearEggEdit(box.dataset.batch);J('/api/eggs').then(renderEgg);};
     const ob=box.querySelector('.ordbtn');
-    if(ob)ob.onclick=()=>{const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);setOrdered(box.dataset.batch,y,w);J('/api/eggs').then(renderEgg);};
+    if(ob)ob.onclick=async()=>{
+      const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);
+      ob.disabled=true;ob.textContent='記録中…';
+      try{const j=await postOrdered(box.dataset.batch,y,w);
+        if(!j.ok)throw new Error(j.msg||'記録できませんでした');
+        eggSay('発注済にしました：'+j.msg+'（他のスタッフの画面にも反映されます）');
+        J('/api/eggs').then(renderEgg);
+      }catch(e){ob.disabled=false;ob.textContent='発注済みにする';eggSay(e.message,true);}};
     const ou=box.querySelector('.ordundo');
-    if(ou)ou.onclick=(e)=>{e.preventDefault();clearOrdered(box.dataset.batch);J('/api/eggs').then(renderEgg);};
+    if(ou)ou.onclick=async(e)=>{e.preventDefault();
+      try{await postUnordered(box.dataset.batch);J('/api/eggs').then(renderEgg);}
+      catch(err){eggSay('取消できませんでした',true);}};
     const copy=box.querySelector('.copybtn');
     if(copy)copy.onclick=async()=>{refreshEggSms(box);const body=box.querySelector('.smsbtn').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='本文コピー',1200);}catch(e){box.querySelector('.smsbody').focus&&box.querySelector('.smsbody').focus();copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='本文コピー',1800);}};
     refreshEggSms(box);
@@ -610,9 +636,22 @@ function bindBulkEggSms(root){
   if(copy)copy.onclick=async()=>{refreshBulkEggSms(root);const body=root.querySelector('.bulkSms').dataset.body||'';try{await navigator.clipboard.writeText(body);copy.textContent='コピー済み';setTimeout(()=>copy.textContent='一括本文コピー',1200);}catch(e){copy.textContent='下の本文を長押しコピー';setTimeout(()=>copy.textContent='一括本文コピー',1800);}};
   // 3便まとめて発注済みにする／一括取消（各行の入力値を実発注として記録）
   const bo=root.querySelector('.bulkOrdered');
-  if(bo)bo.onclick=()=>{root.querySelectorAll('.bulkorder .eggorder').forEach(box=>{const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);setOrdered(box.dataset.batch,y,w);});J('/api/eggs').then(renderEgg);};
+  if(bo)bo.onclick=async()=>{
+    bo.disabled=true;bo.textContent='記録中…';
+    const boxes=[...root.querySelectorAll('.bulkorder .eggorder')];
+    try{
+      for(const box of boxes){
+        const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);
+        const j=await postOrdered(box.dataset.batch,y,w);
+        if(!j.ok)throw new Error(box.dataset.batch+'：'+(j.msg||'記録できませんでした'));
+      }
+      eggSay('3便とも発注済にしました（他のスタッフの画面にも反映されます）');
+      J('/api/eggs').then(renderEgg);
+    }catch(e){bo.disabled=false;bo.textContent='3便まとめて発注済みにする';eggSay(e.message,true);}};
   const bu=root.querySelector('.bulkUnorder');
-  if(bu)bu.onclick=(e)=>{e.preventDefault();root.querySelectorAll('.bulkorder .eggorder').forEach(box=>clearOrdered(box.dataset.batch));J('/api/eggs').then(renderEgg);};
+  if(bu)bu.onclick=async(e)=>{e.preventDefault();
+    for(const box of root.querySelectorAll('.bulkorder .eggorder')){await postUnordered(box.dataset.batch);}
+    J('/api/eggs').then(renderEgg);};
 }
 function renderSecs(secs){return (secs||[]).map(s=>{
   let h=(s.header&&!s.header.startsWith('📖'))?'<div class="rsh">'+esc(s.header)+'</div>':'';

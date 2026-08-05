@@ -205,6 +205,19 @@ class Handler(BaseHTTPRequestHandler):
             )
             self._send(int(r.pop("status", 200)) if "error" in r else 200,
                        json.dumps(r, ensure_ascii=False))
+        elif path == "/api/eggs/ordered":
+            # 「発注済みにする」の押下を製造表に記録する（端末ごとに食い違わせない）
+            try:
+                import egg_order_store
+                if data.get("clear"):
+                    r = egg_order_store.clear_ordered(data.get("key"))
+                else:
+                    r = egg_order_store.set_ordered(
+                        data.get("key"), data.get("date"),
+                        data.get("yolkBags"), data.get("whiteBags"))
+            except Exception as e:
+                r = {"ok": False, "msg": f"記録できませんでした（{e}）"}
+            self._send(200, json.dumps(r, ensure_ascii=False))
         elif path == "/api/seibun/photo":
             # 読み取った原材料写真を、そのままシートに保管する
             ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
