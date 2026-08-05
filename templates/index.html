@@ -184,6 +184,66 @@
     .wrap{box-shadow:0 0 0 1px var(--line),0 8px 34px rgba(70,55,30,.09);}
   }
   @media (min-width:1200px){:root{--appw:840px;}}
+
+  /* 卵発注画面: 表示だけを再設計。計算・API・保存処理には触れない */
+  #egg{padding:6px 0 22px;background:linear-gradient(180deg,#f8f4ec 0,#fff 260px);}
+  #egg .note{margin:12px 14px 8px;padding:13px 15px;border:1px solid #dfd1bb;border-left:4px solid #8a6b3f;border-radius:12px;background:#f6f0e6;color:#51493f;font-size:12px;line-height:1.75;box-shadow:none;}
+  #egg .eggrule{margin:0 14px 12px;padding:11px 14px;border:1px solid #ead7ac;border-radius:12px;background:#fff8e8;color:#74531f;font-size:12px;line-height:1.75;box-shadow:none;}
+  #egg .sec{margin:20px 14px 8px;padding:0 0 8px;border-bottom:2px solid #392f27;color:#392f27;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:18px;font-weight:600;letter-spacing:.04em;}
+  #eggdaylist{display:grid;grid-template-columns:1fr;gap:10px;padding:0 14px;}
+  #egg .ecard{margin:0;border:1px solid #ddd2c3;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 5px 18px rgba(70,51,30,.07);}
+  #egg .ecard .eh{min-height:48px;padding:11px 14px;background:#efe8dd;border-bottom:1px solid #ded3c4;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;letter-spacing:.03em;}
+  #egg .ecard .eh .chip{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;}
+  #egg .ecard .pbadge{margin-left:auto;padding:4px 9px;background:#ece3d5;color:#6d512f;border-radius:999px;font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;}
+  #egg .ecard .erow{min-height:56px;padding:11px 14px;gap:10px;background:#fff;}
+  #egg .ecard .lbl{width:66px;font-size:14px;}
+  #egg .ecard .kv{display:grid;grid-template-columns:repeat(3,minmax(54px,1fr));gap:6px;color:#81786d;}
+  #egg .ecard .kv span{display:flex;flex-direction:column;gap:2px;padding:5px 7px;border-radius:8px;background:#faf7f1;font-size:10px;}
+  #egg .ecard .kv b{font-size:15px;font-variant-numeric:tabular-nums;}
+  #egg .estock{min-width:36px;font-size:15px;}
+  #egg .chip{padding:5px 9px;border-radius:999px;}
+  #egg .todoln{margin:0 12px 11px;padding:9px 11px;border-radius:9px;background:#eef4f7;color:#315f78;font-size:12px;line-height:1.55;}
+  #egg .ecard:has(.todoln){position:relative;}
+  #eggbatches{display:grid;grid-template-columns:1fr;gap:10px;padding:0 14px;}
+  #egg .batch,#egg .bulkorder{margin:0;padding:14px;border:1px solid #ddd1c2;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(70,51,30,.07);}
+  #egg .batch .bn,#egg .bulkorder .boh{margin-bottom:7px;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:16px;color:#302922;}
+  #egg .batch .bos,#egg .bulkorder .bos{padding:9px 10px;border-radius:8px;background:#f4f0e9;color:#635a50;font-size:11px;}
+  #egg .daytag{padding:4px 9px;border-radius:999px;background:#8d6a33;color:#fff;font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;}
+  #egg .daytag-main{background:#7f3432;}
+  #egg .eggorder{gap:9px;padding-top:12px;}
+  #egg .eggorder label{flex:1 1 190px;padding:9px 10px;border:1px solid #e4dbcf;border-radius:10px;background:#fbf8f3;color:#514940;}
+  #egg .eggorder input{width:62px;height:38px;border-color:#bca98f;border-radius:9px;background:#fffdf9;font-size:18px;}
+  #egg .recq{margin-left:auto;}
+  #egg .smsbtn,#egg .copybtn,#egg .ordbtn{min-height:40px;padding:10px 14px;border-radius:9px;}
+  #egg .smsbtn{margin-left:0;background:#7f3432;color:#fff;}
+  #egg .copybtn{background:#eee7dc;}
+  #egg .ordbtn{border-color:#376849;background:#376849;color:#fff;}
+  #egg .smsbody{margin-top:3px;padding:11px 12px;border-left:3px solid #a4865c;border-radius:7px;background:#f7f2ea;color:#5d554c;line-height:1.6;}
+  #egg .bulkorder{grid-column:1/-1;border-color:#d7c5aa;background:#fffaf1;}
+  #egg .bulkorder .bbrow{box-shadow:none;border-color:#e2d5c3;background:#fff;}
+  #egg .bulkorder .boa{padding-top:4px;}
+  #egg .bulkorder .bulkSms{background:#7f3432;color:#fff;}
+  #egg .rules{margin:10px 14px;border:1px solid #d9cfc1;border-radius:12px;background:#fff;box-shadow:none;}
+  #egg .rules summary{padding:13px 14px;font-size:14px;}
+  #egg .rsh{padding:11px 13px 6px;background:#f4f0e9;}
+  #egg .rsl{padding:7px 13px 7px 20px;}
+  #egg .dot-y{background:#e7b93f;border-color:#c89626;}
+  #egg .chip.bad{background:#f8e4e1;color:#9b3933;}
+  #egg .chip.warn{background:#fff0d2;color:#7d561b;}
+  #egg .chip.ok{background:#e3f1e6;color:#336944;}
+  @media (min-width:768px){
+    #egg{padding:12px 8px 28px;}
+    #eggdaylist{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    #eggbatches{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    #egg .bulkorder{grid-column:1/-1;}
+    #egg .bulkorder .bbrow{display:inline-block;vertical-align:top;width:calc(33.333% - 8px);margin:4px 4px 0;}
+    #egg .bulkorder .bbrow .eggorder label{flex-basis:100%;}
+    #egg .bulkorder .bbrow .smsbtn,#egg .bulkorder .bbrow .copybtn,#egg .bulkorder .bbrow .ordbtn{flex:1 1 auto;}
+  }
+  @media (min-width:1200px){
+    :root{--appw:1080px;}
+    #eggdaylist{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
 </style>
 </head>
 <body>
