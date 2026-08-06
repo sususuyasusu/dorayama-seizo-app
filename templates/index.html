@@ -414,6 +414,10 @@
   body:not(:has(#raw:not(.hide))) .invmin,
   body:not(:has(#raw:not(.hide))) .os,
   body:not(:has(#raw:not(.hide))) .sp{color:#b9ada2;}
+  /* 卵タブ「今週の〇〇便を変更」等の見出し: 黒地で見えるよう曜日タグの色に合わせる */
+  body:not(:has(#raw:not(.hide))) #egg .batch .bn{color:#d9b26a;}                       /* 月水土=金茶 */
+  body:not(:has(#raw:not(.hide))) #egg .bulkorder .boh{color:#e2938e;}                  /* 木=紅 */
+  body:not(:has(#raw:not(.hide))) #egg .batch .bn:has(.daytag-main){color:#e2938e;}
 </style>
 </head>
 <body>
