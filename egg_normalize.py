@@ -121,7 +121,76 @@ def normalize(tab, ws, tabset):
         ws.batch_update([{"range": "AS6:AT12", "values": [[f(r), f(r)] for r in range(6, 13)]}],
                         value_input_option="USER_ENTERED")
         b = f"OK(翌週{nw}/集計行{kr}・翌週{nkr})"
-    return f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)"
+
+    # D) 翌週正味発注数(AO14:AU18) を毎回正しい参照で組み直す（冪等・自己修復）
+    #    過去事故: 土便の「翌々週の月・火」が 0 リテラルのまま残り、6週にわたり過少発注表示。
+    #    原因は「翌々週タブが未作成の時点で生成し、その 0 が以後コピー継承された」こと。
+    #    ここで毎回タブ名を日付から解決して書き直すので、後からタブが増えても自動で埋まる。
+    d = _fix_batches(ws, tab, tabset)
+    return f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)  D:{d}"
+
+
+def _tab_after(tab, days, tabset):
+    """MMDDタブの days 日後のタブ名（存在するものだけ返す）。年またぎは近い方を採用。"""
+    try:
+        mm, dd = int(tab[:2]), int(tab[2:])
+    except ValueError:
+        return None
+    today = datetime.date.today()
+    cands = []
+    for y in (today.year - 1, today.year, today.year + 1):
+        try:
+            cands.append(datetime.date(y, mm, dd))
+        except ValueError:
+            continue
+    if not cands:
+        return None
+    base = min(cands, key=lambda d: abs((d - today).days))
+    nd = base + datetime.timedelta(days=days)
+    name = f"{nd.month:02d}{nd.day:02d}"
+    return name if name in tabset else None
+
+
+def _fix_batches(ws, tab, tabset):
+    """翌週正味発注数の3便(火/木/土)を、翌週・翌々週の実績回転を参照する式に組み直す。
+    カバー範囲: 火便=翌週の水木 / 木便=翌週の金土 / 土便=翌週の日＋翌々週の月火。
+    繰越控除: その便の到着までに翌週で消費する曜日の合計。"""
+    nw = _tab_after(tab, 7, tabset)
+    if not nw:
+        return "skip(翌週タブなし)"
+    nw2 = _tab_after(tab, 14, tabset)
+    nws = ws.spreadsheet.worksheet(nw)
+    r1 = _label_row(nws, "回転数（切上げ）") or 39          # 翌週の集計行
+    r2 = None
+    if nw2:
+        r2 = _label_row(ws.spreadsheet.worksheet(nw2), "回転数（切上げ）") or 39
+
+    C = ["V", "W", "X", "Y", "Z", "AA", "AB"]               # 実績側 月〜日
+    def nwc(i):
+        return f"'{nw}'!${C[i]}${r1}"
+
+    if nw2 and r2:
+        sat_cover = f"{nwc(6)}+'{nw2}'!$V${r2}+'{nw2}'!$W${r2}"
+        sat_note = ""
+    else:
+        sat_cover = nwc(6)                                   # 翌々週未作成時は日曜のみ（後日自動で埋まる）
+        sat_note = "・土便は翌々週タブ待ち"
+
+    rows = {
+        16: (f"{nwc(2)}+{nwc(3)}", [0, 1]),                  # 火便=水木 / 繰越控除=月火
+        17: (f"{nwc(4)}+{nwc(5)}", [0, 1, 2, 3]),            # 木便=金土 / 〜木
+        18: (sat_cover, [0, 1, 2, 3, 4, 5]),                 # 土便=日+翌々月火 / 〜土
+    }
+    updates = [{"range": "AO14", "values": [[f"翌週({nw}) 正味発注数 — 繰り越し在庫を引いた数 / 木曜まで確定"]]}]
+    for r, (cover, carry_idx) in rows.items():
+        carry = "+".join(nwc(i) for i in carry_idx)
+        ap = f"=ROUND(MAX(0,({cover})-MAX(0,N($BA$12)-({carry}))),0)"
+        asf = f"=ROUND(MAX(0,({cover})-MAX(0,N($BB$12)-({carry}))),0)"
+        updates.append({"range": f"AP{r}:AU{r}", "values": [[
+            ap, f"=ROUND($AP${r}*0.4,1)", f"=ROUND($AP${r}*0.4/5,0)",
+            asf, f"=ROUND($AS${r}*0.75,1)", f"=ROUND($AS${r}*0.75/5,0)"]]})
+    ws.batch_update(updates, value_input_option="USER_ENTERED")
+    return f"OK(翌週{nw}/翌々週{nw2 or '無'}){sat_note}"
 
 
 def main():

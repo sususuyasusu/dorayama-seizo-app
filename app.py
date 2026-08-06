@@ -132,6 +132,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/eggsync":
             import egg_stock_sync
             self._send(200, json.dumps(egg_stock_sync.status, ensure_ascii=False))
+        elif path == "/api/eggheal":
+            import egg_autoheal
+            self._send(200, json.dumps(egg_autoheal.status, ensure_ascii=False))
         elif path == "/api/cost":
             self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
         elif path == "/api/materials":
@@ -280,4 +283,6 @@ if __name__ == "__main__":
     host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
     import egg_stock_sync
     egg_stock_sync.start()   # AppSheet在庫→製造表の10分同期（Apps Scriptトリガ停止の恒久対策）
+    import egg_autoheal
+    egg_autoheal.start()     # 卵シートの自己修復を1日1回（発注ブロックの0埋め等を自動是正）
     ThreadingHTTPServer((host, port), Handler).serve_forever()
