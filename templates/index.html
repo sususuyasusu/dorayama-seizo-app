@@ -682,7 +682,7 @@ async function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''
 function nz(x){if(x===''||x==null)return '–';const n=parseFloat(x);return isNaN(n)?x:(''+(Math.round(n*10)/10));}
 function numOnly(x){const n=parseInt(String(x||'').replace(/[^0-9]/g,''),10);return isNaN(n)?0:n;}
 function escAttr(s){return esc(String(s||'')).replace(/"/g,'&quot;');}
-function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">見通し '+nz(o)+'</span>';}
+function eChip(o){const n=parseFloat(o);let cls='na';if(!isNaN(n))cls=n<0?'bad':(n<=3?'warn':'ok');return '<span class="chip '+cls+'">予測 '+nz(o)+'</span>';}
 function eline(label,o,row,col,tab){
   const stock=col>0?('<span class="estock" contenteditable="true" data-tab="'+esc(tab)+'" data-r="'+row+'" data-c="'+col+'">'+esc(o.stock||'')+'</span>'):('<b>'+nz(o.stock)+'</b>');
   let h='<div class="erow"><div class="lbl">'+label+'</div><div class="kv"><span>在庫 '+stock+'</span><span>必要 <b>'+nz(o.need)+'</b></span><span>届く <b>'+nz(o.incoming)+'</b></span></div>'+eChip(o.outlook)+'</div>';

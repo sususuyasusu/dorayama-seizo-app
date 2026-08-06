@@ -181,10 +181,10 @@ def _white_bags_round(rot):
     return int(round(rot * 0.75 / 5))
 
 
-def _white_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd):
-    """締切日の卵白おすすめ文を『便がカバーする製造回転を5kg袋に切り上げ』で作る。
-    安全在庫の上乗せはしない。既存の発注(届く)が分かる便は差分を、
-    分からない便(翌火便)は新規発注として返す。算出できなければ None。"""
+def _white_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd, stock_by_wd):
+    """締切日の卵白おすすめ文を『便カバー製造回転 −（その日の卵白在庫）を5kg袋化』で作る。
+    2026-08-06: 卵黄と同じく在庫を差し引く方式に統一（旧: 在庫を引かないギリギリ運用は、
+    卵白在庫が厚い時期に推奨が卵黄の3倍超に見える問題があった）。算出できなければ None。"""
     cfg = _DEADLINE_COVER.get(wd)
     if not cfg:
         return None
@@ -195,7 +195,8 @@ def _white_coverage_line(wd, prod_by_wd, next_act, incoming_by_wd):
         rot += sum(next_act[i] for i in cfg["next"])
     if rot <= 0:
         return None
-    target_bags = _bags(rot * 0.75, 0.75, WHITE_BAG_THR)   # 端数4回転以上で+1袋
+    net_rot = max(0.0, rot - stock_by_wd.get(wd, 0.0))
+    target_bags = _bags(net_rot * 0.75, 0.75, WHITE_BAG_THR)   # 端数4回転以上で+1袋
     kg = target_bags * 5
     arrive = cfg["arrive"]
     existing = incoming_by_wd.get(arrive) if arrive else None
@@ -361,6 +362,7 @@ def get_egg_nav(tab=None):
         inc_w = {d["wd"]: _num(d["white"]["incoming"]) for d in days}
         inc_y = {d["wd"]: _num(d["yolk"]["incoming"]) for d in days}
         stock_y = {d["wd"]: _num(d["yolk"]["stock"]) for d in days}
+        stock_w = {d["wd"]: _num(d["white"]["stock"]) for d in days}
         _kp, next_act, _next_inc = _next_week_kaiten(ws.title)
         for d in days:
             d_date = _parse_date(d["date"])
@@ -369,7 +371,7 @@ def get_egg_nav(tab=None):
             # 卵白: 便のカバー必要を5kg袋に切り上げ（在庫は引かない＝常にギリギリ運用）
             wtodo = d["white"]["todo"]
             if "📦" in wtodo:
-                wl = _white_coverage_line(d["wd"], prod_by_wd, next_act, inc_w)
+                wl = _white_coverage_line(d["wd"], prod_by_wd, next_act, inc_w, stock_w)
                 if wl:
                     d["white"]["todo"] = _rewrite_white_todo(wtodo, wl)
             # 卵黄: カバー必要 − その日の在庫 を5kg袋に切り上げ（在庫が多いので差し引く）
