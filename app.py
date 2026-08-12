@@ -23,6 +23,7 @@ import manual_layer
 import sms_layer
 import seibun_layer
 import budget_summary_layer
+import management_layer
 
 BASE = Path(__file__).parent
 STATIC = (BASE / "static").resolve()
@@ -138,6 +139,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(egg_autoheal.status, ensure_ascii=False))
         elif path == "/api/cost":
             self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
+        elif path == "/api/management/dorayama":
+            self._send(200, json.dumps(management_layer.get_dorayama_management(), ensure_ascii=False))
         elif path == "/api/summary":
             ym = (parse_qs(u.query).get("ym") or [None])[0]
             self._send(200, json.dumps(budget_summary_layer.get_summary(ym), ensure_ascii=False))
