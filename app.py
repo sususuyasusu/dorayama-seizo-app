@@ -91,6 +91,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/management" or path == "/management/":
             self._send(200, (BASE / "templates" / "management.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
+        elif path == "/store-manager" or path == "/store-manager/":
+            self._send(200, (BASE / "templates" / "store_manager.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
         elif path == "/manual" or path == "/manual/":
             # マニュアルは独立アプリへ移行（2026-07-14）。旧URLは転送で生かす。
             self.send_response(302)
