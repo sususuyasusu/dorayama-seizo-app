@@ -88,6 +88,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/" or path.startswith("/index"):
             self._send(200, (BASE / "templates" / "index.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
+        elif path == "/management" or path == "/management/":
+            self._send(200, (BASE / "templates" / "management.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
         elif path == "/manual" or path == "/manual/":
             # マニュアルは独立アプリへ移行（2026-07-14）。旧URLは転送で生かす。
             self.send_response(302)
