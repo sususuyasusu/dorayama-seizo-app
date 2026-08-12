@@ -22,17 +22,38 @@ def get_dorayama_management():
         cumulative += item["profit"]
         rows.append({**item, "cumulative": cumulative})
     latest = rows[-1]
+    achievement = round(latest["sales"] / latest["budget"] * 100, 1) if latest["budget"] else None
+    break_even_rate = round(latest["sales"] / latest["breakEven"] * 100, 1) if latest["breakEven"] else None
     return {
         "asOf": "2026-08-08",
+        "period": "6月締め",
         "status": "provisional",
         "statusLabel": "暫定・月次締め前",
         "latest": latest,
         "months": rows,
         "breakEvenGap": max(0, latest["breakEven"] - latest["sales"]),
+        "budgetGap": max(0, latest["budget"] - latest["sales"]),
+        "achievement": achievement,
+        "breakEvenRate": break_even_rate,
+        "todayDecisions": [
+            {"level": "urgent", "title": "まず売上を確定する", "detail": "店舗の決済手数料と催事の精算書を確認。未確定のまま追加発注・増員を決めない。"},
+            {"level": "watch", "title": "損益分岐点との差を毎日確認", "detail": "確定済み売上では損益分岐点まで差があります。日次売上の積み上がりと残営業日で判断します。"},
+            {"level": "normal", "title": "変動費を売上と一緒に見る", "detail": "商品原価25%、催事手数料20%、催事販売員・配送費を催事ごとに確認します。"},
+        ],
         "checks": [
-            {"label": "催事売上・精算書", "status": "書類待ち"},
-            {"label": "部門未設定", "status": "6件確認"},
-            {"label": "鈴木康之 人件費", "status": "どら山50%"},
-            {"label": "会社共通費", "status": "売上比で配賦"},
+            {"category": "店舗売上", "source": "Airレジ・決済明細", "status": "未確定", "reason": "決済端末手数料の確定・差引確認待ち", "owner": "店長", "next": "決済明細とAirレジ売上を照合"},
+            {"category": "催事売上", "source": "Googleフォーム・催事精算書", "status": "未確定", "reason": "催事場から届く最終入金額の書類待ち", "owner": "管理", "next": "精算書到着後に入金額を確定"},
+            {"category": "原価", "source": "商品原価・請求書", "status": "暫定", "reason": "商品原価率25%で暫定計上。請求書実額との照合前", "owner": "管理", "next": "仕入請求書と振込額を照合"},
+            {"category": "人件費", "source": "Airシフト・freee人事労務", "status": "未確定", "reason": "勤務実績と確定給与の照合待ち", "owner": "店長・管理", "next": "シフト実績と確定人件費を照合"},
+            {"category": "催事経費", "source": "精算書・請求書", "status": "暫定", "reason": "手数料20%、販売員45,000円/日、配送7,150円/日で暫定計上", "owner": "管理", "next": "催事別の日数・請求額を確認"},
+            {"category": "経費・固定費", "source": "領収書・請求書・カード明細", "status": "未確定", "reason": "現金、振込、ネット購入、インフラ引落の証憑照合中", "owner": "管理", "next": "証憑と口座・カード引落を照合"},
+            {"category": "会社共通費", "source": "事業別損益", "status": "暫定", "reason": "どら山・デザイン・会社共通への配賦確定前", "owner": "経営", "next": "確定した配賦基準で再計算"},
+        ],
+        "assumptions": [
+            "商品の原価率：売上の25%（実請求額確定まで）",
+            "催事手数料：売上の20%",
+            "催事販売員：45,000円／日、配送料：7,150円／日",
+            "家賃・光熱費等：200,000円／月",
+            "鈴木康之の人件費：どら山50%・デザイン50%",
         ],
     }
