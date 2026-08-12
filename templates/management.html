@@ -1,0 +1,129 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>D&W 経営管理</title></head><body style="margin:0"><div id="dorayamaIdealApp">
+  <style>
+    #dorayamaIdealApp{font-family:"Hiragino Sans","Yu Gothic",sans-serif;color:#29251f;background:#f5f0e7;min-height:920px;border:1px solid #d8cebd;overflow:hidden}
+    #dorayamaIdealApp *{box-sizing:border-box}
+    #dorayamaIdealApp .dia-shell{display:grid;grid-template-columns:210px 1fr;min-height:920px}
+    #dorayamaIdealApp .dia-side{background:#28251f;color:#f8f2e8;padding:26px 18px;display:flex;flex-direction:column}
+    #dorayamaIdealApp .dia-brand{font-family:serif;font-size:21px;line-height:1.45;letter-spacing:.08em;padding:0 10px 22px;border-bottom:1px solid #575044}
+    #dorayamaIdealApp .dia-brand small{display:block;font-family:sans-serif;font-size:11px;color:#cbbfae;letter-spacing:.15em;margin-top:6px}
+    #dorayamaIdealApp .dia-nav{display:grid;gap:6px;margin-top:22px}
+    #dorayamaIdealApp .dia-nav button{border:0;background:transparent;color:#ded6ca;text-align:left;padding:12px 13px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px}
+    #dorayamaIdealApp .dia-nav button[aria-current="page"]{background:#9e4038;color:#fff}
+    #dorayamaIdealApp .dia-nav span{display:inline-block;width:26px}
+    #dorayamaIdealApp .dia-sidefoot{margin-top:auto;padding:16px 10px 0;border-top:1px solid #575044;color:#bfb4a4;font-size:11px;line-height:1.8}
+    #dorayamaIdealApp .dia-main{min-width:0}
+    #dorayamaIdealApp .dia-top{height:76px;background:#fffdf9;border-bottom:1px solid #ddd4c6;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+    #dorayamaIdealApp .dia-title{font-family:serif;font-size:23px;font-weight:700;letter-spacing:.04em}
+    #dorayamaIdealApp .dia-sync{font-size:12px;color:#6c665c;background:#f4efe7;border:1px solid #ded5c8;border-radius:20px;padding:8px 12px}
+    #dorayamaIdealApp .dia-content{padding:24px 28px 36px}
+    #dorayamaIdealApp .dia-headrow{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin-bottom:18px}
+    #dorayamaIdealApp .dia-headrow h1{font-family:serif;font-size:25px;margin:0 0 4px}
+    #dorayamaIdealApp .dia-headrow p{margin:0;color:#756d62;font-size:13px}
+    #dorayamaIdealApp .dia-month{border:1px solid #bdb2a1;background:#fffdf9;border-radius:9px;padding:10px 13px;color:#3f3931;font-weight:700}
+    #dorayamaIdealApp .dia-segments{display:flex;gap:8px;margin-bottom:18px}
+    #dorayamaIdealApp .dia-segments button{padding:9px 16px;border:1px solid #cfc5b7;background:#fffdf9;border-radius:20px;color:#645d53;font-weight:700;cursor:pointer}
+    #dorayamaIdealApp .dia-segments button[aria-pressed="true"]{background:#302c26;border-color:#302c26;color:#fff}
+    #dorayamaIdealApp .dia-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+    #dorayamaIdealApp .dia-kpi{background:#fffdf9;border:1px solid #ddd3c4;border-radius:14px;padding:15px;min-height:112px}
+    #dorayamaIdealApp .dia-kpi label{display:block;color:#756d62;font-size:12px;margin-bottom:11px}
+    #dorayamaIdealApp .dia-kpi strong{display:block;font-family:serif;font-size:24px;letter-spacing:.01em}
+    #dorayamaIdealApp .dia-kpi small{display:block;font-size:11px;color:#7c746a;margin-top:8px}
+    #dorayamaIdealApp .dia-kpi.dia-profit{border-top:4px solid #477761;padding-top:12px}
+    #dorayamaIdealApp .dia-positive{color:#336b51}
+    #dorayamaIdealApp .dia-negative{color:#a33f38}
+    #dorayamaIdealApp .dia-quest{margin:14px 0 18px;background:#3b352d;color:#fff;border-radius:14px;padding:16px 19px;display:grid;grid-template-columns:1fr 240px;gap:22px;align-items:center}
+    #dorayamaIdealApp .dia-quest b{font-size:15px}
+    #dorayamaIdealApp .dia-quest p{margin:5px 0 0;color:#ddd3c5;font-size:12px}
+    #dorayamaIdealApp .dia-progress{height:9px;background:#665f55;border-radius:9px;overflow:hidden}
+    #dorayamaIdealApp .dia-progress i{display:block;height:100%;width:78%;background:#d5a646;border-radius:9px}
+    #dorayamaIdealApp .dia-progresslabel{display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:#ddd3c5}
+    #dorayamaIdealApp .dia-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+    #dorayamaIdealApp .dia-panel{background:#fffdf9;border:1px solid #ddd3c4;border-radius:14px;padding:18px;min-width:0}
+    #dorayamaIdealApp .dia-panelhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    #dorayamaIdealApp .dia-panelhead h2{font-family:serif;font-size:18px;margin:0}
+    #dorayamaIdealApp .dia-legend{font-size:11px;color:#756d62;display:flex;gap:10px}
+    #dorayamaIdealApp .dia-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+    #dorayamaIdealApp .dia-chart{width:100%;height:230px;display:block}
+    #dorayamaIdealApp .dia-chart text{font-size:10px;fill:#746d63}
+    #dorayamaIdealApp .dia-list{display:grid;gap:9px}
+    #dorayamaIdealApp .dia-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 12px;background:#f8f4ed;border-radius:9px}
+    #dorayamaIdealApp .dia-row span{font-size:13px;color:#4f4941}
+    #dorayamaIdealApp .dia-row b{font-size:14px}
+    #dorayamaIdealApp .dia-row small{display:block;color:#8a8175;font-size:10px;margin-top:3px}
+    #dorayamaIdealApp .dia-tablepanel{margin-top:14px}
+    #dorayamaIdealApp table{width:100%;border-collapse:collapse;font-size:12px}
+    #dorayamaIdealApp th{text-align:right;color:#756d62;font-weight:600;padding:9px;border-bottom:1px solid #ded5c8}
+    #dorayamaIdealApp th:first-child,#dorayamaIdealApp td:first-child{text-align:left}
+    #dorayamaIdealApp td{text-align:right;padding:10px 9px;border-bottom:1px solid #eee7dc;font-weight:600}
+    #dorayamaIdealApp .dia-status{display:inline-block;padding:4px 8px;border-radius:12px;background:#e2f0e7;color:#336b51;font-size:10px}
+    #dorayamaIdealApp .dia-warn{background:#f5e3df;color:#963d36}
+    @media(max-width:850px){#dorayamaIdealApp .dia-shell{grid-template-columns:74px 1fr}#dorayamaIdealApp .dia-brand{font-size:0;text-align:center;padding:0 0 18px}#dorayamaIdealApp .dia-brand:before{content:"どら山";font-size:13px}#dorayamaIdealApp .dia-brand small,#dorayamaIdealApp .dia-nav button{font-size:0}#dorayamaIdealApp .dia-nav span{font-size:18px;width:auto;text-align:center}#dorayamaIdealApp .dia-sidefoot{display:none}#dorayamaIdealApp .dia-kpis{grid-template-columns:repeat(3,1fr)}#dorayamaIdealApp .dia-grid{grid-template-columns:1fr}#dorayamaIdealApp .dia-quest{grid-template-columns:1fr}}
+  </style>
+  <div class="dia-shell">
+    <aside class="dia-side">
+      <div class="dia-brand">門仲どらやき<br>どら山 経営管理<small>DETAIL &amp; WORKS</small></div>
+      <nav class="dia-nav">
+        <button aria-current="page"><span>◉</span>経営ダッシュボード</button>
+        <button><span>◫</span>月次予実</button>
+        <button><span>￥</span>売上・入金</button>
+        <button><span>％</span>原価・経費</button>
+        <button><span>人</span>人件費</button>
+        <button><span>催</span>催事別採算</button>
+        <button><span>✓</span>照合・未確定</button>
+      </nav>
+      <div class="dia-sidefoot">会計の正本：freee<br>店舗：Airレジ　催事：精算書<br>表示：管理会計・税込</div>
+    </aside>
+    <main class="dia-main">
+      <header class="dia-top"><div class="dia-title">月次予実・損益管理</div><div class="dia-sync">● 最終更新 8/8 14:30　未確定 6件</div></header>
+      <section class="dia-content">
+        <div class="dia-headrow"><div><h1 id="diaHeading">全社の現在地</h1><p id="diaSub">どら山・デザイン・会社共通を一枚で確認</p></div><select class="dia-month" aria-label="対象月"><option>2026年6月</option><option>2026年5月</option></select></div>
+        <div class="dia-segments" aria-label="事業切替"><button data-seg="all" aria-pressed="true">全社</button><button data-seg="dora" aria-pressed="false">どら山</button><button data-seg="design" aria-pressed="false">デザイン</button></div>
+        <div class="dia-kpis">
+          <div class="dia-kpi"><label>実績売上</label><strong id="diaSales">537.9万円</strong><small id="diaSalesNote">6月・暫定</small></div>
+          <div class="dia-kpi"><label>予算売上</label><strong id="diaBudget">未確定</strong><small>部門予算の統合待ち</small></div>
+          <div class="dia-kpi"><label>損益分岐点</label><strong id="diaBreak">要確定</strong><small id="diaBreakNote">全社基準を整備中</small></div>
+          <div class="dia-kpi dia-profit"><label>経常利益</label><strong id="diaProfit" class="dia-negative">▲152.7万円</strong><small>共通費配賦後・暫定</small></div>
+          <div class="dia-kpi"><label>累積経常利益</label><strong id="diaCumulative" class="dia-positive">＋277.3万円</strong><small>1〜6月暫定</small></div>
+        </div>
+        <div class="dia-quest"><div><b id="diaQuest">6月は全社で▲152.7万円の暫定赤字</b><p>競争ではなく、次に確認する数字を一つだけ明確にします。</p></div><div><div class="dia-progress"><i id="diaProgress" style="width:62%"></i></div><div class="dia-progresslabel"><span>月次締めの進捗</span><span id="diaProgressText">確定 62%</span></div></div></div>
+        <div class="dia-grid">
+          <section class="dia-panel"><div class="dia-panelhead"><h2>月次予実・損益分岐点</h2><div class="dia-legend"><span><i class="dia-dot" style="background:#303945"></i>実績</span><span><i class="dia-dot" style="background:#b48b3f"></i>予算</span><span><i class="dia-dot" style="background:#9e4038"></i>分岐点</span></div></div>
+            <svg class="dia-chart" viewBox="0 0 600 230" role="img" aria-label="1月から6月の実績、予算、損益分岐点の折れ線グラフ">
+              <g stroke="#e7dfd3" stroke-width="1"><line x1="45" y1="30" x2="575" y2="30"/><line x1="45" y1="90" x2="575" y2="90"/><line x1="45" y1="150" x2="575" y2="150"/><line x1="45" y1="205" x2="575" y2="205"/></g>
+              <g><text x="8" y="34">1億</text><text x="8" y="94">7,500万</text><text x="8" y="154">5,000万</text><text x="8" y="209">0</text><text x="52" y="224">1月</text><text x="151" y="224">2月</text><text x="251" y="224">3月</text><text x="351" y="224">4月</text><text x="451" y="224">5月</text><text x="551" y="224">6月</text></g>
+              <polyline points="60,126 160,112 260,118 360,83 460,52 560,42" fill="none" stroke="#303945" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="60,84 160,82 260,80 360,78 460,76 560,74" fill="none" stroke="#b48b3f" stroke-width="3" stroke-dasharray="7 5"/>
+              <polyline points="60,127 160,96 260,128 360,116 460,110 560,108" fill="none" stroke="#9e4038" stroke-width="3" stroke-dasharray="3 5"/>
+              <g fill="#303945"><circle cx="60" cy="126" r="4"/><circle cx="160" cy="112" r="4"/><circle cx="260" cy="118" r="4"/><circle cx="360" cy="83" r="4"/><circle cx="460" cy="52" r="4"/><circle cx="560" cy="42" r="5"/></g>
+            </svg>
+          </section>
+          <section class="dia-panel"><div class="dia-panelhead"><h2>利益の内訳</h2><span class="dia-status">確認済み</span></div><div class="dia-list">
+            <div class="dia-row"><span>売上<small>どら山＋デザイン</small></span><b id="diaListSales">537.9万円</b></div>
+            <div class="dia-row"><span>原価・直接経費<small>部門へ直接計上</small></span><b id="diaDirect">▲594.1万円</b></div>
+            <div class="dia-row"><span>人件費<small id="diaPeopleNote">直接経費に含む・配賦ルール反映</small></span><b id="diaPeople">内数</b></div>
+            <div class="dia-row"><span>会社共通費<small>売上比で配賦</small></span><b id="diaCommon">▲96.4万円</b></div>
+            <div class="dia-row"><span>経常利益<small>配賦後・暫定</small></span><b id="diaListProfit" class="dia-negative">▲152.7万円</b></div>
+          </div></section>
+        </div>
+        <section class="dia-panel dia-tablepanel"><div class="dia-panelhead"><h2>確認が必要な数字</h2><span style="font-size:11px;color:#756d62">未確定を0円扱いせず、理由まで表示</span></div><table><thead><tr><th>項目</th><th>速報</th><th>確定額</th><th>差額</th><th>状態</th></tr></thead><tbody><tr><td>催事売上・6月精算書</td><td>2,942,660円</td><td>—</td><td>—</td><td><span class="dia-status dia-warn">書類待ち</span></td></tr><tr><td>デザイン人件費</td><td>410,599円</td><td>410,599円</td><td>0円</td><td><span class="dia-status">配賦済み</span></td></tr><tr><td>会社共通費</td><td>963,677円</td><td>963,677円</td><td>0円</td><td><span class="dia-status">確認済み</span></td></tr></tbody></table></section>
+      </section>
+    </main>
+  </div>
+  <script>
+    (function(){
+      const root=document.getElementById('dorayamaIdealApp');
+      const states={
+        all:{heading:'全社の現在地',sub:'どら山・デザイン・会社共通を一枚で確認',sales:'537.9万円',note:'6月・暫定',budget:'未確定',breakEven:'要確定',breakNote:'全社基準を整備中',profit:'▲152.7万円',cumulative:'＋277.3万円',quest:'6月は全社で▲152.7万円の暫定赤字',progress:'62%',progressText:'確定 62%',direct:'▲594.1万円',people:'内数',common:'▲96.4万円',peopleNote:'直接経費に含む・配賦ルール反映'},
+        dora:{heading:'どら山の現在地',sub:'本店・催事の予算、実績、採算を確認',sales:'306.6万円',note:'催事精算書は一部未確定',budget:'936.6万円',breakEven:'701.0万円',breakNote:'あと 394.4万円',profit:'▲300.1万円',cumulative:'▲342.8万円',quest:'次の目標：損益分岐点まであと394.4万円',progress:'44%',progressText:'分岐点の 44%',direct:'▲551.7万円',people:'内数',common:'▲54.9万円',peopleNote:'店舗・催事・鈴木50%'},
+        design:{heading:'デザイン部の現在地',sub:'大矢100%＋鈴木50%の人件費で集計',sales:'231.3万円',note:'6月・暫定',budget:'未設定',breakEven:'83.9万円',breakNote:'実績が 147.4万円上回る',profit:'＋147.4万円',cumulative:'＋620.1万円',quest:'今月の達成：損益分岐点を突破',progress:'100%',progressText:'分岐点の 276%',direct:'▲42.4万円',people:'▲41.1万円',common:'▲41.4万円',peopleNote:'大矢100%＋鈴木50%'}
+      };
+      function setText(id,value){root.querySelector('#'+id).textContent=value}
+      root.querySelectorAll('.dia-segments button').forEach(btn=>btn.addEventListener('click',()=>{
+        root.querySelectorAll('.dia-segments button').forEach(b=>b.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true');
+        const s=states[btn.dataset.seg];setText('diaHeading',s.heading);setText('diaSub',s.sub);setText('diaSales',s.sales);setText('diaSalesNote',s.note);setText('diaBudget',s.budget);setText('diaBreak',s.breakEven);setText('diaBreakNote',s.breakNote);setText('diaProfit',s.profit);setText('diaCumulative',s.cumulative);setText('diaQuest',s.quest);setText('diaProgressText',s.progressText);setText('diaListSales',s.sales);setText('diaDirect',s.direct);setText('diaPeople',s.people);setText('diaCommon',s.common);setText('diaPeopleNote',s.peopleNote);setText('diaListProfit',s.profit);root.querySelector('#diaProgress').style.width=s.progress;
+        ['diaProfit','diaListProfit','diaCumulative'].forEach(id=>{const el=root.querySelector('#'+id);el.classList.toggle('dia-negative',el.textContent.includes('▲'));el.classList.toggle('dia-positive',!el.textContent.includes('▲'))});
+      }));
+    })();
+  </script>
+</div>
+</body></html>
