@@ -57,18 +57,18 @@ def get_dorayama_management():
         ],
         "expenseAudit": {
             "label": "6月・freee明細と社内台帳の照合",
-            "directTotal": 6327493,
+            "directTotal": 5970901,
             "status": "直接費確認済み・共通費配賦待ち",
             "items": [
                 {"label": "仕入高", "amount": 1540153, "type": "変動費"},
-                {"label": "外注費", "amount": 2336307, "type": "催事・外注"},
+                {"label": "外注費（タイミー人件費の重複356,572円を除外）", "amount": 1963785, "type": "催事・外注"},
                 {"label": "給料手当", "amount": 1077118, "type": "人件費"},
                 {"label": "消耗品費", "amount": 585530, "type": "変動・間接"},
                 {"label": "荷造運賃", "amount": 269956, "type": "配送費"},
                 {"label": "地代家賃", "amount": 248880, "type": "固定費"},
-                {"label": "賃借料", "amount": 181519, "type": "固定費"},
+                {"label": "賃借料（加瀬レンタルスペース15,950円を含む）", "amount": 197469, "type": "固定費"},
                 {"label": "水道光熱費", "amount": 71147, "type": "固定費"},
-                {"label": "支払手数料ほか", "amount": 16983, "type": "間接費"},
+                {"label": "支払手数料ほか", "amount": 16863, "type": "間接費"},
             ],
             "unresolved": [
                 {"label": "会社共通費", "reason": "事業別の配賦基準確定待ち"},
