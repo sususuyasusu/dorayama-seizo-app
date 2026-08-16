@@ -87,4 +87,33 @@ def get_dorayama_management():
                 {"label": "セゾンカード・PayPayカード", "reason": "同期自体は正常。未登録明細がセゾン6,274件・PayPay303件残っており、既存の日次確認運用で本人承認を経て順次登録中（バックログ）"},
             ],
         },
+        # 2026-08-15 追加: 売上→原価→粗利益→人件費→固定費→営業利益の流れを
+        # 目に見える形にする「利益はどこに消えているか」セクション用データ。
+        # 数値は上のexpenseAudit(6月・freee確認済み直接費)と同じ数字から算出。
+        # 廃棄ロスはdw-mono-material-cogs-mapの既存調査値(催事FY2026 5ヶ月平均)を
+        # 参考値として明記。6月固有の実測ではなく、本店(Airレジ)は廃棄記録がないため
+        # 含まない旨も明記する。
+        "impact": {
+            "month": "6月",
+            "days": 30,
+            "waterfall": [
+                {"label": "売上", "value": 3065779, "kind": "start"},
+                {"label": "原価", "value": -1540153, "kind": "cost"},
+                {"label": "粗利益", "value": 1525626, "kind": "subtotal"},
+                {"label": "人件費", "value": -3040903, "kind": "cost"},
+                {"label": "固定費", "value": -1389845, "kind": "cost"},
+                {"label": "営業利益（概算・共通費配賦前）", "value": -2905122, "kind": "end"},
+            ],
+            "grossMarginRate": 49.8,
+            "laborOfGrossRate": 199.3,
+            "laborOfGrossTarget": "40〜50%",
+            "daily": {"sales": 102193, "cost": 51338, "labor": 101363, "fixed": 46328},
+            "costSensitivityPer1pct": 30658,
+            "waste": {
+                "rate": 13.3,
+                "monthlyCostEstimate": 63000,
+                "note": "催事の廃棄率（FY2026・5ヶ月平均の参考値。6月単月の実測ではありません）。本店(Airレジ)は廃棄記録が無く含まれていません。半分に減らせれば月あたり約3.2万円の原価改善が見込めます。",
+            },
+            "headline": "6月は売上10万円につき人件費だけで10万円かかっていました。粗利益の2倍(199%)を人件費が食っており、目安の40〜50%を大きく超えています。",
+        },
     }
