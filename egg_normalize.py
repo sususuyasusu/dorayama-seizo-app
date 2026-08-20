@@ -127,7 +127,76 @@ def normalize(tab, ws, tabset):
     #    原因は「翌々週タブが未作成の時点で生成し、その 0 が以後コピー継承された」こと。
     #    ここで毎回タブ名を日付から解決して書き直すので、後からタブが増えても自動で埋まる。
     d = _fix_batches(ws, tab, tabset)
-    return f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)  D:{d}"
+
+    # E) まだ発注していない先の週に残る「幽霊の発注記録」を消す
+    #    週タブを複製すると配送便別合算(W/Y)の手入力値がコピーされ、未発注の週にも
+    #    発注済みの数字が居座る。それが在庫予測を膨らませ「翌週の発注は0でよい」と
+    #    誤った推奨を生む（2026-08-13 と 08-20 に実害）。
+    #    発注は木曜に翌週分をまとめて出すので、翌々週以降は必ず未発注 → 空にする。
+    e = _clear_ghost_orders(ws, tab)
+    return (f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)  "
+            f"D:{d}  E:{e}")
+
+
+def _weeks_ahead(tab):
+    """タブ(MMDD)が当週の何週先かを返す。当週=0, 翌週=1, ... 過去なら負。"""
+    try:
+        mm, dd = int(tab[:2]), int(tab[2:])
+    except ValueError:
+        return None
+    today = datetime.date.today()
+    cands = []
+    for y in (today.year - 1, today.year, today.year + 1):
+        try:
+            cands.append(datetime.date(y, mm, dd))
+        except ValueError:
+            continue
+    if not cands:
+        return None
+    tab_monday = min(cands, key=lambda d: abs((d - today).days))
+    cur_monday = today - datetime.timedelta(days=today.weekday())
+    return (tab_monday - cur_monday).days // 7
+
+
+def _clear_ghost_orders(ws, tab):
+    """翌々週以降のタブなら、配送便別合算の発注記録(W/Y)を空にする。
+    当週・翌週は実際に発注済みの可能性があるため触らない。"""
+    ahead = _weeks_ahead(tab)
+    if ahead is None:
+        return "skip(週判定不可)"
+    if ahead < 2:
+        return f"skip(当週から{ahead}週=発注済みの可能性)"
+    rows = _bin_rows_by_label(ws)
+    if not rows:
+        return "skip(配送便行が見つからない)"
+    cur = ws.get(f"W{rows[0]}:Y{rows[-1]}")
+    has_value = False
+    for i, r in enumerate(rows):
+        row = cur[i] if i < len(cur) else []
+        for ci in (0, 2):                     # W列(卵黄g) と Y列(卵白g)
+            v = str(row[ci]).strip() if len(row) > ci else ""
+            if v and v not in ("0",):
+                has_value = True
+    if not has_value:
+        return "OK(既に空)"
+    ws.batch_update([{"range": f"W{r}", "values": [[""]]} for r in rows]
+                    + [{"range": f"Y{r}", "values": [[""]]} for r in rows],
+                    value_input_option="USER_ENTERED")
+    return f"幽霊記録を消去(行{rows})"
+
+
+def _bin_rows_by_label(ws):
+    """A列のラベルから火/木/土便の行を特定（催事増で行がズレる週に追従）。"""
+    try:
+        colA = ws.get("A60:A95")
+    except Exception:
+        return []
+    rows = []
+    for i, cell in enumerate(colA):
+        text = (cell[0] if cell else "").strip()
+        if text.startswith(("火曜便", "木曜便", "土曜便")):
+            rows.append(60 + i)
+    return sorted(rows)[:3]
 
 
 def _tab_after(tab, days, tabset):
