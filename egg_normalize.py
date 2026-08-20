@@ -135,7 +135,49 @@ def normalize(tab, ws, tabset):
     #    発注は木曜に翌週分をまとめて出すので、翌々週以降は必ず未発注 → 空にする。
     e = _clear_ghost_orders(ws, tab)
     return (f"[{tab}] A:{nA}/14 置換  B:{b}  C:見通し/発注チェックを実績化(冪等)  "
-            f"D:{d}  E:{e}")
+            f"D:{d}  E:{e}  F:{_fix_actual_dates(ws)}  G:{_fix_week_total(ws)}")
+
+
+def _fix_actual_dates(ws):
+    """実績側の日付起点(V4)が予定側(B4)とズレていたら直す。
+    2026-08-20発覚: 0907〜0928の4週で実績側が「7月20日」のまま固定値で残り、
+    予定側(9月)と一致していなかった。V4を =B4 にすれば以降の曜日は自動で連なる。"""
+    try:
+        b = ws.get("B4:B4", value_render_option="UNFORMATTED_VALUE")
+        v = ws.get("V4:V4", value_render_option="UNFORMATTED_VALUE")
+        bv = b[0][0] if b and b[0] else None
+        vv = v[0][0] if v and v[0] else None
+    except Exception:
+        return "skip(読取不可)"
+    if bv is None:
+        return "skip(予定側なし)"
+    if bv == vv:
+        return "OK"
+    ws.batch_update([{"range": "V4", "values": [["=B4"]]}], value_input_option="USER_ENTERED")
+    return "実績側の日付を予定に合わせた"
+
+
+def _fix_week_total(ws):
+    """週間の合計回転数の実績側が、予定側の合計を参照していたら直す。
+    2026-08-20発覚: 実績6,310個の週に予定10,110個由来の168.5回転が表示されていた。"""
+    r_tot = _label_row(ws, "どら焼き合計（個）［週間］")
+    r_std = _label_row(ws, "1回転の基準個数")
+    r_real = _label_row(ws, "合計回転数（実数）")
+    r_ceil = _label_row(ws, "合計回転数（切上げ）")
+    if not all([r_tot, r_std, r_real, r_ceil]):
+        return "skip(行なし)"
+    try:
+        cur = ws.acell(f"V{r_real}", value_render_option="FORMULA").value or ""
+    except Exception:
+        return "skip(読取不可)"
+    # 分子が予定側の週間合計($B$40等)なら誤り。実績側($V$40)を見ていれば正しい。
+    if f"$B${r_tot}" not in cur:
+        return "OK"
+    ws.batch_update([
+        {"range": f"V{r_real}", "values": [[f"=IFERROR($V${r_tot}/$B${r_std},0)"]]},
+        {"range": f"V{r_ceil}", "values": [[f"=IFERROR(CEILING($V${r_tot}/$B${r_std},1),0)"]]},
+    ], value_input_option="USER_ENTERED")
+    return "週間合計を実績基準に修正"
 
 
 def _weeks_ahead(tab):
