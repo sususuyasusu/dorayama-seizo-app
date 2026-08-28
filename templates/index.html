@@ -909,7 +909,7 @@ function ankoCard(c,A,isShiro){
   const warn=c.emergencyBags>0?('<div class="aalert confirm">緊急追加が必要：今週いっぱい（日曜まで）に '+numfmt(c.emergencyG)+'g 不足（目安 '+c.emergencyBags+'袋）</div>'):'';
   const carry=c.emergencyBags>0?'不足':('余り '+numfmt(c.carryoverG)+'g');
   const jun=isShiro?('<div class="junin">旬どら100個あたりの白あん <input id="junrate" type="number" inputmode="decimal" value="'+(A.junRatePer100||0)+'"> g　<span>（通常発注対象の旬どら '+numfmt(A.junCountPeriod)+'個）</span></div>'+
-    '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g</div>'):'';
+    '<div class="abreak">白どら分 '+numfmt(A.shiroBreakdown.shiroDoraG)+'g ＋ 旬どら分 '+numfmt(A.shiroBreakdown.shunDoraG)+'g'+((A.shiroBreakdown.matchaG||0)>0?' ＋ 抹茶分 '+numfmt(A.shiroBreakdown.matchaG)+'g':'')+'</div>'):'';
   return '<div class="ankocard"><div class="ah">'+head+'</div>'+
     warn+
     '<div class="arow"><span class="lb">当週の使用</span><b>'+numfmt(c.coverPeriodG)+'g</b><span class="sub">'+A.coverPeriodLabel+'・'+c.coverPeriodBags+'袋</span></div>'+

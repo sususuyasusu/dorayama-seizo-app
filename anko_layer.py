@@ -19,9 +19,13 @@ G_PER = 35           # 1個あたりのあん(g)。製造表の数式と同じ
 BAG_G = 5000         # 粒あん・上白あん とも 5kg/袋
 BUSINESS_CLOSE_HOUR = 17
 JUN_KEY = "旬どら_白あん_g_per_100個"   # 旬どら100個あたりの白あん(g)
+MATCHA_KEY = "抹茶どら_白あん_g_per_100個"   # 抹茶どら100個あたりの白あん(g)。既定3000g=3kg
+MATCHA_DEFAULT_G_PER_100 = 3000
 TSUBU_PRODUCTS = ("黒どら", "あんバター")
 SHIRO_PRODUCTS = ("白どら",)
 JUN_PRODUCTS = ("旬どら",)
+# 製造表から拾う商品名。抹茶は 2026-08-20 追加（白あん100個=3kg、旬どらと同じ扱い）
+COUNT_PRODUCTS = ("黒どら", "あんバター", "白どら", "旬どら", "抹茶")
 
 
 def _num(s):
@@ -39,8 +43,8 @@ def _daily_counts(tab):
     def g(r, c):
         return V[r - 1][c] if r - 1 < len(V) and c < len(V[r - 1]) else ""
 
-    s = {name: [0.0] * 7 for name in ("黒どら", "あんバター", "白どら", "旬どら")}
-    for r in range(5, 35):
+    s = {name: [0.0] * 7 for name in COUNT_PRODUCTS}
+    for r in range(5, 40):          # 商品追加で行が増えるため余裕をもって走査
         nm = str(g(r, 0)).strip()
         if nm in s and str(g(r, 8)).strip() == "はい":
             for i, c in enumerate(range(21, 28)):  # V..AB 実績側製造表
@@ -67,12 +71,14 @@ def _sum_days(counts, indexes):
     return {name: sum(values[i] for i in indexes) for name, values in counts.items()}
 
 
-def _demand(counts, jun_rate):
+def _demand(counts, jun_rate, matcha_rate=MATCHA_DEFAULT_G_PER_100):
     tsubu = G_PER * (counts["黒どら"] + counts["あんバター"])
     shiro_dora = G_PER * counts["白どら"]
     shun_dora = (jun_rate / 100.0) * counts["旬どら"]
+    matcha = (matcha_rate / 100.0) * counts.get("抹茶", 0)   # 抹茶100個=3kgの白あん
     return {"tsubu": tsubu, "shiroDora": shiro_dora,
-            "shunDora": shun_dora, "shiro": shiro_dora + shun_dora}
+            "shunDora": shun_dora, "matcha": matcha,
+            "shiro": shiro_dora + shun_dora + matcha}
 
 
 def _tab_monday(tab):
@@ -110,10 +116,11 @@ def _stock_bags():
 
 def get_anko_order(tab=None):
     jun_rate = _num(config_store.get_config(JUN_KEY, 0))
+    matcha_rate = _num(config_store.get_config(MATCHA_KEY, MATCHA_DEFAULT_G_PER_100)) or MATCHA_DEFAULT_G_PER_100
     cur_title, cur_daily = _daily_counts(tab)
     nxt = _next_tab(cur_title)
     nxt2 = _tab_after(cur_title, 14)
-    empty = {name: [0.0] * 7 for name in ("黒どら", "あんバター", "白どら", "旬どら")}
+    empty = {name: [0.0] * 7 for name in COUNT_PRODUCTS}
     nxt_title, nxt_daily = _daily_counts(nxt) if nxt else (None, empty)
     nxt2_title, nxt2_daily = _daily_counts(nxt2) if nxt2 else (None, empty)
 
@@ -121,13 +128,13 @@ def get_anko_order(tab=None):
     cover_cur = _sum_days(cur_daily, range(0, 7))
     cover_next = _sum_days(nxt_daily, range(0, 0))   # 追加なし
     cover_counts = {name: cover_cur[name] + cover_next[name] for name in cover_cur}
-    d_cover = _demand(cover_counts, jun_rate)
+    d_cover = _demand(cover_counts, jun_rate, matcha_rate)
 
     # 月曜朝の通常発注の対象=翌週 月〜日。
     order_next = _sum_days(nxt_daily, range(0, 7))
     order_nxt2 = _sum_days(nxt2_daily, range(0, 0))  # 追加なし
     order_counts = {name: order_next[name] + order_nxt2[name] for name in order_next}
-    d_order = _demand(order_counts, jun_rate)
+    d_order = _demand(order_counts, jun_rate, matcha_rate)
 
     tsubu_inv, shiro_inv = _stock_bags()
     t_stock_bags = (tsubu_inv["total"] if tsubu_inv else 0) or 0
@@ -164,9 +171,12 @@ def get_anko_order(tab=None):
         "junRatePer100": jun_rate,
         "junCountCover": round(cover_counts["旬どら"]),
         "junCountPeriod": round(order_counts["旬どら"]),
+        "matchaRatePer100": matcha_rate,
+        "matchaCountPeriod": round(order_counts.get("抹茶", 0)),
         "shiroBreakdown": {
             "shiroDoraG": round(d_order["shiroDora"]),
             "shunDoraG": round(d_order["shunDora"]),
+            "matchaG": round(d_order["matcha"]),
         },
         "gPer": G_PER,
         "tsubu": card("あんこ（粒あん）", tsubu_inv, "tsubu", t_stock_bags),

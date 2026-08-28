@@ -16,6 +16,8 @@ CRED = os.environ.get(
     "/Users/suzuki3/Library/CloudStorage/Dropbox-Detale/D& W/どら山/過去/dw_budget_profit_sheets_automation/config/google_credentials.json",
 )
 
+# 店舗用ブロックの商品行。行番号は商品追加でズレるため既定値であり、実際は
+# store_product_rows() が「店舗用」見出しの下から商品名で探して使う。
 STORE_PRODUCTS = {"黒どら": 27, "あんバター": 28, "白どら": 29, "旬どら": 30, "生": 31, "皮4枚セット": 32}
 PLAN_COLS = list(range(1, 8))      # B..H = 予定 月～日
 ACT_COLS = list(range(21, 28))     # V..AB = 実績 月～日
@@ -78,6 +80,30 @@ def get_ws(title, refresh=False):
     if not refresh:
         return get_ws(title, refresh=True)
     return None
+
+
+def store_product_rows(vals):
+    """「店舗用」ブロックの商品名→行番号を、シートを読んで作る。
+    商品追加(例: 抹茶)で行がズレても正しく追従するため、行番号は決め打ちしない。
+    見つからない場合のみ既定値 STORE_PRODUCTS を返す。"""
+    start = None
+    for r, row in enumerate(vals, start=1):
+        a = str(row[0]).strip() if row else ""
+        if a == "店舗用":
+            start = r
+            break
+    if start is None:
+        return dict(STORE_PRODUCTS)
+    found = {}
+    for r in range(start + 1, min(start + 15, len(vals) + 1)):
+        row = vals[r - 1] if r - 1 < len(vals) else []
+        a = str(row[0]).strip() if row else ""
+        if not a:
+            continue
+        if a.startswith(("【", "どら焼き合計", "回転数", "1回転", "合計回転")):
+            break          # 集計ブロックに入ったら終了
+        found[a] = r
+    return found or dict(STORE_PRODUCTS)
 
 
 def kaiten_row(vals, label="回転数（実数）"):
@@ -188,7 +214,7 @@ def get_week_store_data(today=None):
         days.append({"label": f"{WEEKDAYS[i]}{d.month}/{d.day}", "date": d.isoformat()})
 
     products = []
-    for name, row in STORE_PRODUCTS.items():
+    for name, row in store_product_rows(vals).items():
         plan = [num(cell(row, c)) for c in PLAN_COLS]
         act = [num(cell(row, c)) for c in ACT_COLS]
         products.append({"name": name, "plan": plan, "actual": act})
