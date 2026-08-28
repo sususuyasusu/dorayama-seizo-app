@@ -17,7 +17,7 @@ from google.oauth2.service_account import Credentials
 from gspread.utils import rowcol_to_a1
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-PRODUCTS = {"黒どら", "あんバター", "白どら", "旬どら", "生", "生どら", "皮4枚セット", "皮だけ（パック）"}
+PRODUCTS = {"黒どら", "あんバター", "白どら", "旬どら", "抹茶", "生", "生どら", "皮4枚セット", "皮だけ（パック）"}
 ACT_COL_BASE = 22  # V列(1-indexed)=月曜の実績
 
 
@@ -55,7 +55,7 @@ class SheetsClient:
             return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""
         out = []
         cur = None
-        for r in range(1, 35):
+        for r in range(1, 45):   # 商品追加で行が増えるため余裕をもって走査
             a = g(r, 0).strip()
             s = g(r, 18).strip()
             if s == "カテゴリー" and a:

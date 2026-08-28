@@ -225,7 +225,10 @@ def get_week_store_data(today=None):
             "products": products, "kaiten": kaiten}
 
 
-PRODUCTS_SET = ["黒どら", "あんバター", "白どら", "旬どら", "生", "生どら", "皮4枚セット", "皮だけ（パック）"]
+PRODUCTS_SET = ["黒どら", "あんバター", "白どら", "旬どら", "抹茶", "生", "生どら",
+                "皮4枚セット", "皮だけ（パック）"]
+# 数字が未入力でも画面に必ず出す商品（入力欄が無いと入力できないため）
+ALWAYS_SHOW = {"抹茶"}
 
 
 def get_week_blocks(tab=None, today=None):
@@ -247,7 +250,7 @@ def get_week_blocks(tab=None, today=None):
     daydates = None
     blocks = []
     cur = None
-    for r in range(1, 35):
+    for r in range(1, 45):        # 商品追加で行が増えるため余裕をもって走査
         a = cell(r, 0).strip()
         s = cell(r, 18).strip()
         if s == "カテゴリー" and a:
@@ -259,11 +262,14 @@ def get_week_blocks(tab=None, today=None):
         if cur is not None and a in PRODUCTS_SET:
             plan = [num(cell(r, c)) for c in PLAN_COLS]
             actual = [num(cell(r, c)) for c in ACT_COLS]
-            # 予算が全て空/0 かつ 実績が全て空の行は、空の重複テンプレ行なので取り込まない
+            # 予算が全て空/0 かつ 実績が全て空の行は、空の重複テンプレ行なので取り込まない。
+            # ただし ALWAYS_SHOW の商品は数字が未入力でも入力欄として必ず出す（新商品対応）。
             empty_plan = all(v is None or v == 0 for v in plan)
             empty_actual = all(v is None for v in actual)
             existing = {p["name"] for p in cur["products"]}
-            if (empty_plan and empty_actual) or (a in existing):
+            if a in existing:
+                continue
+            if (empty_plan and empty_actual) and a not in ALWAYS_SHOW:
                 continue
             if not cur["category"]:
                 cur["category"] = "店舗用" if cur["name"] == "店舗用" else "催事用"
