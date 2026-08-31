@@ -45,40 +45,40 @@ import target_settings_layer
 def verify_management():
     data = management_layer.get_dorayama_management()
     latest = data["latest"]
-    assert latest["sales"] == 4239728
+    assert latest["sales"] == 4286386
     assert latest["costOfSales"] == 1840450
-    assert latest["grossProfit"] == 2399278
-    assert latest["operatingExpenses"] == 2977079
-    assert latest["costTotal"] == 4817529
-    assert latest["profit"] == -577801
-    assert latest["cumulative"] == -3970200
+    assert latest["grossProfit"] == 2445936
+    assert latest["operatingExpenses"] == 2974830
+    assert latest["costTotal"] == 4815280
+    assert latest["profit"] == -528894
+    assert latest["cumulative"] == -3400014
     assert latest["budget"] == 8462000
-    assert data["budgetGap"] == 4222272
-    assert data["achievement"] == 50.1
+    assert data["budgetGap"] == 4175614
+    assert data["achievement"] == 50.7
     assert data["breakEvenGap"] is None
-    assert data["cumulative"]["sales"] == 38403817
-    assert data["cumulative"]["grossProfit"] == 22934429
-    assert data["cumulative"]["labor"] == 20884362
+    assert data["cumulative"]["sales"] == 38968098
+    assert data["cumulative"]["grossProfit"] == 23498705
+    assert data["cumulative"]["labor"] == 20892320
     assert data["cumulative"]["eventStaffing"] == 9608656
-    assert data["cumulative"]["labor"] - data["cumulative"]["eventStaffing"] == 11275706
-    assert data["cumulative"]["profit"] == -3970200
-    assert data["automationProgress"]["completedCorrections"] == 148
+    assert data["cumulative"]["labor"] - data["cumulative"]["eventStaffing"] == 11283664
+    assert data["cumulative"]["profit"] == -3400014
+    assert data["automationProgress"]["completedCorrections"] == 1211
     assert data["automationProgress"]["failedCorrections"] == 0
     assert data["months"][0]["dataStatus"] == "Excel原本参考"
     assert data["months"][1]["dataStatus"] == "freee是正後"
     confirmed_months = data["months"][1:7]
     assert confirmed_months[0]["eventStaffing"] == 3964675
-    assert confirmed_months[0]["internalLabor"] == 2057403
+    assert confirmed_months[0]["internalLabor"] == 2057854
     assert confirmed_months[-1]["eventStaffing"] == 1073600
-    assert confirmed_months[-1]["internalLabor"] == 1370116
-    assert sum(row["internalLabor"] for row in confirmed_months) == 11275706
-    event_labor = next(item["amount"] for item in data["latestBreakdown"] if item["label"] == "催事販売員")
+    assert confirmed_months[-1]["internalLabor"] == 1371142
+    assert sum(row["internalLabor"] for row in confirmed_months) == 11283664
+    event_labor = next(item["amount"] for item in data["latestBreakdown"] if item["label"] == "マネキン費（催事販売員の派遣）")
     store_side_labor = latest["labor"] - event_labor
     assert event_labor == 1073600
-    assert store_side_labor == 1370116
-    assert round(store_side_labor / latest["storeSales"] * 100, 1) == 78.1
+    assert store_side_labor == 1371142
+    assert round(store_side_labor / latest["storeSales"] * 100, 1) == 76.2
     assert round(event_labor / latest["eventSales"] * 100, 1) == 43.2
-    assert round(latest["storeSales"] * 0.25) == 438390
+    assert round(latest["storeSales"] * 0.25) == 450055
     assert round(latest["eventSales"] * 0.25) == 621542
     json.dumps(data, ensure_ascii=False, allow_nan=False)
 
@@ -231,14 +231,14 @@ def verify_management_analysis():
     assert next(line for line in cost_analysis["lines"] if line["row"] == 25)["label"] == "その他の外注費"
     weekday_history = data["weekdayTimeHistory"]
     assert weekday_history["from"] == "2026-01-01"
-    assert weekday_history["to"] == "2026-08-16"
-    assert len(weekday_history["daily"]) == 228
-    assert sum(row["storeSales"] for row in weekday_history["daily"]) == 14307736
-    assert sum(row["eventSales"] for row in weekday_history["daily"]) == 23759774
+    assert weekday_history["to"] == "2026-08-29"
+    assert len(weekday_history["daily"]) == 241
+    assert sum(row["storeSales"] for row in weekday_history["daily"]) == 14996088
+    assert sum(row["eventSales"] for row in weekday_history["daily"]) == 25795932
     assert data["augustReconciliation"]["salesDifference"] == 1897625
     assert data["augustReconciliation"]["storeDifference"] == 0
     assert data["augustReconciliation"]["eventDifference"] == 1897625
-    assert data["freeeProgress"]["historicalUnassignedSales"]["amount"] == 9375797
+    assert data["freeeProgress"]["historicalUnassignedSales"]["amount"] == 0
     assert data["workbook"]["sheetCount"] == 15
     assert len(data["navigation"]) == 19
     assert any(item["id"] == "targets" for item in data["navigation"])
@@ -478,7 +478,7 @@ def verify_html():
         "棒・点にカーソルを合わせると金額を表示",
         "historicalLaborCalendar", "日別シフト人件費合計",
         "月次確定との差（未日別配賦）", "判定は行いません",
-        "日別人件費率＝シフト人件費÷（店舗売上＋催事売上）",
+        "日別人件費率＝シフト人件費÷（販売日の店舗売上＋催事売上）",
         "以下は緑、超過は赤", "催事売上未取得・暫定",
     )
     for text in required_texts:
@@ -490,7 +490,8 @@ def verify_html():
     assert "#NAME?" not in html
     scripts = [html.split("<script>", 1)[1].split("</script>", 1)[0]]
     index_html = (BASE / "templates" / "index.html").read_text(encoding="utf-8")
-    assert 'id="nav-manager"' not in index_html
+    assert 'id="nav-manager"' in index_html
+    assert "location.href='/store-manager'" in index_html
     assert '<span class="ic">📈</span>経常利益' in index_html
     scripts.extend(re.findall(r"<script>(.*?)</script>", index_html, flags=re.S))
     node = os.environ.get("DORAYAMA_NODE")
