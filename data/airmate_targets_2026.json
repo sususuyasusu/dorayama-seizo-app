@@ -1,0 +1,45 @@
+{
+  "source": "Airメイト 目標設定",
+  "sourceUrl": "https://airmate.jp/set_target/",
+  "verifiedAt": "2026-08-17T13:00:00+09:00",
+  "fiscalYear": 2026,
+  "period": "2026-02/2027-01",
+  "annualSalesTarget": 101169074,
+  "costTargetUsable": false,
+  "costTargetNote": "原価・人件費・その他コストのAirメイト目標がすべて0円のため、利益予算には使用しない",
+  "eventOperatingTarget": {
+    "amountGross": 220000,
+    "noEventDayAmountGross": 0,
+    "unit": "1催事1日",
+    "taxBasis": "税込",
+    "effectiveFrom": "2026-08-18",
+    "source": "本人確定運用ルール",
+    "rule": "税込220,000円 × 催事数 × 開催日数。催事のない日は0円"
+  },
+  "stores": {
+    "event": {
+      "label": "【催事】門仲どらやき どら山",
+      "lastUpdated": "2026-04-14T13:48:00+09:00",
+      "annualSalesTarget": 74300000
+    },
+    "store": {
+      "label": "【門前仲町】門仲どらやき どら山",
+      "lastUpdated": "2026-08-17T12:37:00+09:00",
+      "annualSalesTarget": 26869074
+    }
+  },
+  "months": [
+    {"yearMonth": "2026-02", "event": 2000000, "store": 2000000, "total": 4000000},
+    {"yearMonth": "2026-03", "event": 3500000, "store": 2450000, "total": 5950000},
+    {"yearMonth": "2026-04", "event": 9500000, "store": 2340074, "total": 11840074},
+    {"yearMonth": "2026-05", "event": 9900000, "store": 2460000, "total": 12360000},
+    {"yearMonth": "2026-06", "event": 10500000, "store": 2099000, "total": 12599000},
+    {"yearMonth": "2026-07", "event": 6300000, "store": 2162000, "total": 8462000},
+    {"yearMonth": "2026-08", "event": 6100000, "store": 2198000, "total": 8298000},
+    {"yearMonth": "2026-09", "event": 5500000, "store": 2350000, "total": 7850000},
+    {"yearMonth": "2026-10", "event": 6500000, "store": 2425000, "total": 8925000},
+    {"yearMonth": "2026-11", "event": 6500000, "store": 2385000, "total": 8885000},
+    {"yearMonth": "2026-12", "event": 6500000, "store": 2180000, "total": 8680000},
+    {"yearMonth": "2027-01", "event": 1500000, "store": 1820000, "total": 3320000}
+  ]
+}

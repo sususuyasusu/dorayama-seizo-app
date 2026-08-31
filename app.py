@@ -23,6 +23,11 @@ import manual_layer
 import sms_layer
 import seibun_layer
 import management_layer
+import daily_ledger
+import management_sync_layer
+import management_analysis_layer
+import budget_workbook_layer
+import target_settings_layer
 
 BASE = Path(__file__).parent
 STATIC = (BASE / "static").resolve()
@@ -146,6 +151,17 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(cost_layer.get_cost(tab), ensure_ascii=False))
         elif path == "/api/management/dorayama":
             self._send(200, json.dumps(management_layer.get_dorayama_management(), ensure_ascii=False))
+        elif path == "/api/management/daily-ledger":
+            self._send(200, json.dumps(daily_ledger.get_daily_ledger(tab), ensure_ascii=False))
+        elif path == "/api/management/source-sync":
+            self._send(200, json.dumps(management_sync_layer.get_management_sync(), ensure_ascii=False))
+        elif path == "/api/management/analysis":
+            self._send(200, json.dumps(management_analysis_layer.get_management_analysis(), ensure_ascii=False))
+        elif path == "/api/management/workbook":
+            sheet = (parse_qs(u.query).get("sheet") or ["表紙"])[0]
+            self._send(200, json.dumps(budget_workbook_layer.get_sheet(sheet), ensure_ascii=False))
+        elif path == "/api/management/targets":
+            self._send(200, json.dumps(target_settings_layer.get_target_settings(), ensure_ascii=False))
         elif path == "/api/materials":
             self._send(200, json.dumps(material_layer.get_materials(tab), ensure_ascii=False))
         elif path == "/api/inventory":
@@ -217,6 +233,9 @@ class Handler(BaseHTTPRequestHandler):
                 anko_layer.set_anko_config(data, data.get("tab")),
                 ensure_ascii=False,
             ))
+        elif path == "/api/management/targets":
+            result = target_settings_layer.save_target_settings(data)
+            self._send(200, json.dumps(result, ensure_ascii=False))
         elif path == "/api/seibun/analyze":
             # 合言葉が通らなければ画像認識に進まない（URLを知っているだけの人に費用を使わせない）
             ok, msg, code = seibun_layer.check_access(data.get("accessCode"))
@@ -290,8 +309,11 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8765))
     host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
-    import egg_stock_sync
-    egg_stock_sync.start()   # AppSheet在庫→製造表の10分同期（Apps Scriptトリガ停止の恒久対策）
-    import egg_autoheal
-    egg_autoheal.start()     # 卵シートの自己修復を1日1回（発注ブロックの0埋め等を自動是正）
+    # DORAYAMA_DISABLE_BACKGROUND=1 のとき、シートへ書き込む常駐同期を起動しない。
+    # ローカル検証を読み取り専用で行うための安全装置。Render本番は未設定＝従来どおり両方起動。
+    if not os.environ.get("DORAYAMA_DISABLE_BACKGROUND"):
+        import egg_stock_sync
+        egg_stock_sync.start()   # AppSheet在庫→製造表の10分同期（Apps Scriptトリガ停止の恒久対策）
+        import egg_autoheal
+        egg_autoheal.start()     # 卵シートの自己修復を1日1回（発注ブロックの0埋め等を自動是正）
     ThreadingHTTPServer((host, port), Handler).serve_forever()

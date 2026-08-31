@@ -1,3 +1,4 @@
 gspread>=6.0
 google-auth>=2.0
 line-bot-sdk==3.11.0
+openpyxl>=3.1

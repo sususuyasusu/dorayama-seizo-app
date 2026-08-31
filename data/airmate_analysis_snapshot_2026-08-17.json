@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "source": "Airメイト画面（ユーザー提供スクリーンショット）",
+  "updatedAt": "2026-08-17T09:55:00+09:00",
+  "period": {
+    "from": "2026-07-18",
+    "to": "2026-08-16"
+  },
+  "scope": "【催事】門仲どらやき どら山",
+  "productAnalysis": {
+    "abcRule": "売上構成比の累積70%までをA、90%までをB、以降をCとする画面用の暫定基準",
+    "totalQuantityReference": 5864,
+    "totalSalesReference": 1949000,
+    "totalGrossProfitReference": 1784000,
+    "items": [
+      {"rank": 1, "category": "FOOD", "name": "黒どら", "quantity": 1636, "quantityShare": 27.9, "sales": 489164, "salesShare": 25.1, "grossProfit": 384460, "grossProfitShare": 21.6, "abc": "A"},
+      {"rank": 2, "category": "FOOD", "name": "あんバター", "quantity": 1213, "quantityShare": 20.7, "sales": 483987, "salesShare": 24.8, "grossProfit": 483987, "grossProfitShare": 27.1, "abc": "A"},
+      {"rank": 3, "category": "FOOD", "name": "旬どら", "quantity": 757, "quantityShare": 12.9, "sales": 345770, "salesShare": 17.7, "grossProfit": 345770, "grossProfitShare": 19.4, "abc": "A"},
+      {"rank": 4, "category": "FOOD", "name": "白どら", "quantity": 624, "quantityShare": 10.6, "sales": 186576, "salesShare": 9.5, "grossProfit": 146640, "grossProfitShare": 8.2, "abc": "B"},
+      {"rank": 5, "category": "FOOD", "name": "抹茶どら", "quantity": 594, "quantityShare": 10.1, "sales": 267300, "salesShare": 13.7, "grossProfit": 267300, "grossProfitShare": 15.0, "abc": "B"},
+      {"rank": 6, "category": "袋", "name": "ビニール袋", "quantity": 553, "quantityShare": 9.4, "sales": 5530, "salesShare": 0.2, "grossProfit": -1659, "grossProfitShare": 0.0, "abc": "C"},
+      {"rank": 7, "category": "FOOD", "name": "皮4枚セット", "quantity": 279, "quantityShare": 4.7, "sales": 119970, "salesShare": 6.1, "grossProfit": 119970, "grossProfitShare": 6.7, "abc": "C"},
+      {"rank": 8, "category": "袋", "name": "箱(小)と紙袋", "quantity": 74, "quantityShare": 1.2, "sales": 7400, "salesShare": 0.3, "grossProfit": 7400, "grossProfitShare": 0.4, "abc": "C"},
+      {"rank": 9, "category": "FOOD", "name": "生どら", "quantity": 72, "quantityShare": 1.2, "sales": 34560, "salesShare": 1.7, "grossProfit": 34560, "grossProfitShare": 1.9, "abc": "C"},
+      {"rank": 10, "category": "袋", "name": "箱(大)と紙袋", "quantity": 48, "quantityShare": 0.8, "sales": 5760, "salesShare": 0.2, "grossProfit": -8640, "grossProfitShare": -0.4, "abc": "C"}
+    ]
+  },
+  "weekdayTimeAnalysis": {
+    "metric": "平均売上",
+    "overallAverage": 187381,
+    "weekdays": [
+      {"day": "月", "averageSales": 207803},
+      {"day": "火", "averageSales": 191794},
+      {"day": "水", "averageSales": 171719},
+      {"day": "木", "averageSales": 182115},
+      {"day": "金", "averageSales": 240572},
+      {"day": "土", "averageSales": 186264},
+      {"day": "日", "averageSales": 148738}
+    ],
+    "timeBands": ["5時-6時", "6時-7時", "7時-8時", "8時-9時", "9時-10時", "10時-11時", "11時-12時", "12時-13時", "13時-14時", "14時-15時", "15時-16時", "16時-17時", "17時-18時", "18時-19時", "19時-20時", "20時-21時", "21時-22時", "22時-23時"],
+    "timeBandStatus": "Airメイト参照画面では全時間帯が0円。催事売上に時刻情報が付いていない可能性があるため、統合画面では未取得として扱う"
+  },
+  "laborAnalysis": {
+    "source": "Airメイト画面スナップショット（ユーザー提供・読み取り専用）",
+    "updatedAt": "2026-08-18T10:48:00+09:00",
+    "period": "2026/8",
+    "scope": "【催事】門仲どらやき どら山",
+    "monthlyLaborRate": 4.5,
+    "monthlyLabor": 148192,
+    "monthlySales": 3288305,
+    "salesTargetAchievement": 98.0,
+    "thresholdRate": 25.0,
+    "includedInInternalLabor": false,
+    "accountingTreatment": "催事Airメイト参考値。社員・アルバイト・タイミーの内部人件費には合算せず、催事販売外注費の確定額にも使用しない",
+    "thresholdNote": "Airメイト画面の目標0.0%は採用せず、今回確定した本店・催事共通の人件費基準25%を使用",
+    "daily": [
+      {"day": 1, "laborRate": 7.1, "sales": 128772, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true},
+      {"day": 2, "laborRate": 12.3, "sales": 74823, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true},
+      {"day": 3, "laborRate": 6.0, "sales": 152350, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true},
+      {"day": 4, "laborRate": 5.8, "sales": 158080, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 5, "laborRate": 0.0, "sales": 0, "shiftPlanExceeded": false, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 6, "laborRate": 5.4, "sales": 169672, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true},
+      {"day": 7, "laborRate": 3.6, "sales": 255407, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 8, "laborRate": 3.4, "sales": 268509, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 9, "laborRate": 4.0, "sales": 229583, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 10, "laborRate": 3.5, "sales": 263257, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 11, "laborRate": 3.5, "sales": 258505, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 12, "laborRate": 4.0, "sales": 226342, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 13, "laborRate": 3.6, "sales": 254840, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 14, "laborRate": 3.4, "sales": 266760, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 15, "laborRate": 3.3, "sales": 280556, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": false},
+      {"day": 16, "laborRate": 5.2, "sales": 175521, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true},
+      {"day": 17, "laborRate": 7.3, "sales": 125328, "shiftPlanExceeded": true, "workHoursExceeded": false, "salesTargetMissed": true}
+    ]
+  }
+}

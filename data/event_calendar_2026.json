@@ -1,0 +1,30 @@
+{
+  "source": "Googleカレンダー「どら山 催事」",
+  "calendarId": "a90e68d65c2bc050b6f3044f57afddefd13108846e4bf5a43dec05372ba2d5b6@group.calendar.google.com",
+  "verifiedAt": "2026-08-18T08:08:02+09:00",
+  "rule": "終日で登録された催事を開催初日から最終日まで1日ずつ数える。同日に複数催事が重なる場合は催事数分を加算する。",
+  "events": [
+    {"name":"新宿ニュウマン","start":"2025-12-18","end":"2026-03-08","venue":"新宿ニュウマン","tentative":false},
+    {"name":"伊勢丹新宿","start":"2026-01-02","end":"2026-01-13","venue":"伊勢丹新宿","tentative":true},
+    {"name":"立川コンコース","start":"2026-01-05","end":"2026-01-17","venue":"立川コンコース","tentative":true},
+    {"name":"エキュート大宮 5番","start":"2026-01-13","end":"2026-02-01","venue":"エキュート大宮 5番","tentative":false},
+    {"name":"京都高島屋","start":"2026-02-18","end":"2026-02-23","venue":"京都高島屋","tentative":false},
+    {"name":"ながの東急","start":"2026-02-26","end":"2026-03-15","venue":"ながの東急","tentative":false},
+    {"name":"富岡八幡宮 屋台","start":"2026-03-20","end":"2026-03-22","venue":"富岡八幡宮 屋台","tentative":false},
+    {"name":"阪神百貨店 おやつのひきだし","start":"2026-03-25","end":"2026-03-31","venue":"阪神百貨店 おやつのひきだし","tentative":false},
+    {"name":"エキュート上野","start":"2026-03-30","end":"2026-04-12","venue":"エキュート上野","tentative":false},
+    {"name":"池袋西武","start":"2026-04-01","end":"2026-04-07","venue":"池袋西武","tentative":false},
+    {"name":"大丸梅田","start":"2026-04-08","end":"2026-04-14","venue":"大丸梅田","tentative":true},
+    {"name":"ルミネ大宮","start":"2026-04-20","end":"2026-05-10","venue":"ルミネ大宮","tentative":false},
+    {"name":"日本橋高島屋","start":"2026-05-13","end":"2026-05-26","venue":"日本橋高島屋","tentative":true},
+    {"name":"大丸東京","start":"2026-06-03","end":"2026-06-16","venue":"大丸東京","tentative":false},
+    {"name":"日本橋三越","start":"2026-06-17","end":"2026-06-23","venue":"日本橋三越","tentative":false},
+    {"name":"JR秋葉原","start":"2026-06-22","end":"2026-07-20","venue":"JR秋葉原","tentative":false},
+    {"name":"上野","start":"2026-07-21","end":"2026-09-30","venue":"上野","tentative":false},
+    {"name":"川越 東武","start":"2026-07-28","end":"2026-08-03","venue":"川越 東武","tentative":false},
+    {"name":"立川ルミネ","start":"2026-08-20","end":"2026-09-02","venue":"立川ルミネ","tentative":false},
+    {"name":"富岡八幡宮","start":"2026-09-25","end":"2026-09-27","venue":"富岡八幡宮","tentative":false},
+    {"name":"池袋東武 仮","start":"2026-10-01","end":"2026-10-07","venue":"池袋東武 仮","tentative":true},
+    {"name":"松坂屋上野","start":"2026-10-07","end":"2026-10-13","venue":"松坂屋上野","tentative":false}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": null,
+  "rates": {
+    "material": 25,
+    "labor": 25,
+    "ordinaryProfit": 20
+  },
+  "months": {}
+}

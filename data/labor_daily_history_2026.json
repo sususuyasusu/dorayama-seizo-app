@@ -1,0 +1,1915 @@
+{
+  "schemaVersion": 1,
+  "source": "保存済みAirシフト給与計算表・タイミー・Airレジ（読み取り専用）",
+  "updatedAt": "2026-08-19",
+  "scopeNote": "日別シフト人件費はAirシフト給与計算表とタイミー、店舗売上はAirレジ。催事販売外注は含めない。",
+  "months": [
+    {
+      "key": "2026-01",
+      "month": "1月",
+      "period": "2026年1月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 2081182,
+      "storeSalesTotal": 1421848,
+      "workHours": 1339.69,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-01-01",
+          "labor": 70741,
+          "workHours": 42.6,
+          "headcount": 5,
+          "storeSales": 38639
+        },
+        {
+          "day": 2,
+          "date": "2026-01-02",
+          "labor": 89730,
+          "workHours": 52.85,
+          "headcount": 7,
+          "storeSales": 48883
+        },
+        {
+          "day": 3,
+          "date": "2026-01-03",
+          "labor": 79355,
+          "workHours": 45.58,
+          "headcount": 6,
+          "storeSales": 44559
+        },
+        {
+          "day": 4,
+          "date": "2026-01-04",
+          "labor": 86443,
+          "workHours": 57.1,
+          "headcount": 9,
+          "storeSales": 50564
+        },
+        {
+          "day": 5,
+          "date": "2026-01-05",
+          "labor": 87500,
+          "workHours": 55.0,
+          "headcount": 8,
+          "storeSales": 47448
+        },
+        {
+          "day": 6,
+          "date": "2026-01-06",
+          "labor": 81152,
+          "workHours": 51.17,
+          "headcount": 7,
+          "storeSales": 43261
+        },
+        {
+          "day": 7,
+          "date": "2026-01-07",
+          "labor": 62912,
+          "workHours": 40.63,
+          "headcount": 6,
+          "storeSales": 38759
+        },
+        {
+          "day": 8,
+          "date": "2026-01-08",
+          "labor": 72179,
+          "workHours": 48.0,
+          "headcount": 7,
+          "storeSales": 57829
+        },
+        {
+          "day": 9,
+          "date": "2026-01-09",
+          "labor": 32343,
+          "workHours": 20.95,
+          "headcount": 4,
+          "storeSales": 39128
+        },
+        {
+          "day": 10,
+          "date": "2026-01-10",
+          "labor": 58674,
+          "workHours": 37.87,
+          "headcount": 5,
+          "storeSales": 47006
+        },
+        {
+          "day": 11,
+          "date": "2026-01-11",
+          "labor": 61068,
+          "workHours": 39.65,
+          "headcount": 6,
+          "storeSales": 37145
+        },
+        {
+          "day": 12,
+          "date": "2026-01-12",
+          "labor": 84551,
+          "workHours": 54.63,
+          "headcount": 9,
+          "storeSales": 41035
+        },
+        {
+          "day": 13,
+          "date": "2026-01-13",
+          "labor": 77292,
+          "workHours": 49.27,
+          "headcount": 7,
+          "storeSales": 43730
+        },
+        {
+          "day": 14,
+          "date": "2026-01-14",
+          "labor": 50756,
+          "workHours": 36.85,
+          "headcount": 6,
+          "storeSales": 49779
+        },
+        {
+          "day": 15,
+          "date": "2026-01-15",
+          "labor": 65925,
+          "workHours": 44.23,
+          "headcount": 7,
+          "storeSales": 39040
+        },
+        {
+          "day": 16,
+          "date": "2026-01-16",
+          "labor": 63151,
+          "workHours": 40.4,
+          "headcount": 6,
+          "storeSales": 43399
+        },
+        {
+          "day": 17,
+          "date": "2026-01-17",
+          "labor": 54226,
+          "workHours": 34.73,
+          "headcount": 5,
+          "storeSales": 80426
+        },
+        {
+          "day": 18,
+          "date": "2026-01-18",
+          "labor": 55791,
+          "workHours": 35.67,
+          "headcount": 5,
+          "storeSales": 46533
+        },
+        {
+          "day": 19,
+          "date": "2026-01-19",
+          "labor": 49750,
+          "workHours": 34.47,
+          "headcount": 5,
+          "storeSales": 39942
+        },
+        {
+          "day": 20,
+          "date": "2026-01-20",
+          "labor": 78757,
+          "workHours": 49.86,
+          "headcount": 8,
+          "storeSales": 51610
+        },
+        {
+          "day": 21,
+          "date": "2026-01-21",
+          "labor": 69624,
+          "workHours": 43.85,
+          "headcount": 6,
+          "storeSales": 31587
+        },
+        {
+          "day": 22,
+          "date": "2026-01-22",
+          "labor": 72955,
+          "workHours": 46.55,
+          "headcount": 7,
+          "storeSales": 28319
+        },
+        {
+          "day": 23,
+          "date": "2026-01-23",
+          "labor": 74359,
+          "workHours": 50.48,
+          "headcount": 8,
+          "storeSales": 46631
+        },
+        {
+          "day": 24,
+          "date": "2026-01-24",
+          "labor": 63400,
+          "workHours": 39.9,
+          "headcount": 5,
+          "storeSales": 52288
+        },
+        {
+          "day": 25,
+          "date": "2026-01-25",
+          "labor": 64133,
+          "workHours": 40.07,
+          "headcount": 6,
+          "storeSales": 45350
+        },
+        {
+          "day": 26,
+          "date": "2026-01-26",
+          "labor": 62250,
+          "workHours": 39.58,
+          "headcount": 5,
+          "storeSales": 44358
+        },
+        {
+          "day": 27,
+          "date": "2026-01-27",
+          "labor": 68936,
+          "workHours": 46.22,
+          "headcount": 6,
+          "storeSales": 40731
+        },
+        {
+          "day": 28,
+          "date": "2026-01-28",
+          "labor": 54320,
+          "workHours": 34.95,
+          "headcount": 5,
+          "storeSales": 55374
+        },
+        {
+          "day": 29,
+          "date": "2026-01-29",
+          "labor": 63640,
+          "workHours": 44.23,
+          "headcount": 7,
+          "storeSales": 41021
+        },
+        {
+          "day": 30,
+          "date": "2026-01-30",
+          "labor": 65978,
+          "workHours": 44.3,
+          "headcount": 6,
+          "storeSales": 53153
+        },
+        {
+          "day": 31,
+          "date": "2026-01-31",
+          "labor": 59291,
+          "workHours": 38.05,
+          "headcount": 5,
+          "storeSales": 54321
+        }
+      ]
+    },
+    {
+      "key": "2026-02",
+      "month": "2月",
+      "period": "2026年2月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1532553,
+      "storeSalesTotal": 1990141,
+      "workHours": 985.07,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-02-01",
+          "labor": 39418,
+          "workHours": 25.07,
+          "headcount": 4,
+          "storeSales": 111342
+        },
+        {
+          "day": 2,
+          "date": "2026-02-02",
+          "labor": 45029,
+          "workHours": 28.88,
+          "headcount": 4,
+          "storeSales": 42433
+        },
+        {
+          "day": 3,
+          "date": "2026-02-03",
+          "labor": 63608,
+          "workHours": 42.78,
+          "headcount": 6,
+          "storeSales": 41615
+        },
+        {
+          "day": 4,
+          "date": "2026-02-04",
+          "labor": 41536,
+          "workHours": 27.38,
+          "headcount": 4,
+          "storeSales": 61054
+        },
+        {
+          "day": 5,
+          "date": "2026-02-05",
+          "labor": 38601,
+          "workHours": 26.03,
+          "headcount": 4,
+          "storeSales": 51981
+        },
+        {
+          "day": 6,
+          "date": "2026-02-06",
+          "labor": 43401,
+          "workHours": 26.18,
+          "headcount": 3,
+          "storeSales": 67957
+        },
+        {
+          "day": 7,
+          "date": "2026-02-07",
+          "labor": 39865,
+          "workHours": 25.47,
+          "headcount": 3,
+          "storeSales": 98329
+        },
+        {
+          "day": 8,
+          "date": "2026-02-08",
+          "labor": 32674,
+          "workHours": 20.72,
+          "headcount": 3,
+          "storeSales": 56365
+        },
+        {
+          "day": 9,
+          "date": "2026-02-09",
+          "labor": 8326,
+          "workHours": 5.9,
+          "headcount": 3,
+          "storeSales": 40008
+        },
+        {
+          "day": 10,
+          "date": "2026-02-10",
+          "labor": 51974,
+          "workHours": 35.47,
+          "headcount": 5,
+          "storeSales": 60651
+        },
+        {
+          "day": 11,
+          "date": "2026-02-11",
+          "labor": 26467,
+          "workHours": 17.4,
+          "headcount": 3,
+          "storeSales": 47491
+        },
+        {
+          "day": 12,
+          "date": "2026-02-12",
+          "labor": 54571,
+          "workHours": 37.17,
+          "headcount": 5,
+          "storeSales": 54761
+        },
+        {
+          "day": 13,
+          "date": "2026-02-13",
+          "labor": 31597,
+          "workHours": 20.72,
+          "headcount": 3,
+          "storeSales": 72464
+        },
+        {
+          "day": 14,
+          "date": "2026-02-14",
+          "labor": 43937,
+          "workHours": 29.57,
+          "headcount": 5,
+          "storeSales": 86470
+        },
+        {
+          "day": 15,
+          "date": "2026-02-15",
+          "labor": 54848,
+          "workHours": 33.82,
+          "headcount": 5,
+          "storeSales": 78082
+        },
+        {
+          "day": 16,
+          "date": "2026-02-16",
+          "labor": 71767,
+          "workHours": 46.18,
+          "headcount": 6,
+          "storeSales": 62152
+        },
+        {
+          "day": 17,
+          "date": "2026-02-17",
+          "labor": 77481,
+          "workHours": 46.62,
+          "headcount": 6,
+          "storeSales": 62208
+        },
+        {
+          "day": 18,
+          "date": "2026-02-18",
+          "labor": 74838,
+          "workHours": 49.4,
+          "headcount": 7,
+          "storeSales": 41740
+        },
+        {
+          "day": 19,
+          "date": "2026-02-19",
+          "labor": 80309,
+          "workHours": 53.9,
+          "headcount": 8,
+          "storeSales": 57311
+        },
+        {
+          "day": 20,
+          "date": "2026-02-20",
+          "labor": 73430,
+          "workHours": 45.43,
+          "headcount": 6,
+          "storeSales": 60939
+        },
+        {
+          "day": 21,
+          "date": "2026-02-21",
+          "labor": 77987,
+          "workHours": 47.93,
+          "headcount": 6,
+          "storeSales": 102743
+        },
+        {
+          "day": 22,
+          "date": "2026-02-22",
+          "labor": 48849,
+          "workHours": 31.15,
+          "headcount": 4,
+          "storeSales": 125913
+        },
+        {
+          "day": 23,
+          "date": "2026-02-23",
+          "labor": 51810,
+          "workHours": 33.23,
+          "headcount": 5,
+          "storeSales": 129709
+        },
+        {
+          "day": 24,
+          "date": "2026-02-24",
+          "labor": 74590,
+          "workHours": 48.18,
+          "headcount": 8,
+          "storeSales": 37415
+        },
+        {
+          "day": 25,
+          "date": "2026-02-25",
+          "labor": 68547,
+          "workHours": 43.28,
+          "headcount": 7,
+          "storeSales": 46263
+        },
+        {
+          "day": 26,
+          "date": "2026-02-26",
+          "labor": 66475,
+          "workHours": 43.75,
+          "headcount": 7,
+          "storeSales": 120954
+        },
+        {
+          "day": 27,
+          "date": "2026-02-27",
+          "labor": 72956,
+          "workHours": 45.23,
+          "headcount": 7,
+          "storeSales": 72886
+        },
+        {
+          "day": 28,
+          "date": "2026-02-28",
+          "labor": 77662,
+          "workHours": 48.23,
+          "headcount": 7,
+          "storeSales": 98905
+        }
+      ]
+    },
+    {
+      "key": "2026-03",
+      "month": "3月",
+      "period": "2026年3月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1473976,
+      "storeSalesTotal": 2133196,
+      "workHours": 937.36,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-03-01",
+          "labor": 64372,
+          "workHours": 43.13,
+          "headcount": 6,
+          "storeSales": 90715
+        },
+        {
+          "day": 2,
+          "date": "2026-03-02",
+          "labor": 58419,
+          "workHours": 38.9,
+          "headcount": 6,
+          "storeSales": 44649
+        },
+        {
+          "day": 3,
+          "date": "2026-03-03",
+          "labor": 57135,
+          "workHours": 36.9,
+          "headcount": 6,
+          "storeSales": 30304
+        },
+        {
+          "day": 4,
+          "date": "2026-03-04",
+          "labor": 22993,
+          "workHours": 17.13,
+          "headcount": 3,
+          "storeSales": 48873
+        },
+        {
+          "day": 5,
+          "date": "2026-03-05",
+          "labor": 53995,
+          "workHours": 34.63,
+          "headcount": 5,
+          "storeSales": 45702
+        },
+        {
+          "day": 6,
+          "date": "2026-03-06",
+          "labor": 61256,
+          "workHours": 37.06,
+          "headcount": 6,
+          "storeSales": 81910
+        },
+        {
+          "day": 7,
+          "date": "2026-03-07",
+          "labor": 41923,
+          "workHours": 27.65,
+          "headcount": 4,
+          "storeSales": 90561
+        },
+        {
+          "day": 8,
+          "date": "2026-03-08",
+          "labor": 39789,
+          "workHours": 27.0,
+          "headcount": 4,
+          "storeSales": 86052
+        },
+        {
+          "day": 9,
+          "date": "2026-03-09",
+          "labor": 41310,
+          "workHours": 25.52,
+          "headcount": 3,
+          "storeSales": 32300
+        },
+        {
+          "day": 10,
+          "date": "2026-03-10",
+          "labor": 39485,
+          "workHours": 27.2,
+          "headcount": 4,
+          "storeSales": 51353
+        },
+        {
+          "day": 11,
+          "date": "2026-03-11",
+          "labor": 36270,
+          "workHours": 22.08,
+          "headcount": 3,
+          "storeSales": 72170
+        },
+        {
+          "day": 12,
+          "date": "2026-03-12",
+          "labor": 44088,
+          "workHours": 26.72,
+          "headcount": 3,
+          "storeSales": 42939
+        },
+        {
+          "day": 13,
+          "date": "2026-03-13",
+          "labor": 46027,
+          "workHours": 31.98,
+          "headcount": 5,
+          "storeSales": 72212
+        },
+        {
+          "day": 14,
+          "date": "2026-03-14",
+          "labor": 17325,
+          "workHours": 10.0,
+          "headcount": 1,
+          "storeSales": 89415
+        },
+        {
+          "day": 15,
+          "date": "2026-03-15",
+          "labor": 28309,
+          "workHours": 18.52,
+          "headcount": 3,
+          "storeSales": 81442
+        },
+        {
+          "day": 16,
+          "date": "2026-03-16",
+          "labor": 43212,
+          "workHours": 25.65,
+          "headcount": 3,
+          "storeSales": 51507
+        },
+        {
+          "day": 17,
+          "date": "2026-03-17",
+          "labor": 41257,
+          "workHours": 24.48,
+          "headcount": 3,
+          "storeSales": 60652
+        },
+        {
+          "day": 18,
+          "date": "2026-03-18",
+          "labor": 29168,
+          "workHours": 18.88,
+          "headcount": 3,
+          "storeSales": 89325
+        },
+        {
+          "day": 19,
+          "date": "2026-03-19",
+          "labor": 27602,
+          "workHours": 18.42,
+          "headcount": 3,
+          "storeSales": 58927
+        },
+        {
+          "day": 20,
+          "date": "2026-03-20",
+          "labor": 46632,
+          "workHours": 27.82,
+          "headcount": 3,
+          "storeSales": 72374
+        },
+        {
+          "day": 21,
+          "date": "2026-03-21",
+          "labor": 42000,
+          "workHours": 23.63,
+          "headcount": 3,
+          "storeSales": 108951
+        },
+        {
+          "day": 22,
+          "date": "2026-03-22",
+          "labor": 26892,
+          "workHours": 15.27,
+          "headcount": 2,
+          "storeSales": 201642
+        },
+        {
+          "day": 23,
+          "date": "2026-03-23",
+          "labor": 46508,
+          "workHours": 29.73,
+          "headcount": 5,
+          "storeSales": 61006
+        },
+        {
+          "day": 24,
+          "date": "2026-03-24",
+          "labor": 36581,
+          "workHours": 25.53,
+          "headcount": 4,
+          "storeSales": 53274
+        },
+        {
+          "day": 25,
+          "date": "2026-03-25",
+          "labor": 48090,
+          "workHours": 29.65,
+          "headcount": 5,
+          "storeSales": 45726
+        },
+        {
+          "day": 26,
+          "date": "2026-03-26",
+          "labor": 49930,
+          "workHours": 31.65,
+          "headcount": 5,
+          "storeSales": 40782
+        },
+        {
+          "day": 27,
+          "date": "2026-03-27",
+          "labor": 63293,
+          "workHours": 37.4,
+          "headcount": 5,
+          "storeSales": 89993
+        },
+        {
+          "day": 28,
+          "date": "2026-03-28",
+          "labor": 63446,
+          "workHours": 40.09,
+          "headcount": 6,
+          "storeSales": 74640
+        },
+        {
+          "day": 29,
+          "date": "2026-03-29",
+          "labor": 76495,
+          "workHours": 47.42,
+          "headcount": 7,
+          "storeSales": 84689
+        },
+        {
+          "day": 30,
+          "date": "2026-03-30",
+          "labor": 82049,
+          "workHours": 54.57,
+          "headcount": 8,
+          "storeSales": 40951
+        },
+        {
+          "day": 31,
+          "date": "2026-03-31",
+          "labor": 98125,
+          "workHours": 62.75,
+          "headcount": 9,
+          "storeSales": 38160
+        }
+      ]
+    },
+    {
+      "key": "2026-04",
+      "month": "4月",
+      "period": "2026年4月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1871777,
+      "storeSalesTotal": 1599230,
+      "workHours": 1216.93,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-04-01",
+          "labor": 67857,
+          "workHours": 43.28,
+          "headcount": 7,
+          "storeSales": 40808
+        },
+        {
+          "day": 2,
+          "date": "2026-04-02",
+          "labor": 78165,
+          "workHours": 53.53,
+          "headcount": 8,
+          "storeSales": 40634
+        },
+        {
+          "day": 3,
+          "date": "2026-04-03",
+          "labor": 83135,
+          "workHours": 54.0,
+          "headcount": 8,
+          "storeSales": 47721
+        },
+        {
+          "day": 4,
+          "date": "2026-04-04",
+          "labor": 83937,
+          "workHours": 56.13,
+          "headcount": 9,
+          "storeSales": 50606
+        },
+        {
+          "day": 5,
+          "date": "2026-04-05",
+          "labor": 84362,
+          "workHours": 53.83,
+          "headcount": 8,
+          "storeSales": 39197
+        },
+        {
+          "day": 6,
+          "date": "2026-04-06",
+          "labor": 85482,
+          "workHours": 52.42,
+          "headcount": 7,
+          "storeSales": 37686
+        },
+        {
+          "day": 7,
+          "date": "2026-04-07",
+          "labor": 76312,
+          "workHours": 51.7,
+          "headcount": 8,
+          "storeSales": 38236
+        },
+        {
+          "day": 8,
+          "date": "2026-04-08",
+          "labor": 69942,
+          "workHours": 47.02,
+          "headcount": 7,
+          "storeSales": 49440
+        },
+        {
+          "day": 9,
+          "date": "2026-04-09",
+          "labor": 76962,
+          "workHours": 49.87,
+          "headcount": 7,
+          "storeSales": 50478
+        },
+        {
+          "day": 10,
+          "date": "2026-04-10",
+          "labor": 83363,
+          "workHours": 57.32,
+          "headcount": 9,
+          "storeSales": 48884
+        },
+        {
+          "day": 11,
+          "date": "2026-04-11",
+          "labor": 70142,
+          "workHours": 46.23,
+          "headcount": 7,
+          "storeSales": 40945
+        },
+        {
+          "day": 12,
+          "date": "2026-04-12",
+          "labor": 62762,
+          "workHours": 39.78,
+          "headcount": 6,
+          "storeSales": 98314
+        },
+        {
+          "day": 13,
+          "date": "2026-04-13",
+          "labor": 28381,
+          "workHours": 16.83,
+          "headcount": 2,
+          "storeSales": 39061
+        },
+        {
+          "day": 14,
+          "date": "2026-04-14",
+          "labor": 32072,
+          "workHours": 18.75,
+          "headcount": 2,
+          "storeSales": 58123
+        },
+        {
+          "day": 15,
+          "date": "2026-04-15",
+          "labor": 23374,
+          "workHours": 14.13,
+          "headcount": 2,
+          "storeSales": 47912
+        },
+        {
+          "day": 16,
+          "date": "2026-04-16",
+          "labor": 31443,
+          "workHours": 19.87,
+          "headcount": 3,
+          "storeSales": 51310
+        },
+        {
+          "day": 17,
+          "date": "2026-04-17",
+          "labor": 25998,
+          "workHours": 15.87,
+          "headcount": 2,
+          "storeSales": 59905
+        },
+        {
+          "day": 18,
+          "date": "2026-04-18",
+          "labor": 28608,
+          "workHours": 18.17,
+          "headcount": 3,
+          "storeSales": 93787
+        },
+        {
+          "day": 19,
+          "date": "2026-04-19",
+          "labor": 39468,
+          "workHours": 26.53,
+          "headcount": 4,
+          "storeSales": 92893
+        },
+        {
+          "day": 20,
+          "date": "2026-04-20",
+          "labor": 48691,
+          "workHours": 32.55,
+          "headcount": 5,
+          "storeSales": 58080
+        },
+        {
+          "day": 21,
+          "date": "2026-04-21",
+          "labor": 56104,
+          "workHours": 37.1,
+          "headcount": 6,
+          "storeSales": 47577
+        },
+        {
+          "day": 22,
+          "date": "2026-04-22",
+          "labor": 76349,
+          "workHours": 48.98,
+          "headcount": 8,
+          "storeSales": 36276
+        },
+        {
+          "day": 23,
+          "date": "2026-04-23",
+          "labor": 77639,
+          "workHours": 50.42,
+          "headcount": 8,
+          "storeSales": 32479
+        },
+        {
+          "day": 24,
+          "date": "2026-04-24",
+          "labor": 69784,
+          "workHours": 46.03,
+          "headcount": 7,
+          "storeSales": 48520
+        },
+        {
+          "day": 25,
+          "date": "2026-04-25",
+          "labor": 69912,
+          "workHours": 46.0,
+          "headcount": 6,
+          "storeSales": 84240
+        },
+        {
+          "day": 26,
+          "date": "2026-04-26",
+          "labor": 52123,
+          "workHours": 36.33,
+          "headcount": 6,
+          "storeSales": 44541
+        },
+        {
+          "day": 27,
+          "date": "2026-04-27",
+          "labor": 68491,
+          "workHours": 45.01,
+          "headcount": 7,
+          "storeSales": 49028
+        },
+        {
+          "day": 28,
+          "date": "2026-04-28",
+          "labor": 67811,
+          "workHours": 42.2,
+          "headcount": 7,
+          "storeSales": 53513
+        },
+        {
+          "day": 29,
+          "date": "2026-04-29",
+          "labor": 77370,
+          "workHours": 49.32,
+          "headcount": 7,
+          "storeSales": 52503
+        },
+        {
+          "day": 30,
+          "date": "2026-04-30",
+          "labor": 75738,
+          "workHours": 47.73,
+          "headcount": 8,
+          "storeSales": 66533
+        }
+      ]
+    },
+    {
+      "key": "2026-05",
+      "month": "5月",
+      "period": "2026年5月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1540237,
+      "storeSalesTotal": 2345160,
+      "workHours": 998.93,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-05-01",
+          "labor": 75368,
+          "workHours": 49.92,
+          "headcount": 7,
+          "storeSales": 71203
+        },
+        {
+          "day": 2,
+          "date": "2026-05-02",
+          "labor": 82797,
+          "workHours": 51.18,
+          "headcount": 7,
+          "storeSales": 70755
+        },
+        {
+          "day": 3,
+          "date": "2026-05-03",
+          "labor": 67376,
+          "workHours": 43.82,
+          "headcount": 6,
+          "storeSales": 89218
+        },
+        {
+          "day": 4,
+          "date": "2026-05-04",
+          "labor": 60664,
+          "workHours": 40.65,
+          "headcount": 6,
+          "storeSales": 77728
+        },
+        {
+          "day": 5,
+          "date": "2026-05-05",
+          "labor": 25845,
+          "workHours": 16.57,
+          "headcount": 2,
+          "storeSales": 102168
+        },
+        {
+          "day": 6,
+          "date": "2026-05-06",
+          "labor": 49570,
+          "workHours": 31.32,
+          "headcount": 4,
+          "storeSales": 84484
+        },
+        {
+          "day": 7,
+          "date": "2026-05-07",
+          "labor": 60807,
+          "workHours": 40.53,
+          "headcount": 6,
+          "storeSales": 39111
+        },
+        {
+          "day": 8,
+          "date": "2026-05-08",
+          "labor": 54757,
+          "workHours": 39.07,
+          "headcount": 6,
+          "storeSales": 72343
+        },
+        {
+          "day": 9,
+          "date": "2026-05-09",
+          "labor": 56865,
+          "workHours": 37.8,
+          "headcount": 6,
+          "storeSales": 57797
+        },
+        {
+          "day": 10,
+          "date": "2026-05-10",
+          "labor": 28808,
+          "workHours": 17.33,
+          "headcount": 2,
+          "storeSales": 109019
+        },
+        {
+          "day": 11,
+          "date": "2026-05-11",
+          "labor": 23934,
+          "workHours": 14.72,
+          "headcount": 2,
+          "storeSales": 43211
+        },
+        {
+          "day": 12,
+          "date": "2026-05-12",
+          "labor": 58730,
+          "workHours": 37.63,
+          "headcount": 5,
+          "storeSales": 66187
+        },
+        {
+          "day": 13,
+          "date": "2026-05-13",
+          "labor": 65854,
+          "workHours": 43.25,
+          "headcount": 6,
+          "storeSales": 52269
+        },
+        {
+          "day": 14,
+          "date": "2026-05-14",
+          "labor": 52362,
+          "workHours": 39.27,
+          "headcount": 7,
+          "storeSales": 43136
+        },
+        {
+          "day": 15,
+          "date": "2026-05-15",
+          "labor": 66092,
+          "workHours": 41.33,
+          "headcount": 6,
+          "storeSales": 61450
+        },
+        {
+          "day": 16,
+          "date": "2026-05-16",
+          "labor": 51357,
+          "workHours": 32.85,
+          "headcount": 5,
+          "storeSales": 88942
+        },
+        {
+          "day": 17,
+          "date": "2026-05-17",
+          "labor": 68738,
+          "workHours": 43.08,
+          "headcount": 6,
+          "storeSales": 83981
+        },
+        {
+          "day": 18,
+          "date": "2026-05-18",
+          "labor": 45610,
+          "workHours": 31.03,
+          "headcount": 5,
+          "storeSales": 75104
+        },
+        {
+          "day": 19,
+          "date": "2026-05-19",
+          "labor": 50105,
+          "workHours": 35.7,
+          "headcount": 5,
+          "storeSales": 82264
+        },
+        {
+          "day": 20,
+          "date": "2026-05-20",
+          "labor": 51737,
+          "workHours": 31.97,
+          "headcount": 4,
+          "storeSales": 81742
+        },
+        {
+          "day": 21,
+          "date": "2026-05-21",
+          "labor": 49666,
+          "workHours": 34.43,
+          "headcount": 5,
+          "storeSales": 54738
+        },
+        {
+          "day": 22,
+          "date": "2026-05-22",
+          "labor": 49880,
+          "workHours": 31.97,
+          "headcount": 5,
+          "storeSales": 83496
+        },
+        {
+          "day": 23,
+          "date": "2026-05-23",
+          "labor": 66514,
+          "workHours": 41.83,
+          "headcount": 6,
+          "storeSales": 81016
+        },
+        {
+          "day": 24,
+          "date": "2026-05-24",
+          "labor": 49064,
+          "workHours": 33.87,
+          "headcount": 5,
+          "storeSales": 107762
+        },
+        {
+          "day": 25,
+          "date": "2026-05-25",
+          "labor": 54146,
+          "workHours": 35.4,
+          "headcount": 5,
+          "storeSales": 66883
+        },
+        {
+          "day": 26,
+          "date": "2026-05-26",
+          "labor": 32765,
+          "workHours": 18.85,
+          "headcount": 2,
+          "storeSales": 70179
+        },
+        {
+          "day": 27,
+          "date": "2026-05-27",
+          "labor": 26680,
+          "workHours": 15.97,
+          "headcount": 2,
+          "storeSales": 60489
+        },
+        {
+          "day": 28,
+          "date": "2026-05-28",
+          "labor": 22161,
+          "workHours": 14.37,
+          "headcount": 2,
+          "storeSales": 91919
+        },
+        {
+          "day": 29,
+          "date": "2026-05-29",
+          "labor": 25948,
+          "workHours": 15.28,
+          "headcount": 2,
+          "storeSales": 78476
+        },
+        {
+          "day": 30,
+          "date": "2026-05-30",
+          "labor": 32602,
+          "workHours": 18.77,
+          "headcount": 2,
+          "storeSales": 103859
+        },
+        {
+          "day": 31,
+          "date": "2026-05-31",
+          "labor": 33435,
+          "workHours": 19.17,
+          "headcount": 2,
+          "storeSales": 94231
+        }
+      ]
+    },
+    {
+      "key": "2026-06",
+      "month": "6月",
+      "period": "2026年6月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1383635,
+      "storeSalesTotal": 1849036,
+      "workHours": 904.84,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-06-01",
+          "labor": 24522,
+          "workHours": 14.83,
+          "headcount": 2,
+          "storeSales": 44220
+        },
+        {
+          "day": 2,
+          "date": "2026-06-02",
+          "labor": 46351,
+          "workHours": 31.05,
+          "headcount": 5,
+          "storeSales": 54366
+        },
+        {
+          "day": 3,
+          "date": "2026-06-03",
+          "labor": 47323,
+          "workHours": 28.0,
+          "headcount": 3,
+          "storeSales": 19194
+        },
+        {
+          "day": 4,
+          "date": "2026-06-04",
+          "labor": 26363,
+          "workHours": 16.52,
+          "headcount": 2,
+          "storeSales": 41526
+        },
+        {
+          "day": 5,
+          "date": "2026-06-05",
+          "labor": 48734,
+          "workHours": 34.48,
+          "headcount": 5,
+          "storeSales": 88701
+        },
+        {
+          "day": 6,
+          "date": "2026-06-06",
+          "labor": 61725,
+          "workHours": 41.68,
+          "headcount": 5,
+          "storeSales": 84395
+        },
+        {
+          "day": 7,
+          "date": "2026-06-07",
+          "labor": 49526,
+          "workHours": 32.96,
+          "headcount": 5,
+          "storeSales": 79350
+        },
+        {
+          "day": 8,
+          "date": "2026-06-08",
+          "labor": 57872,
+          "workHours": 36.78,
+          "headcount": 5,
+          "storeSales": 45619
+        },
+        {
+          "day": 9,
+          "date": "2026-06-09",
+          "labor": 59531,
+          "workHours": 37.02,
+          "headcount": 5,
+          "storeSales": 55847
+        },
+        {
+          "day": 10,
+          "date": "2026-06-10",
+          "labor": 53082,
+          "workHours": 35.68,
+          "headcount": 5,
+          "storeSales": 44755
+        },
+        {
+          "day": 11,
+          "date": "2026-06-11",
+          "labor": 53444,
+          "workHours": 36.82,
+          "headcount": 6,
+          "storeSales": 49785
+        },
+        {
+          "day": 12,
+          "date": "2026-06-12",
+          "labor": 57191,
+          "workHours": 37.82,
+          "headcount": 5,
+          "storeSales": 78909
+        },
+        {
+          "day": 13,
+          "date": "2026-06-13",
+          "labor": 66681,
+          "workHours": 43.4,
+          "headcount": 6,
+          "storeSales": 73584
+        },
+        {
+          "day": 14,
+          "date": "2026-06-14",
+          "labor": 56268,
+          "workHours": 36.05,
+          "headcount": 5,
+          "storeSales": 90594
+        },
+        {
+          "day": 15,
+          "date": "2026-06-15",
+          "labor": 51755,
+          "workHours": 33.2,
+          "headcount": 4,
+          "storeSales": 61884
+        },
+        {
+          "day": 16,
+          "date": "2026-06-16",
+          "labor": 33755,
+          "workHours": 22.0,
+          "headcount": 3,
+          "storeSales": 42888
+        },
+        {
+          "day": 17,
+          "date": "2026-06-17",
+          "labor": 36137,
+          "workHours": 22.4,
+          "headcount": 3,
+          "storeSales": 53777
+        },
+        {
+          "day": 18,
+          "date": "2026-06-18",
+          "labor": 41278,
+          "workHours": 27.33,
+          "headcount": 4,
+          "storeSales": 43586
+        },
+        {
+          "day": 19,
+          "date": "2026-06-19",
+          "labor": 40377,
+          "workHours": 27.18,
+          "headcount": 4,
+          "storeSales": 72815
+        },
+        {
+          "day": 20,
+          "date": "2026-06-20",
+          "labor": 58382,
+          "workHours": 38.05,
+          "headcount": 5,
+          "storeSales": 78214
+        },
+        {
+          "day": 21,
+          "date": "2026-06-21",
+          "labor": 58283,
+          "workHours": 37.97,
+          "headcount": 5,
+          "storeSales": 79896
+        },
+        {
+          "day": 22,
+          "date": "2026-06-22",
+          "labor": 53401,
+          "workHours": 37.82,
+          "headcount": 6,
+          "storeSales": 49245
+        },
+        {
+          "day": 23,
+          "date": "2026-06-23",
+          "labor": 33101,
+          "workHours": 21.95,
+          "headcount": 3,
+          "storeSales": 56048
+        },
+        {
+          "day": 24,
+          "date": "2026-06-24",
+          "labor": 31899,
+          "workHours": 19.98,
+          "headcount": 4,
+          "storeSales": 73077
+        },
+        {
+          "day": 25,
+          "date": "2026-06-25",
+          "labor": 38126,
+          "workHours": 26.13,
+          "headcount": 4,
+          "storeSales": 59280
+        },
+        {
+          "day": 26,
+          "date": "2026-06-26",
+          "labor": 41312,
+          "workHours": 25.33,
+          "headcount": 3,
+          "storeSales": 40461
+        },
+        {
+          "day": 27,
+          "date": "2026-06-27",
+          "labor": 32164,
+          "workHours": 20.38,
+          "headcount": 3,
+          "storeSales": 53513
+        },
+        {
+          "day": 28,
+          "date": "2026-06-28",
+          "labor": 33420,
+          "workHours": 24.3,
+          "headcount": 4,
+          "storeSales": 108590
+        },
+        {
+          "day": 29,
+          "date": "2026-06-29",
+          "labor": 38259,
+          "workHours": 24.7,
+          "headcount": 4,
+          "storeSales": 50325
+        },
+        {
+          "day": 30,
+          "date": "2026-06-30",
+          "labor": 53373,
+          "workHours": 33.03,
+          "headcount": 4,
+          "storeSales": 74592
+        }
+      ]
+    },
+    {
+      "key": "2026-07",
+      "month": "7月",
+      "period": "2026年7月",
+      "status": "日別シフト実績",
+      "dailyLaborTotal": 1450245,
+      "storeSalesTotal": 1753271,
+      "workHours": 931.48,
+      "daily": [
+        {
+          "day": 1,
+          "date": "2026-07-01",
+          "labor": 28686,
+          "workHours": 17.92,
+          "headcount": 3,
+          "storeSales": 54998,
+          "eventSales": 85124,
+          "combinedSales": 140122,
+          "laborRate": 20.5,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 2,
+          "date": "2026-07-02",
+          "labor": 34049,
+          "workHours": 23.38,
+          "headcount": 4,
+          "storeSales": 46643,
+          "eventSales": 88109,
+          "combinedSales": 134752,
+          "laborRate": 25.3,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 3,
+          "date": "2026-07-03",
+          "labor": 40959,
+          "workHours": 26.85,
+          "headcount": 4,
+          "storeSales": 68129,
+          "eventSales": 130234,
+          "combinedSales": 198363,
+          "laborRate": 20.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 4,
+          "date": "2026-07-04",
+          "labor": 46257,
+          "workHours": 29.12,
+          "headcount": 4,
+          "storeSales": 107684,
+          "eventSales": 125334,
+          "combinedSales": 233018,
+          "laborRate": 19.9,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 5,
+          "date": "2026-07-05",
+          "labor": 48764,
+          "workHours": 30.77,
+          "headcount": 4,
+          "storeSales": 68527,
+          "eventSales": 87533,
+          "combinedSales": 156060,
+          "laborRate": 31.2,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 6,
+          "date": "2026-07-06",
+          "labor": 35667,
+          "workHours": 23.73,
+          "headcount": 4,
+          "storeSales": 49216,
+          "eventSales": 75439,
+          "combinedSales": 124655,
+          "laborRate": 28.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 7,
+          "date": "2026-07-07",
+          "labor": 31304,
+          "workHours": 20.88,
+          "headcount": 3,
+          "storeSales": 53894,
+          "eventSales": 0,
+          "combinedSales": 53894,
+          "laborRate": 58.1,
+          "eventSalesStatus": "未取得"
+        },
+        {
+          "day": 8,
+          "date": "2026-07-08",
+          "labor": 34314,
+          "workHours": 22.32,
+          "headcount": 3,
+          "storeSales": 56732,
+          "eventSales": 85450,
+          "combinedSales": 142182,
+          "laborRate": 24.1,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 9,
+          "date": "2026-07-09",
+          "labor": 34367,
+          "workHours": 21.6,
+          "headcount": 3,
+          "storeSales": 47165,
+          "eventSales": 71101,
+          "combinedSales": 118266,
+          "laborRate": 29.1,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 10,
+          "date": "2026-07-10",
+          "labor": 37154,
+          "workHours": 23.28,
+          "headcount": 3,
+          "storeSales": 76740,
+          "eventSales": 138866,
+          "combinedSales": 215606,
+          "laborRate": 17.2,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 11,
+          "date": "2026-07-11",
+          "labor": 38256,
+          "workHours": 24.85,
+          "headcount": 4,
+          "storeSales": 80932,
+          "eventSales": 112165,
+          "combinedSales": 193097,
+          "laborRate": 19.8,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 12,
+          "date": "2026-07-12",
+          "labor": 42195,
+          "workHours": 28.88,
+          "headcount": 4,
+          "storeSales": 77541,
+          "eventSales": 93257,
+          "combinedSales": 170798,
+          "laborRate": 24.7,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 13,
+          "date": "2026-07-13",
+          "labor": 30980,
+          "workHours": 19.62,
+          "headcount": 3,
+          "storeSales": 36133,
+          "eventSales": 0,
+          "combinedSales": 36133,
+          "laborRate": 85.7,
+          "eventSalesStatus": "未取得"
+        },
+        {
+          "day": 14,
+          "date": "2026-07-14",
+          "labor": 47667,
+          "workHours": 30.57,
+          "headcount": 4,
+          "storeSales": 63104,
+          "eventSales": 71686,
+          "combinedSales": 134790,
+          "laborRate": 35.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 15,
+          "date": "2026-07-15",
+          "labor": 41987,
+          "workHours": 24.98,
+          "headcount": 3,
+          "storeSales": 48111,
+          "eventSales": 87312,
+          "combinedSales": 135423,
+          "laborRate": 31.0,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 16,
+          "date": "2026-07-16",
+          "labor": 29351,
+          "workHours": 17.48,
+          "headcount": 2,
+          "storeSales": 52811,
+          "eventSales": 77245,
+          "combinedSales": 130056,
+          "laborRate": 22.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 17,
+          "date": "2026-07-17",
+          "labor": 36505,
+          "workHours": 25.08,
+          "headcount": 4,
+          "storeSales": 42094,
+          "eventSales": 126550,
+          "combinedSales": 168644,
+          "laborRate": 21.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 18,
+          "date": "2026-07-18",
+          "labor": 52499,
+          "workHours": 30.52,
+          "headcount": 4,
+          "storeSales": 87077,
+          "eventSales": 85452,
+          "combinedSales": 172529,
+          "laborRate": 30.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 19,
+          "date": "2026-07-19",
+          "labor": 50225,
+          "workHours": 32.78,
+          "headcount": 5,
+          "storeSales": 84435,
+          "eventSales": 88259,
+          "combinedSales": 172694,
+          "laborRate": 29.1,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 20,
+          "date": "2026-07-20",
+          "labor": 57396,
+          "workHours": 34.92,
+          "headcount": 5,
+          "storeSales": 63039,
+          "eventSales": 0,
+          "combinedSales": 63039,
+          "laborRate": 91.0,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 21,
+          "date": "2026-07-21",
+          "labor": 44982,
+          "workHours": 29.77,
+          "headcount": 5,
+          "storeSales": 34970,
+          "eventSales": 0,
+          "combinedSales": 34970,
+          "laborRate": 128.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 22,
+          "date": "2026-07-22",
+          "labor": 57213,
+          "workHours": 36.9,
+          "headcount": 5,
+          "storeSales": 28656,
+          "eventSales": 168316,
+          "combinedSales": 196972,
+          "laborRate": 29.0,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 23,
+          "date": "2026-07-23",
+          "labor": 40815,
+          "workHours": 26.72,
+          "headcount": 4,
+          "storeSales": 16531,
+          "eventSales": 172402,
+          "combinedSales": 188933,
+          "laborRate": 21.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 24,
+          "date": "2026-07-24",
+          "labor": 44438,
+          "workHours": 30.97,
+          "headcount": 5,
+          "storeSales": 54687,
+          "eventSales": 253765,
+          "combinedSales": 308452,
+          "laborRate": 14.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 25,
+          "date": "2026-07-25",
+          "labor": 64811,
+          "workHours": 42.65,
+          "headcount": 6,
+          "storeSales": 62892,
+          "eventSales": 168032,
+          "combinedSales": 230924,
+          "laborRate": 28.1,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 26,
+          "date": "2026-07-26",
+          "labor": 56139,
+          "workHours": 37.55,
+          "headcount": 5,
+          "storeSales": 64220,
+          "eventSales": 175504,
+          "combinedSales": 239724,
+          "laborRate": 23.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 27,
+          "date": "2026-07-27",
+          "labor": 73954,
+          "workHours": 48.47,
+          "headcount": 7,
+          "storeSales": 41226,
+          "eventSales": 0,
+          "combinedSales": 41226,
+          "laborRate": 179.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 28,
+          "date": "2026-07-28",
+          "labor": 74125,
+          "workHours": 44.2,
+          "headcount": 6,
+          "storeSales": 29855,
+          "eventSales": 158797,
+          "combinedSales": 188652,
+          "laborRate": 39.3,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 29,
+          "date": "2026-07-29",
+          "labor": 61226,
+          "workHours": 39.17,
+          "headcount": 6,
+          "storeSales": 57909,
+          "eventSales": 120501,
+          "combinedSales": 178410,
+          "laborRate": 34.3,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 30,
+          "date": "2026-07-30",
+          "labor": 62054,
+          "workHours": 36.82,
+          "headcount": 5,
+          "storeSales": 45230,
+          "eventSales": 131547,
+          "combinedSales": 176777,
+          "laborRate": 35.1,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 31,
+          "date": "2026-07-31",
+          "labor": 71906,
+          "workHours": 48.73,
+          "headcount": 7,
+          "storeSales": 52090,
+          "eventSales": 186359,
+          "combinedSales": 238449,
+          "laborRate": 30.2,
+          "eventSalesStatus": "取得済み"
+        }
+      ],
+      "eventSalesTotal": 3164339,
+      "combinedSalesTotal": 4917610,
+      "laborRate": 29.5,
+      "greenDays": 12,
+      "redDays": 19,
+      "eventSalesPendingDates": [
+        "2026-07-07",
+        "2026-07-13"
+      ],
+      "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
+    }
+  ]
+}
