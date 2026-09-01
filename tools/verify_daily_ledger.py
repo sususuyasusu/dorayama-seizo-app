@@ -474,6 +474,9 @@ def verify_html():
         "Googleカレンダーに登録した各催事", "売上実績（店舗＋催事）",
         "催事のない日は0円", "channelMonthlyRows", "channelAnnualChart",
         "channel-store-month", "channel-event-month", "年間の店舗売上",
+        "historicalPaceRows=(state.data.weekdayTimeHistory?.daily||[]).filter",
+        "livePaceRows=(state.data.daily||[]).filter",
+        "実績取得後の目標差", "月末時点の目標差",
         "年間の催事売上", "管理会計PL反映済み", "日次速報との差",
         "棒・点にカーソルを合わせると金額を表示",
         "historicalLaborCalendar", "日別シフト人件費合計",
@@ -487,6 +490,7 @@ def verify_html():
         assert removed_text not in html, removed_text
     for fixed_formula in ("sales*.25", "row.sales*.25", "actual-sales*.25"):
         assert fixed_formula not in html, fixed_formula
+    assert "currentMonth?salesPaceChart" not in html
     assert "#NAME?" not in html
     scripts = [html.split("<script>", 1)[1].split("</script>", 1)[0]]
     index_html = (BASE / "templates" / "index.html").read_text(encoding="utf-8")
