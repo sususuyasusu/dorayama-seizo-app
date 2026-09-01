@@ -258,7 +258,7 @@ def verify_management_analysis():
     assert product_history["months"][-1]["totals"]["estimatedCost"] + product_history["months"][-1]["totals"]["estimatedGrossProfit"] == product_history["months"][-1]["totals"]["sales"]
     labor_daily_history = data["laborDailyHistory"]
     assert [row["key"] for row in labor_daily_history["months"]] == [
-        "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07",
+        "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08",
     ]
     june_labor = next(row for row in labor_daily_history["months"] if row["key"] == "2026-06")
     assert june_labor["key"] == "2026-06"
@@ -281,6 +281,14 @@ def verify_management_analysis():
     assert july_labor["daily"][0]["laborRate"] == 20.5
     assert july_labor["daily"][1]["laborRate"] == 25.3
     assert july_labor["daily"][6]["eventSalesStatus"] == "未取得"
+    august_labor = next(row for row in labor_daily_history["months"] if row["key"] == "2026-08")
+    assert august_labor["dailyLaborTotal"] == 1728853
+    assert august_labor["storeSalesTotal"] == 2021444
+    assert august_labor["eventSalesTotal"] == 5374495
+    assert august_labor["combinedSalesTotal"] == 7395939
+    assert august_labor["laborRate"] == 23.4
+    assert len(august_labor["daily"]) == 31
+    assert august_labor["eventSalesPendingDates"] == ["2026-08-31"]
     products = snapshot["productAnalysis"]["items"]
     weekdays = snapshot["weekdayTimeAnalysis"]["weekdays"]
     assert products[0]["name"] == "黒どら"
