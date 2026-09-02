@@ -50,8 +50,17 @@ def run_once(max_weeks=6):
     monday = today - datetime.timedelta(days=today.weekday())
 
     # 対象週をタブ名(MMDD)から判定＝全シート読み込み(重い)を避ける
+    # 週タブは古い順に並んでいる。タブ名に年が無いため、当週タブより前にあるタブは
+    # 必ず過去週として除外する（去年の同月同日タブを未来週と誤認して書き込むのを防ぐ）
+    cur_idx = None
+    for i, w in enumerate(sheets):
+        if w.title == monday.strftime("%m%d") or w.title == "%d%02d" % (monday.month, monday.day):
+            cur_idx = i
+            break
     targets = []
-    for w in sheets:
+    for i, w in enumerate(sheets):
+        if cur_idx is not None and i < cur_idx:
+            continue
         t = w.title
         if len(t) != 4 or not t.isdigit():
             continue
