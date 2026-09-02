@@ -20,8 +20,21 @@ AIR_MATE_ANALYSIS_PATH = BASE / "data" / "airmate_analysis_snapshot_2026-08-17.j
 PRODUCT_HISTORY_PATH = BASE / "data" / "product_analysis_history_2026.json"
 LABOR_DAILY_HISTORY_PATH = BASE / "data" / "labor_daily_history_2026.json"
 FIXED_COST_CATEGORIES = ("地代家賃", "賃借料", "水道光熱費", "通信費", "保険料")
-FIXED_COST_PROVISIONAL_OVERRIDES = {
-    "8月": {"水道光熱費": 5118},
+FIXED_COST_PROVISIONAL_OVERRIDES = {}
+FIXED_COST_RECONCILIATIONS = {
+    "8月": {
+        "status": "確定",
+        "expectedTotal": 498666,
+        "bookedTotal": 496708,
+        "accrualAdjustment": 1958,
+        "employeeContribution": 35000,
+        "netCompanyBurden": 463666,
+        "sourceLabel": "管理会計PL（8月固定費締め）",
+        "note": (
+            "freee記帳済496,708円に、上下水道の未計上月次調整1,958円を加えています。"
+            "役員社宅の本人負担35,000円を差し引いた会社実負担は463,666円です。"
+        ),
+    },
 }
 MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月"]
 MONTH_COLUMNS = ["F", "G", "H", "J", "K", "L", "N"]
@@ -325,16 +338,18 @@ def _fixed_cost_history(cost_analysis):
         key = month.get("key")
         status = month.get("status")
         overrides = FIXED_COST_PROVISIONAL_OVERRIDES.get(key, {})
+        reconciliation = FIXED_COST_RECONCILIATIONS.get(key, {})
+        fixed_cost_closed = reconciliation.get("status") == "確定"
         details = []
         missing = []
         has_provisional_source = False
         for category in FIXED_COST_CATEGORIES:
             saved = (line_by_label.get(category) or {}).get("values", {}).get(key)
-            source = "管理会計PL（Excel原本）"
-            evidence = "保存済み"
+            source = reconciliation.get("sourceLabel") or "管理会計PL（Excel原本）"
+            evidence = "固定費締め済み" if fixed_cost_closed else "保存済み"
             amount = saved
             is_provisional = False
-            if status != "確定":
+            if status != "確定" and not fixed_cost_closed:
                 if category in overrides:
                     amount = overrides[category]
                     source = "freee経費ミラー（Excel未反映・速報値）"
@@ -357,8 +372,12 @@ def _fixed_cost_history(cost_analysis):
         known_amounts = [item["amount"] for item in details if item["amount"] is not None]
         total = sum(known_amounts) if known_amounts else None
         is_lower_bound = bool(missing) and total is not None
-        if status == "確定":
+        expected_total = reconciliation.get("expectedTotal")
+        fixed_cost_reconciled = fixed_cost_closed and total == expected_total and not missing
+        if status == "確定" or fixed_cost_reconciled:
             display_status = "確定"
+        elif fixed_cost_closed:
+            display_status = "要再照合"
         elif total is not None:
             display_status = "進行中・一部のみ"
         else:
@@ -372,6 +391,11 @@ def _fixed_cost_history(cost_analysis):
             "missingCategories": missing,
             "details": details,
             "hasProvisionalSource": has_provisional_source,
+            "bookedTotal": reconciliation.get("bookedTotal"),
+            "accrualAdjustment": reconciliation.get("accrualAdjustment"),
+            "employeeContribution": reconciliation.get("employeeContribution"),
+            "netCompanyBurden": reconciliation.get("netCompanyBurden"),
+            "reconciliationNote": reconciliation.get("note"),
         })
     return rows
 
