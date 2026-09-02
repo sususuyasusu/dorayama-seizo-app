@@ -307,8 +307,8 @@ def _add_operational_labor(cost_analysis, labor_daily_history):
             continue
         row["operationalInternalLabor"] = operational
         row["accountingInternalLabor"] = row.get("internalLabor")
-        row["operationalInternalLaborSource"] = "Airシフト給与計算表＋タイミー"
-        row["operationalInternalLaborStatus"] = "運営実績"
+        row["operationalInternalLaborSource"] = "Airシフト給与計算表＋タイミー（Excel未反映・速報値）"
+        row["operationalInternalLaborStatus"] = "運営実績（Excel未反映）"
         row["accountingInternalLaborStatus"] = "給与未反映・法定福利費のみ"
     return enriched
 
@@ -327,19 +327,24 @@ def _fixed_cost_history(cost_analysis):
         overrides = FIXED_COST_PROVISIONAL_OVERRIDES.get(key, {})
         details = []
         missing = []
+        has_provisional_source = False
         for category in FIXED_COST_CATEGORIES:
             saved = (line_by_label.get(category) or {}).get("values", {}).get(key)
-            source = "管理会計PL"
+            source = "管理会計PL（Excel原本）"
             evidence = "保存済み"
             amount = saved
+            is_provisional = False
             if status != "確定":
                 if category in overrides:
                     amount = overrides[category]
-                    source = "freee経費ミラー"
-                    evidence = "承認待ち・暫定"
+                    source = "freee経費ミラー（Excel未反映・速報値）"
+                    evidence = "Excel未反映・freee速報値"
+                    is_provisional = True
                 elif not saved:
                     amount = None
                     evidence = "未反映"
+            if is_provisional:
+                has_provisional_source = True
             if amount is None:
                 missing.append(category)
             details.append({
@@ -347,6 +352,7 @@ def _fixed_cost_history(cost_analysis):
                 "amount": amount,
                 "source": source,
                 "evidence": evidence,
+                "isProvisional": is_provisional,
             })
         known_amounts = [item["amount"] for item in details if item["amount"] is not None]
         total = sum(known_amounts) if known_amounts else None
@@ -365,6 +371,7 @@ def _fixed_cost_history(cost_analysis):
             "isLowerBound": is_lower_bound,
             "missingCategories": missing,
             "details": details,
+            "hasProvisionalSource": has_provisional_source,
         })
     return rows
 
