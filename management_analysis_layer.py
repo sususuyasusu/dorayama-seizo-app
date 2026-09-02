@@ -19,6 +19,10 @@ BASE = Path(__file__).resolve().parent
 AIR_MATE_ANALYSIS_PATH = BASE / "data" / "airmate_analysis_snapshot_2026-08-17.json"
 PRODUCT_HISTORY_PATH = BASE / "data" / "product_analysis_history_2026.json"
 LABOR_DAILY_HISTORY_PATH = BASE / "data" / "labor_daily_history_2026.json"
+FIXED_COST_CATEGORIES = ("地代家賃", "賃借料", "水道光熱費", "通信費", "保険料")
+FIXED_COST_PROVISIONAL_OVERRIDES = {
+    "8月": {"水道光熱費": 5118},
+}
 MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月"]
 MONTH_COLUMNS = ["F", "G", "H", "J", "K", "L", "N"]
 NAVIGATION = [
@@ -288,6 +292,83 @@ def _labor_daily_history():
     return json.loads(LABOR_DAILY_HISTORY_PATH.read_text(encoding="utf-8"))
 
 
+def _add_operational_labor(cost_analysis, labor_daily_history):
+    """進行中の会計月へ、保存済みの日別シフト人件費を別項目で添える。"""
+    enriched = deepcopy(cost_analysis)
+    labor_by_month = {
+        row.get("month"): row for row in labor_daily_history.get("months", [])
+    }
+    for row in enriched.get("series", []):
+        labor_row = labor_by_month.get(row.get("key"))
+        if row.get("status") == "確定" or not labor_row:
+            continue
+        operational = labor_row.get("dailyLaborTotal")
+        if operational is None:
+            continue
+        row["operationalInternalLabor"] = operational
+        row["accountingInternalLabor"] = row.get("internalLabor")
+        row["operationalInternalLaborSource"] = "Airシフト給与計算表＋タイミー"
+        row["operationalInternalLaborStatus"] = "運営実績"
+        row["accountingInternalLaborStatus"] = "給与未反映・法定福利費のみ"
+    return enriched
+
+
+def _fixed_cost_history(cost_analysis):
+    """管理会計PLから重複のない固定費5科目を月別に集計する。"""
+    line_by_label = {
+        line.get("label"): line
+        for line in cost_analysis.get("lines", [])
+        if line.get("label") in FIXED_COST_CATEGORIES
+    }
+    rows = []
+    for month in cost_analysis.get("months", []):
+        key = month.get("key")
+        status = month.get("status")
+        overrides = FIXED_COST_PROVISIONAL_OVERRIDES.get(key, {})
+        details = []
+        missing = []
+        for category in FIXED_COST_CATEGORIES:
+            saved = (line_by_label.get(category) or {}).get("values", {}).get(key)
+            source = "管理会計PL"
+            evidence = "保存済み"
+            amount = saved
+            if status != "確定":
+                if category in overrides:
+                    amount = overrides[category]
+                    source = "freee経費ミラー"
+                    evidence = "承認待ち・暫定"
+                elif not saved:
+                    amount = None
+                    evidence = "未反映"
+            if amount is None:
+                missing.append(category)
+            details.append({
+                "category": category,
+                "amount": amount,
+                "source": source,
+                "evidence": evidence,
+            })
+        known_amounts = [item["amount"] for item in details if item["amount"] is not None]
+        total = sum(known_amounts) if known_amounts else None
+        is_lower_bound = bool(missing) and total is not None
+        if status == "確定":
+            display_status = "確定"
+        elif total is not None:
+            display_status = "進行中・一部のみ"
+        else:
+            display_status = "未取得"
+        rows.append({
+            "key": key,
+            "period": month.get("label") or key,
+            "status": display_status,
+            "total": total,
+            "isLowerBound": is_lower_bound,
+            "missingCategories": missing,
+            "details": details,
+        })
+    return rows
+
+
 def _event_target_summary(details):
     per_day = airmate_targets_layer.event_daily_sales_target()
     by_date = {}
@@ -323,7 +404,10 @@ def _event_target_summary(details):
 def get_management_analysis():
     now = datetime.now(JST)
     confirmed = management_layer.get_dorayama_management()
-    cost_analysis = management_pl_workbook_layer.get_cost_analysis()
+    labor_daily_history = _labor_daily_history()
+    cost_analysis = _add_operational_labor(
+        management_pl_workbook_layer.get_cost_analysis(), labor_daily_history
+    )
     confirmed = _apply_latest_management_pl(confirmed, cost_analysis)
     sync = management_sync_layer.get_management_sync(today=now.date())
     lines = _pnl_lines()
@@ -345,7 +429,6 @@ def get_management_analysis():
     event_target = _event_target_summary(event_details)
     airmate_analysis = _airmate_analysis_snapshot()
     product_history = _product_analysis_history()
-    labor_daily_history = _labor_daily_history()
     airmate_history = management_sync_layer.read_airmate_history(now.date())
     provisional_month = "8月"
     current_month_label = f"{now.month}月"
@@ -426,6 +509,9 @@ def get_management_analysis():
             "referenceTotal": month_preview.get("fixedCostReference"),
             "paymentExpenseReference": month_preview.get("paymentExpenseReference"),
             "evidencePendingCount": month_preview.get("fixedEvidencePendingCount"),
+            "history": _fixed_cost_history(cost_analysis),
+            "categories": list(FIXED_COST_CATEGORIES),
+            "scopeNote": "固定費は地代家賃・賃借料・水道光熱費・通信費・保険料。カード引落、催事販売外注、消耗品、広告宣伝費は含めません。",
         },
         "freeeProgress": confirmed.get("automationProgress") or {},
         "impact": confirmed.get("impact"),
