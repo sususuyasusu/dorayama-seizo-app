@@ -160,7 +160,7 @@ def get_dorayama_management():
         "cumulativePeriod": snapshot["period"],
         "status": "corrected-management-pl",
         "statusLabel": "1,211件の部門設定完了・2〜7月最新管理会計PL",
-        "sourceLabel": "実績：8月18日更新の管理会計PL／freee進捗：8月28日までの実行記録を反映",
+        "sourceLabel": "実績：管理会計PL／freee進捗：2026年9月3日までの実行記録を反映",
         "sourceUpdatedAt": snapshot["snapshotAt"],
         "basis": snapshot["basis"],
         "latest": latest,
