@@ -36,6 +36,27 @@ FIXED_COST_RECONCILIATIONS = {
         ),
     },
 }
+LABOR_RECONCILIATIONS = {
+    "8月": {
+        "status": "再集計中",
+        "accountingLabor": 388764,
+        "accountingLaborNote": "管理会計PLは給与未反映で、法定福利費の支払額のみ",
+        "payrollGross": 1314804,
+        "payrollPeriod": "2026/7/16〜8/15・8/25支給",
+        "timeeInvoice": 199990,
+        "timeeWorkerCompensation": 184375,
+        "timeeServiceFee": 15615,
+        "shiftCostEstimate": 1728853,
+        "unpricedShiftCount": 4,
+        "unpricedShiftHours": 16.87,
+        "missingPunchCount": 1,
+        "sourceLabel": "給与確定資料・タイミー8月請求書・Airシフト勤務表の再照合",
+        "note": (
+            "1,728,853円は固定給社員も時給換算した勤務シフト原価の参考値で、給与確定額ではありません。"
+            "時給未設定4勤務と退勤未打刻1勤務もあるため、8月内部人件費と経常利益は確定表示しません。"
+        ),
+    },
+}
 MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月"]
 MONTH_COLUMNS = ["F", "G", "H", "J", "K", "L", "N"]
 NAVIGATION = [
@@ -186,6 +207,10 @@ def _workbook_financials(source):
         if material is not None and selling_expenses is not None else None,
         "dataStatus": "管理会計PL確定" if source.get("status") == "確定" else "管理会計PL進行中",
         "sourceLabel": "【第10期 どら山】管理会計PL.xlsx",
+        "accountingInternalLabor": source.get("accountingInternalLabor"),
+        "accountingProfit": source.get("accountingProfit"),
+        "shiftCostEstimate": source.get("shiftCostEstimate"),
+        "laborReconciliation": source.get("laborReconciliation"),
     }
 
 
@@ -321,6 +346,18 @@ def _add_operational_labor(cost_analysis, labor_daily_history):
             continue
         operational = labor_row.get("dailyLaborTotal")
         if operational is None:
+            continue
+        reconciliation = LABOR_RECONCILIATIONS.get(row.get("key"))
+        if reconciliation:
+            row["accountingInternalLabor"] = row.get("internalLabor")
+            row["accountingProfit"] = row.get("profit")
+            row["shiftCostEstimate"] = operational
+            row["laborReconciliation"] = deepcopy(reconciliation)
+            row["internalLabor"] = None
+            row["labor"] = None
+            row["sellingExpenses"] = None
+            row["operatingProfit"] = None
+            row["profit"] = None
             continue
         row["operationalInternalLabor"] = operational
         row["accountingInternalLabor"] = row.get("internalLabor")
