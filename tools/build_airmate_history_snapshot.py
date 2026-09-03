@@ -21,6 +21,18 @@ def main():
     if not rows:
         print("CSVから0件。スナップショットは更新しません（既存を保持）")
         return 1
+
+    out = BASE / "data" / "airmate_history_2026.json"
+    try:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        existing = None
+    if existing is not None and existing.get("rows") == rows:
+        first = min(row["date"] for row in rows)
+        last = max(row["date"] for row in rows)
+        print(f"実データに変化なし（{len(rows)}日分・{first}〜{last}）。書き換えはスキップ")
+        return 2
+
     payload = {
         "schemaVersion": 1,
         "generatedAt": datetime.now().isoformat(timespec="minutes"),
@@ -28,7 +40,6 @@ def main():
         "note": "CSVを直接読めない環境でのフォールバック。再生成はこのスクリプトを実行",
         "rows": rows,
     }
-    out = BASE / "data" / "airmate_history_2026.json"
     out.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
     first = min(row["date"] for row in rows)
     last = max(row["date"] for row in rows)
