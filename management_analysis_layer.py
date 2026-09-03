@@ -123,7 +123,21 @@ def _pnl_lines():
     return lines
 
 
-def _monthly_rows(confirmed, goal_settings=None):
+def _monthly_daily_sales_totals(daily_history):
+    """日次実績(Airメイト・Airレジ)を年月ごとに積み上げる。"""
+    totals = {}
+    for row in daily_history or []:
+        ym = str(row.get("date") or "")[:7]
+        if not ym:
+            continue
+        bucket = totals.setdefault(ym, {"storeSales": 0, "eventSales": 0, "days": 0})
+        bucket["storeSales"] += row.get("storeSales") or 0
+        bucket["eventSales"] += row.get("eventSales") or 0
+        bucket["days"] += 1
+    return totals
+
+
+def _monthly_rows(confirmed, goal_settings=None, daily_history=None):
     rows = []
     store = _row_months(4)
     events = _row_months(3)
@@ -132,6 +146,7 @@ def _monthly_rows(confirmed, goal_settings=None):
     effective_targets = {
         row["yearMonth"]: row for row in (goal_settings or {}).get("months", [])
     }
+    daily_totals_by_month = _monthly_daily_sales_totals(daily_history)
     for index, target in enumerate(targets):
         label = f"{index + 1}月"
         source = confirmed_by_month.get(label)
@@ -162,6 +177,19 @@ def _monthly_rows(confirmed, goal_settings=None):
             "dataStatus": "未確定",
             "sourceLabel": "未取得",
         }
+        ym_key = f"2026-{index + 1:02d}"
+        daily_totals = daily_totals_by_month.get(ym_key)
+        daily_sales_note = None
+        if source.get("dataStatus") != "管理会計PL確定" and daily_totals and daily_totals["days"] > 0:
+            source = {
+                **source,
+                "storeSales": daily_totals["storeSales"],
+                "eventSales": daily_totals["eventSales"],
+            }
+            daily_sales_note = (
+                f"Airメイト・Airレジ日次実績{daily_totals['days']}日分の合計"
+                "（大本のExcelは未反映・速報値）"
+            )
         actual_store = store[index] if index < len(store) and index < 7 else None
         actual_events = events[index] if index < len(events) and index < 7 else None
         effective = effective_targets.get(f"2026-{index + 1:02d}") or {}
@@ -174,6 +202,7 @@ def _monthly_rows(confirmed, goal_settings=None):
             "eventBudget": effective.get("eventTarget", target.get("event")),
             "storeSales": source.get("storeSales") if source.get("storeSales") is not None else actual_store,
             "eventSales": source.get("eventSales") if source.get("eventSales") is not None else actual_events,
+            "salesSourceNote": daily_sales_note,
             "budgetVariance": sales - budget if sales is not None and budget is not None else None,
             "breakEvenVariance": sales - source["breakEven"]
             if sales is not None and source.get("breakEven") is not None else None,
@@ -484,7 +513,8 @@ def get_management_analysis():
     sync = management_sync_layer.get_management_sync(today=now.date())
     lines = _pnl_lines()
     goal_settings = target_settings_layer.get_target_settings(cost_analysis)
-    monthly_rows = _monthly_rows(confirmed, goal_settings)
+    airmate_history = management_sync_layer.read_airmate_history(now.date())
+    monthly_rows = _monthly_rows(confirmed, goal_settings, airmate_history)
     month_preview = sync.get("monthSummary") or {}
     workbook_catalog = budget_workbook_layer.catalog()
     legacy_errors = sum(item["errorCount"] for item in workbook_catalog if item["quality"] == "旧様式参考")
@@ -501,7 +531,6 @@ def get_management_analysis():
     event_target = _event_target_summary(event_details)
     airmate_analysis = _airmate_analysis_snapshot()
     product_history = _product_analysis_history()
-    airmate_history = management_sync_layer.read_airmate_history(now.date())
     provisional_month = (
         next((row.get("key") for row in cost_analysis.get("months", []) if row.get("status") != "確定"), None)
         or confirmed.get("augustProvisional", {}).get("month")
