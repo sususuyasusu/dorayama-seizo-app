@@ -204,12 +204,16 @@ def _apply_latest_management_pl(confirmed, analysis):
         cumulative_profit += workbook_row.get("profit") or 0
         row["cumulative"] = cumulative_profit
         confirmed_months.append(row)
-    august = workbook_by_month.get("8月")
-    if august:
-        provisional = _workbook_financials(august)
+    provisional_row = next(
+        (row for row in analysis.get("series", []) if row.get("status") != "確定"),
+        None,
+    )
+    if provisional_row:
+        provisional = _workbook_financials(provisional_row)
         provisional.update({
             "asOf": merged.get("augustProvisional", {}).get("asOf"),
-            "status": "管理会計PL進行中・最終確定前",
+            "status": f"管理会計PL{provisional_row.get('status') or '進行中'}・最終確定前",
+            "month": provisional_row.get("key"),
         })
         merged["augustProvisional"] = provisional
     if not confirmed_months:
@@ -461,7 +465,11 @@ def get_management_analysis():
     airmate_analysis = _airmate_analysis_snapshot()
     product_history = _product_analysis_history()
     airmate_history = management_sync_layer.read_airmate_history(now.date())
-    provisional_month = "8月"
+    provisional_month = (
+        next((row.get("key") for row in cost_analysis.get("months", []) if row.get("status") != "確定"), None)
+        or confirmed.get("augustProvisional", {}).get("month")
+        or "8月"
+    )
     current_month_label = f"{now.month}月"
     return {
         "schemaVersion": 3,
