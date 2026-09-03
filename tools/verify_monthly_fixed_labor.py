@@ -15,9 +15,16 @@ def main():
     august_cost = next(
         row for row in data["costAnalysis"]["series"] if row["key"] == "8月"
     )
-    assert august_cost["internalLabor"] == 388764
-    assert august_cost["operationalInternalLabor"] == 1728853
-    assert august_cost["accountingInternalLaborStatus"] == "給与未反映・法定福利費のみ"
+    assert august_cost["internalLabor"] is None
+    assert august_cost["accountingInternalLabor"] == 388764
+    assert august_cost["shiftCostEstimate"] == 1728853
+    assert august_cost["profit"] is None
+    assert august_cost["accountingProfit"] == -684985
+    reconciliation = august_cost["laborReconciliation"]
+    assert reconciliation["status"] == "再集計中"
+    assert reconciliation["payrollGross"] == 1314804
+    assert reconciliation["timeeInvoice"] == 199990
+    assert reconciliation["timeeServiceFee"] == 15615
 
     fixed = {row["key"]: row for row in data["fixed"]["history"]}
     assert fixed["2月"]["total"] == 389162
@@ -41,7 +48,8 @@ def main():
     assert "月別固定費" in html
     assert "会社実負担" in html
     assert "operationalCostRows" in html
-    assert "給与は未反映" in html
+    assert "内部人件費は再集計中" in html
+    assert "この金額を経常利益へ使いません" in html
     print("monthly fixed and labor verification passed")
 
 

@@ -227,7 +227,15 @@ def verify_management_analysis():
     assert cost_analysis["summary"]["totalCost"] == cost_analysis["summary"]["material"] + cost_analysis["summary"]["sellingExpenses"]
     assert cost_analysis["summary"]["other"] >= 0
     assert data["confirmed"]["cumulative"]["profit"] == cost_analysis["summary"]["profit"]
-    assert all(row["internalLabor"] == next(line for line in cost_analysis["lines"] if line["row"] == 23)["values"][row["key"]] - row["eventStaffing"] for row in cost_analysis["series"])
+    labor_total_line = next(line for line in cost_analysis["lines"] if line["row"] == 23)
+    assert all(
+        row["internalLabor"] == labor_total_line["values"][row["key"]] - row["eventStaffing"]
+        for row in confirmed_costs
+    )
+    august_cost = next(row for row in cost_analysis["series"] if row["key"] == "8月")
+    assert august_cost["internalLabor"] is None
+    assert august_cost["profit"] is None
+    assert august_cost["laborReconciliation"]["status"] == "再集計中"
     assert next(line for line in cost_analysis["lines"] if line["row"] == 25)["label"] == "その他の外注費"
     weekday_history = data["weekdayTimeHistory"]
     assert weekday_history["from"] == "2026-01-01"
