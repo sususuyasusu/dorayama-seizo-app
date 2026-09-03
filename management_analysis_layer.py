@@ -47,14 +47,17 @@ LABOR_RECONCILIATIONS = {
         "timeeInvoice": 199990,
         "timeeWorkerCompensation": 184375,
         "timeeServiceFee": 15615,
-        "shiftCostEstimate": 1728853,
-        "unpricedShiftCount": 4,
-        "unpricedShiftHours": 16.87,
-        "missingPunchCount": 1,
+        "shiftCostEstimate": 1766227,
+        "unpricedShiftCount": 0,
+        "unpricedShiftHours": 0,
+        "missingPunchCount": 0,
         "sourceLabel": "給与確定資料・タイミー8月請求書・Airシフト勤務表の再照合",
         "note": (
-            "1,728,853円は固定給社員も時給換算した勤務シフト原価の参考値で、給与確定額ではありません。"
-            "時給未設定4勤務と退勤未打刻1勤務もあるため、8月内部人件費と経常利益は確定表示しません。"
+            "1,766,227円は固定給社員も時給換算した勤務シフト原価の参考値で、給与確定額ではありません。"
+            "時給未設定4勤務（大西実可子・時給1,250円で確定）と退勤未打刻1勤務"
+            "（太田光・8/1退勤16:00で確定）は本人確認により解消済み。"
+            "固定給社員の時給換算と、7/16〜8/15給与確定額1,314,804円との整合確認がまだのため、"
+            "8月内部人件費と経常利益は引き続き確定表示しません。"
         ),
     },
 }

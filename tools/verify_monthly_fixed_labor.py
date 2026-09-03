@@ -17,7 +17,7 @@ def main():
     )
     assert august_cost["internalLabor"] is None
     assert august_cost["accountingInternalLabor"] == 388764
-    assert august_cost["shiftCostEstimate"] == 1728853
+    assert august_cost["shiftCostEstimate"] == 1766227
     assert august_cost["profit"] is None
     assert august_cost["accountingProfit"] == -684985
     reconciliation = august_cost["laborReconciliation"]
