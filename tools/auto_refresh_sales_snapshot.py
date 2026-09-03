@@ -36,6 +36,24 @@ def _run(cmd, cwd=BASE):
 def main():
     print(f"[{datetime.now().isoformat(timespec='seconds')}] 売上速報の自動更新を開始")
 
+    # 0) 他の作業や未公開コミットへ混ざらないことを先に確認する。
+    code, branch, err = _run(["git", "branch", "--show-current"])
+    if code != 0 or branch != "main":
+        print("mainブランチ以外では自動更新しません:", err or branch)
+        return 1
+    code, _, err = _run(["git", "fetch", "origin", "main"])
+    if code != 0:
+        print("公開版の確認に失敗:", err)
+        return 1
+    code, head, err = _run(["git", "rev-parse", "HEAD"])
+    if code != 0:
+        print("現在の版を確認できません:", err)
+        return 1
+    code, remote, err = _run(["git", "rev-parse", "origin/main"])
+    if code != 0 or head != remote:
+        print("ローカル版と公開元が一致しないため、自動コミットを止めました。")
+        return 1
+
     # 1) スナップショット再生成（このMacのAirメイトCSVから）
     code, out, err = _run([sys.executable, "tools/build_airmate_history_snapshot.py"])
     print(out)
@@ -55,14 +73,22 @@ def main():
         print("差分なし。売上速報はすでに最新です。")
         return 0
 
-    # 3) コミット & push
+
+    # 3) 公開前の読取検証。失敗時はスナップショットを公開しない。
+    code, out, err = _run([sys.executable, "tools/verify_daily_ledger.py"])
+    if code != 0:
+        print("公開前検証に失敗。コミットとデプロイを止めました:", err or out)
+        return 1
+
+    # 4) 対象ファイルだけをコミットしてpush。他の作業中ファイルは含めない。
     code, out, err = _run(["git", "add", "data/airmate_history_2026.json"])
     if code != 0:
         print("git add に失敗:", err)
         return 1
 
     commit_message = f"売上速報を自動更新（{datetime.now().strftime('%Y-%m-%d %H:%M')}）"
-    code, out, err = _run(["git", "commit", "-m", commit_message])
+    code, out, err = _run(["git", "commit", "--only", "data/airmate_history_2026.json",
+                           "-m", commit_message])
     if code != 0:
         print("git commit に失敗:", err)
         return 1
@@ -74,7 +100,7 @@ def main():
         return 1
     print("push完了")
 
-    # 4) Renderへデプロイをトリガー（Auto-Deployが不調な場合の保険として明示的に叩く）
+    # 5) Renderへデプロイをトリガー（Auto-Deployが不調な場合の保険として明示的に叩く）
     hook_url = _load_deploy_hook_url()
     if not hook_url:
         print("警告: .env に RENDER_DEPLOY_HOOK_URL が無いため、Renderへのデプロイ指示はスキップしました。")
