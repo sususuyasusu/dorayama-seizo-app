@@ -1,0 +1,1146 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-03T23:00+09:00",
+  "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
+  "privacy": "取引ID・口座番号・認証情報は保存しない",
+  "months": [
+    {
+      "month": "2026-02",
+      "count": 13,
+      "total": 626100,
+      "transactions": [
+        {
+          "date": "2026-02-04",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "Looopでんき",
+          "amount": 10963,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-04",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-16",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 39296,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-24",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 214358,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-27",
+          "category": "保険料",
+          "vendor": "取引先未設定",
+          "description": "NS ニホンセ−フテイ",
+          "amount": 91540,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 11196,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-27",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 13200,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-02-28",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクM -東京都 港区",
+          "amount": 9154,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-03",
+      "count": 14,
+      "total": 1128738,
+      "transactions": [
+        {
+          "date": "2026-03-04",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-05",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "Looopでんき",
+          "amount": 9107,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-16",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 76981,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-23",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 138605,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-25",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "振込 カ)ニホンザイタクカンリサ−ビス",
+          "amount": 550800,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-27",
+          "category": "保険料",
+          "vendor": "取引先未設定",
+          "description": "NS ニホンセ−フテイ",
+          "amount": 91540,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 9556,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-28",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 6600,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-03-31",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクM -東京都 港区",
+          "amount": 9156,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-04",
+      "count": 15,
+      "total": 594931,
+      "transactions": [
+        {
+          "date": "2026-04-06",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-07",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "Looopでんき",
+          "amount": 8948,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 69372,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4735,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-23",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 143273,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-25",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "Looopでんき",
+          "amount": 5501,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-27",
+          "category": "保険料",
+          "vendor": "取引先未設定",
+          "description": "NS ニホンセ−フテイ",
+          "amount": 91540,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-27",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 153440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 9627,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-28",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 3982,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-28",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 6600,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-04-30",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクM -東京都 港区",
+          "amount": 9693,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-05",
+      "count": 17,
+      "total": 700379,
+      "transactions": [
+        {
+          "date": "2026-05-07",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 68951,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-12",
+          "category": "保険料",
+          "vendor": "取引先未設定",
+          "description": "USEN 保険料",
+          "amount": 5880,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-13",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "[BtoB]バーチャルオフィスレゾナンス",
+          "amount": 5000,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-20",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "東京電力 電気料金等 08年05月分",
+          "amount": 1650,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-25",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 156714,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "MHF)ヤチンシユウノウ",
+          "amount": 105440,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-27",
+          "category": "保険料",
+          "vendor": "取引先未設定",
+          "description": "NS ニホンセ−フテイ",
+          "amount": 91540,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 263,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 12371,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-28",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 3982,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-05-31",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクM -東京都 港区",
+          "amount": 12195,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-06",
+      "count": 15,
+      "total": 609408,
+      "transactions": [
+        {
+          "date": "2026-06-04",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 64842,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-10",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "オナマエドツトコムドメイン",
+          "amount": 2273,
+          "payment": "ジャパンネット銀行（API）VISAデビット",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-17",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "東京電力 電気料金等 08年06月分",
+          "amount": 4635,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-18",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "上下水道料金 05月~06月",
+          "amount": 1670,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-23",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 160839,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "MHF)ヤチンシユウノウ",
+          "amount": 105440,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-27",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 3220,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-27",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット",
+          "amount": 25872,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-06-29",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 4224,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-07",
+      "count": 14,
+      "total": 560227,
+      "transactions": [
+        {
+          "date": "2026-07-06",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 72200,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-15",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクМ",
+          "amount": 14336,
+          "payment": "PayPayカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-20",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "東京電力 電気料金等 08年07月分",
+          "amount": 4917,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-21",
+          "category": "通信費",
+          "vendor": "ローソン九段北一丁目店",
+          "description": "110円 普通切手 (登録番号 T4010002053066)",
+          "amount": 110,
+          "payment": "現金",
+          "department": "210 どら山 本店",
+          "evidence": "証憑あり",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-22",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "[BtoB]バーチャルオフィスレゾナンス",
+          "amount": 10000,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-23",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 112905,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-27",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "MHF)ヤチンシユウノウ",
+          "amount": 105440,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-27",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-07-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 3926,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        }
+      ]
+    },
+    {
+      "month": "2026-08",
+      "count": 11,
+      "total": 498666,
+      "transactions": [
+        {
+          "date": "2026-08-04",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 85855,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-20",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "東京電力 電気料金等 08年08月分",
+          "amount": 6870,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-24",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "SMBC(キヤノン",
+          "amount": 62150,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "MHF)ヤチンシユウノウ",
+          "amount": 105440,
+          "payment": "ジャパンネット（法人）",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-26",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "DF.キヤピタルハウス",
+          "amount": 143440,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-31",
+          "category": "水道光熱費",
+          "vendor": "月次調整",
+          "description": "上下水道の8月未計上分",
+          "amount": 1958,
+          "payment": "未払調整",
+          "department": "管理会計調整",
+          "evidence": "8月固定費締め済み",
+          "source": "管理会計PL月次調整"
+        }
+      ]
+    }
+  ]
+}

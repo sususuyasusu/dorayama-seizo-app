@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""毎日の売上速報を自動で最新化する。
+"""毎日の売上速報と固定費明細を自動で最新化する。
 
 このMac上のAirメイトCSV（dw_budget_profit_sheets_automationの日次同期で更新）から
-Render向けスナップショット(data/airmate_history_2026.json)を作り直し、
-差分があればコミット・push・Render再デプロイまで自動で行う。
+Render向けの売上・固定費スナップショットを作り直し、差分があれば
+コミット・push・Render再デプロイまで自動で行う。
 
 使い方: python3 tools/auto_refresh_sales_snapshot.py
 （scheduled-tasksからの定期実行を想定。手動実行もそのまま可能）
@@ -34,7 +34,7 @@ def _run(cmd, cwd=BASE):
 
 
 def main():
-    print(f"[{datetime.now().isoformat(timespec='seconds')}] 売上速報の自動更新を開始")
+    print(f"[{datetime.now().isoformat(timespec='seconds')}] 経営速報の自動更新を開始")
 
     # 0) 他の作業や未公開コミットへ混ざらないことを先に確認する。
     code, branch, err = _run(["git", "branch", "--show-current"])
@@ -54,23 +54,29 @@ def main():
         print("ローカル版と公開元が一致しないため、自動コミットを止めました。")
         return 1
 
-    # 1) スナップショット再生成（このMacのAirメイトCSVから）
+    # 1) スナップショット再生成（売上CSVとfreee固定費明細）
     code, out, err = _run([sys.executable, "tools/build_airmate_history_snapshot.py"])
     print(out)
-    if code == 2:
-        print("実データに変化がないため、コミット・デプロイは行いません。")
-        return 0
-    if code != 0:
+    if code not in (0, 2):
         print("スナップショット生成に失敗、または新規データ0件のためスキップ:", err)
-        return 0
+    fixed_code, fixed_out, fixed_err = _run(
+        [sys.executable, "tools/build_fixed_cost_detail_snapshot.py", "--write"]
+    )
+    print(fixed_out)
+    if fixed_code not in (0, 2):
+        print("固定費明細の取得に失敗。売上速報の更新は継続します:", fixed_err)
 
     # 2) 差分があるか確認
-    code, out, err = _run(["git", "status", "--porcelain", "--", "data/airmate_history_2026.json"])
+    snapshot_paths = [
+        "data/airmate_history_2026.json",
+        "data/fixed_cost_details_2026.json",
+    ]
+    code, out, err = _run(["git", "status", "--porcelain", "--", *snapshot_paths])
     if code != 0:
         print("git status に失敗:", err)
         return 1
     if not out.strip():
-        print("差分なし。売上速報はすでに最新です。")
+        print("差分なし。売上・固定費明細はすでに最新です。")
         return 0
 
 
@@ -79,16 +85,19 @@ def main():
     if code != 0:
         print("公開前検証に失敗。コミットとデプロイを止めました:", err or out)
         return 1
+    code, out, err = _run([sys.executable, "tools/verify_monthly_fixed_labor.py"])
+    if code != 0:
+        print("固定費明細の公開前検証に失敗。コミットとデプロイを止めました:", err or out)
+        return 1
 
     # 4) 対象ファイルだけをコミットしてpush。他の作業中ファイルは含めない。
-    code, out, err = _run(["git", "add", "data/airmate_history_2026.json"])
+    code, out, err = _run(["git", "add", *snapshot_paths])
     if code != 0:
         print("git add に失敗:", err)
         return 1
 
-    commit_message = f"売上速報を自動更新（{datetime.now().strftime('%Y-%m-%d %H:%M')}）"
-    code, out, err = _run(["git", "commit", "--only", "data/airmate_history_2026.json",
-                           "-m", commit_message])
+    commit_message = f"経営速報を自動更新（{datetime.now().strftime('%Y-%m-%d %H:%M')}）"
+    code, out, err = _run(["git", "commit", "--only", *snapshot_paths, "-m", commit_message])
     if code != 0:
         print("git commit に失敗:", err)
         return 1
@@ -114,7 +123,7 @@ def main():
         print("Renderへのデプロイ指示に失敗:", exc)
         return 1
 
-    print("売上速報の自動更新が完了しました。")
+    print("売上・固定費明細の自動更新が完了しました。")
     return 0
 
 

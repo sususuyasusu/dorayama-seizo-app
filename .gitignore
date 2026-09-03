@@ -16,5 +16,6 @@ data/*
 !data/freee_progress_2026-08-28.json
 !data/airmate_history_2026.json
 !data/management_pl_workbook_snapshot.json
+!data/fixed_cost_details_2026.json
 .env
 nohup.out

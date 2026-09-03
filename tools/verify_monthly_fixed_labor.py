@@ -41,11 +41,25 @@ def main():
     assert fixed["8月"]["accrualAdjustment"] == 1958
     assert fixed["8月"]["employeeContribution"] == 35000
     assert fixed["8月"]["netCompanyBurden"] == 463666
+    assert fixed["8月"]["transactionCount"] == 11
+    assert fixed["8月"]["transactionTotal"] == 498666
+    assert fixed["8月"]["transactionDifference"] == 0
+    assert fixed["8月"]["transactionMatchesTotal"] is True
+    august_categories = {
+        row["category"]: row for row in fixed["8月"]["details"]
+    }
+    assert august_categories["地代家賃"]["transactionTotal"] == 316420
+    assert august_categories["賃借料"]["transactionTotal"] == 82830
+    assert august_categories["水道光熱費"]["transactionTotal"] == 94683
+    assert august_categories["通信費"]["transactionTotal"] == 4733
     assert fixed["9月"]["total"] is None
 
     html = (BASE / "templates" / "store_manager.html").read_text(encoding="utf-8")
     assert "fixed-month-select" in html
     assert "月別固定費" in html
+    assert "固定費の取引明細" in html
+    assert "内容・支払先" in html
+    assert "data-fixed-category" in html
     assert "会社実負担" in html
     assert "operationalCostRows" in html
     assert "内部人件費は再集計中" in html

@@ -19,6 +19,7 @@ BASE = Path(__file__).resolve().parent
 AIR_MATE_ANALYSIS_PATH = BASE / "data" / "airmate_analysis_snapshot_2026-08-17.json"
 PRODUCT_HISTORY_PATH = BASE / "data" / "product_analysis_history_2026.json"
 LABOR_DAILY_HISTORY_PATH = BASE / "data" / "labor_daily_history_2026.json"
+FIXED_COST_DETAIL_PATH = BASE / "data" / "fixed_cost_details_2026.json"
 FIXED_COST_CATEGORIES = ("地代家賃", "賃借料", "水道光熱費", "通信費", "保険料")
 FIXED_COST_PROVISIONAL_OVERRIDES = {}
 FIXED_COST_RECONCILIATIONS = {
@@ -340,6 +341,15 @@ def _airmate_analysis_snapshot():
     return json.loads(AIR_MATE_ANALYSIS_PATH.read_text(encoding="utf-8"))
 
 
+def _fixed_cost_detail_snapshot():
+    if not FIXED_COST_DETAIL_PATH.is_file():
+        return {"months": []}
+    try:
+        return json.loads(FIXED_COST_DETAIL_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"months": []}
+
+
 def _product_analysis_history():
     if not PRODUCT_HISTORY_PATH.is_file():
         return {
@@ -398,6 +408,10 @@ def _add_operational_labor(cost_analysis, labor_daily_history):
 
 def _fixed_cost_history(cost_analysis):
     """管理会計PLから重複のない固定費5科目を月別に集計する。"""
+    detail_snapshot = _fixed_cost_detail_snapshot()
+    detail_by_month = {
+        row.get("month"): row for row in detail_snapshot.get("months", [])
+    }
     line_by_label = {
         line.get("label"): line
         for line in cost_analysis.get("lines", [])
@@ -406,6 +420,14 @@ def _fixed_cost_history(cost_analysis):
     rows = []
     for month in cost_analysis.get("months", []):
         key = month.get("key")
+        period = month.get("label") or key
+        try:
+            year_text, month_text = period.split("/")
+            detail_month_key = f"{int(year_text):04d}-{int(month_text):02d}"
+        except (AttributeError, TypeError, ValueError):
+            detail_month_key = None
+        month_detail = detail_by_month.get(detail_month_key, {})
+        transactions = deepcopy(month_detail.get("transactions") or [])
         status = month.get("status")
         overrides = FIXED_COST_PROVISIONAL_OVERRIDES.get(key, {})
         reconciliation = FIXED_COST_RECONCILIATIONS.get(key, {})
@@ -432,15 +454,21 @@ def _fixed_cost_history(cost_analysis):
                 has_provisional_source = True
             if amount is None:
                 missing.append(category)
+            category_transactions = [
+                row for row in transactions if row.get("category") == category
+            ]
             details.append({
                 "category": category,
                 "amount": amount,
                 "source": source,
                 "evidence": evidence,
                 "isProvisional": is_provisional,
+                "transactions": category_transactions,
+                "transactionTotal": sum(row.get("amount") or 0 for row in category_transactions),
             })
         known_amounts = [item["amount"] for item in details if item["amount"] is not None]
         total = sum(known_amounts) if known_amounts else None
+        detail_total = sum(row.get("amount") or 0 for row in transactions)
         is_lower_bound = bool(missing) and total is not None
         expected_total = reconciliation.get("expectedTotal")
         fixed_cost_reconciled = fixed_cost_closed and total == expected_total and not missing
@@ -454,7 +482,7 @@ def _fixed_cost_history(cost_analysis):
             display_status = "未取得"
         rows.append({
             "key": key,
-            "period": month.get("label") or key,
+            "period": period,
             "status": display_status,
             "total": total,
             "isLowerBound": is_lower_bound,
@@ -466,6 +494,13 @@ def _fixed_cost_history(cost_analysis):
             "employeeContribution": reconciliation.get("employeeContribution"),
             "netCompanyBurden": reconciliation.get("netCompanyBurden"),
             "reconciliationNote": reconciliation.get("note"),
+            "transactions": transactions,
+            "transactionCount": len(transactions),
+            "transactionTotal": detail_total if transactions else None,
+            "transactionDifference": total - detail_total if total is not None and transactions else None,
+            "transactionMatchesTotal": bool(transactions) and total == detail_total,
+            "transactionSource": detail_snapshot.get("source"),
+            "transactionUpdatedAt": detail_snapshot.get("generatedAt"),
         })
     return rows
 
