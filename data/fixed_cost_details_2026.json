@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-03T23:00+09:00",
+  "generatedAt": "2026-09-06T13:39+09:00",
   "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
   "privacy": "取引ID・口座番号・認証情報は保存しない",
   "months": [
@@ -1139,6 +1139,24 @@
           "department": "管理会計調整",
           "evidence": "8月固定費締め済み",
           "source": "管理会計PL月次調整"
+        }
+      ]
+    },
+    {
+      "month": "2026-09",
+      "count": 1,
+      "total": 20680,
+      "transactions": [
+        {
+          "date": "2026-09-04",
+          "category": "賃借料",
+          "vendor": "取引先未設定",
+          "description": "セゾン)リ−ス",
+          "amount": 20680,
+          "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
         }
       ]
     }
