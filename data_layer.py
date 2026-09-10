@@ -250,8 +250,10 @@ def get_week_blocks(tab=None, today=None):
     daydates = None
     blocks = []
     cur = None
-    for r in range(1, 45):        # 商品追加で行が増えるため余裕をもって走査
+    for r in range(1, 60):        # 商品追加・4ブロック週で行が増えるため余裕をもって走査
         a = cell(r, 0).strip()
+        if a.startswith("【日別】"):
+            break                 # 集計ブロックに入ったら終了
         s = cell(r, 18).strip()
         if s == "カテゴリー" and a:
             if daydates is None:

@@ -44,8 +44,10 @@ def _daily_counts(tab):
         return V[r - 1][c] if r - 1 < len(V) and c < len(V[r - 1]) else ""
 
     s = {name: [0.0] * 7 for name in COUNT_PRODUCTS}
-    for r in range(5, 40):          # 商品追加で行が増えるため余裕をもって走査
+    for r in range(5, 60):          # 商品追加・4ブロック週で行が増えるため余裕をもって走査
         nm = str(g(r, 0)).strip()
+        if nm.startswith("【日別】"):
+            break                   # 集計ブロックに入ったら終了
         if nm in s and str(g(r, 8)).strip() == "はい":
             for i, c in enumerate(range(21, 28)):  # V..AB 実績側製造表
                 s[nm][i] += _num(g(r, c))

@@ -30,8 +30,10 @@ def get_cost(tab=None):
     event = {"plan": [0.0] * 7, "actual": [0.0] * 7}
     daymd = [None] * 7   # 各曜日の (月, 日) ＝エアシフト人件費の照合キー
     cat = None
-    for r in range(1, 40):
+    for r in range(1, 60):          # 4ブロック週は店舗用が行38以降に下がる
         a = g(r, 0).strip()
+        if a.startswith("【日別】"):
+            break
         s = g(r, 18).strip()
         if s == "カテゴリー" and a:
             cat = "store" if a == "店舗用" else "event"

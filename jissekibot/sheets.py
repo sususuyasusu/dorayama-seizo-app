@@ -55,8 +55,10 @@ class SheetsClient:
             return vals[r - 1][c] if r - 1 < len(vals) and c < len(vals[r - 1]) else ""
         out = []
         cur = None
-        for r in range(1, 45):   # 商品追加で行が増えるため余裕をもって走査
+        for r in range(1, 60):   # 商品追加・4ブロック週で行が増えるため余裕をもって走査
             a = g(r, 0).strip()
+            if a.startswith("【日別】"):
+                break
             s = g(r, 18).strip()
             if s == "カテゴリー" and a:
                 cur = {"name": a, "category": ("店舗用" if a == "店舗用" else "催事用"), "rows": {}}
