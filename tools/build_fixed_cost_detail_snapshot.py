@@ -132,17 +132,23 @@ def main():
             })
 
     # 8月固定費締めで確認済みの発生主義調整。元のfreee取引とは分けて表示する。
-    months.setdefault("2026-08", []).append({
-        "date": "2026-08-31",
-        "category": "水道光熱費",
-        "vendor": "月次調整",
-        "description": "上下水道の8月未計上分",
-        "amount": 1958,
-        "payment": "未払調整",
-        "department": "管理会計調整",
-        "evidence": "8月固定費締め済み",
-        "source": "管理会計PL月次調整",
-    })
+    # ただし同じ請求（上下水道1,958円）が8月分としてfreeeへ記帳された後は、二重計上を避けて調整行を外す。
+    already_booked = any(
+        row["category"] == "水道光熱費" and row["amount"] == 1958 and "上下水道" in (row.get("description") or "")
+        for row in months.get("2026-08", [])
+    )
+    if not already_booked:
+        months.setdefault("2026-08", []).append({
+            "date": "2026-08-31",
+            "category": "水道光熱費",
+            "vendor": "月次調整",
+            "description": "上下水道の8月未計上分",
+            "amount": 1958,
+            "payment": "未払調整",
+            "department": "管理会計調整",
+            "evidence": "8月固定費締め済み",
+            "source": "管理会計PL月次調整",
+        })
 
     month_rows = []
     for month, rows in sorted(months.items()):

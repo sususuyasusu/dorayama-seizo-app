@@ -21,11 +21,10 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parents[1] / "data" / "month_close_rea
 KNOWN_BLOCKERS = {
     "2026-08": [
         "上野・川越・立川の催事会場別精算書",
-        "TakeEatsの8月売上・手数料・キャンセル明細",
-        "8月分の催事販売員請求書",
+        "TakeEatsの8月注文・手数料明細",
         "社会保険の会社負担分と配賦基準",
-        "未解消経費と減価償却の確認",
-        "Airシフトの時給未設定4勤務・16.87時間と退勤未打刻1勤務",
+        "8月の減価償却",
+        "管理会計PL（Excel）8月列の更新",
     ]
 }
 
@@ -109,10 +108,18 @@ def evaluate(data: dict, target: str) -> dict:
         },
     ]
     ready = all(item["ready"] for item in checks)
-    blockers = [] if ready else KNOWN_BLOCKERS.get(
-        target,
-        ["催事精算・給与・決済手数料・未処理経費・減価償却の月次資料"],
-    )
+    # アプリ側の「確定に必要なもの」（closeStatus）が最新の正本。無いときだけ固定の一覧を使う
+    close_status = data.get("closeStatus") or {}
+    checklist = close_status.get("checklist") if close_status.get("closingMonth") == key else None
+    if ready:
+        blockers = []
+    elif checklist:
+        blockers = [f"{item['item']}（{item['state']}）" for item in checklist if item.get("state") != "解消済み"]
+    else:
+        blockers = KNOWN_BLOCKERS.get(
+            target,
+            ["催事精算・給与・決済手数料・未処理経費・減価償却の月次資料"],
+        )
     return {
         "targetMonth": target,
         "ready": ready,

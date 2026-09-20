@@ -17,5 +17,6 @@ data/*
 !data/airmate_history_2026.json
 !data/management_pl_workbook_snapshot.json
 !data/fixed_cost_details_2026.json
+!data/flash_accuracy_2026.json
 .env
 nohup.out

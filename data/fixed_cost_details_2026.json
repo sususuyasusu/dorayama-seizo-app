@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-06T13:39+09:00",
+  "generatedAt": "2026-09-20T12:46+09:00",
   "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
   "privacy": "取引ID・口座番号・認証情報は保存しない",
   "months": [
@@ -1016,8 +1016,8 @@
     },
     {
       "month": "2026-08",
-      "count": 11,
-      "total": 498666,
+      "count": 13,
+      "total": 518494,
       "transactions": [
         {
           "date": "2026-08-04",
@@ -1086,6 +1086,28 @@
           "source": "freee取引明細"
         },
         {
+          "date": "2026-08-15",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンクМ",
+          "amount": 16218,
+          "payment": "PayPayカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-08-19",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "上下水道料金 07月~08月",
+          "amount": 1958,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
           "date": "2026-08-20",
           "category": "水道光熱費",
           "vendor": "取引先未設定",
@@ -1130,22 +1152,22 @@
           "source": "freee取引明細"
         },
         {
-          "date": "2026-08-31",
+          "date": "2026-08-27",
           "category": "水道光熱費",
-          "vendor": "月次調整",
-          "description": "上下水道の8月未計上分",
-          "amount": 1958,
-          "payment": "未払調整",
-          "department": "管理会計調整",
-          "evidence": "8月固定費締め済み",
-          "source": "管理会計PL月次調整"
+          "vendor": "取引先未設定",
+          "description": "ニチガスグループ利用料金",
+          "amount": 3610,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
         }
       ]
     },
     {
       "month": "2026-09",
-      "count": 1,
-      "total": 20680,
+      "count": 2,
+      "total": 142391,
       "transactions": [
         {
           "date": "2026-09-04",
@@ -1154,6 +1176,17 @@
           "description": "セゾン)リ−ス",
           "amount": 20680,
           "payment": "ジャパンネット（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 121711,
+          "payment": "セゾンカード",
           "department": "210 どら山 本店",
           "evidence": "証憑未確認",
           "source": "freee取引明細"

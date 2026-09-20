@@ -33,16 +33,18 @@ def main():
     assert fixed["5月"]["total"] == 489440
     assert fixed["6月"]["total"] == 386769
     assert fixed["7月"]["total"] == 414459
-    assert fixed["8月"]["total"] == 498666
+    # 8月固定費：締め(498,666円)後にfreeeへ記帳された3件（ソフトバンク16,218・ニチガス3,610・上下水道1,958）を反映。
+    # 上下水道1,958円は締め時の月次調整と同じ請求のため、調整行は外して二重計上を避ける。
+    assert fixed["8月"]["total"] == 518494
     assert fixed["8月"]["status"] == "確定"
     assert fixed["8月"]["isLowerBound"] is False
     assert fixed["8月"]["missingCategories"] == []
-    assert fixed["8月"]["bookedTotal"] == 496708
-    assert fixed["8月"]["accrualAdjustment"] == 1958
+    assert fixed["8月"]["bookedTotal"] == 518494
+    assert fixed["8月"]["accrualAdjustment"] == 0
     assert fixed["8月"]["employeeContribution"] == 35000
-    assert fixed["8月"]["netCompanyBurden"] == 463666
-    assert fixed["8月"]["transactionCount"] == 11
-    assert fixed["8月"]["transactionTotal"] == 498666
+    assert fixed["8月"]["netCompanyBurden"] == 483494
+    assert fixed["8月"]["transactionCount"] == 13
+    assert fixed["8月"]["transactionTotal"] == 518494
     assert fixed["8月"]["transactionDifference"] == 0
     assert fixed["8月"]["transactionMatchesTotal"] is True
     august_categories = {
@@ -50,8 +52,8 @@ def main():
     }
     assert august_categories["地代家賃"]["transactionTotal"] == 316420
     assert august_categories["賃借料"]["transactionTotal"] == 82830
-    assert august_categories["水道光熱費"]["transactionTotal"] == 94683
-    assert august_categories["通信費"]["transactionTotal"] == 4733
+    assert august_categories["水道光熱費"]["transactionTotal"] == 98293
+    assert august_categories["通信費"]["transactionTotal"] == 20951
     assert fixed["9月"]["total"] is None
 
     html = (BASE / "templates" / "store_manager.html").read_text(encoding="utf-8")

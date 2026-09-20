@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import types
+from datetime import datetime
 from pathlib import Path
 
 import openpyxl
@@ -206,8 +207,30 @@ def verify_management_analysis():
     assert august["budget"] == 12318000
     assert august["storeBudget"] == 2198000
     assert august["eventBudget"] == 10120000
-    assert august["sales"] == 2534458
+    # 確定前の月は、会計途中の売上ではなく運営売上（このテストでは見本の日次台帳）で表示し、会計側の値は別に残す
+    assert august["sales"] == 4432083
+    assert august["accountingSales"] == 2534458
+    assert august["salesBasis"].startswith("運営売上")
     assert august["dataStatus"] == "管理会計PL進行中"
+    assert august["phase"] == "確定待ち"
+    assert august["profit"] is None
+    assert january["phase"] == "対象外" and january["flash"] is None
+    assert july["phase"] == "確定" and july["flash"] is None
+    flash = august["flash"]
+    assert flash["status"] == "速報"
+    assert flash["fixedCost"] == 518494 and flash["fixedCostBasis"] == "確定"
+    assert flash["eventStaffing"] == 1702000  # ディースパーク8月度請求書（税抜）
+    assert flash["costEstimate"] == 2880104 + 518494 + 1702000
+    assert flash["opsProfit"] == 4432083 - flash["costEstimate"]
+    close_status = data["closeStatus"]
+    assert close_status["confirmedThrough"] == "7月"
+    assert close_status["closingMonth"] == "8月"
+    assert close_status["openItemCount"] == len([
+        item for item in close_status["checklist"] if item["state"] != "解消済み"
+    ])
+    this_month = datetime.now().month
+    september = data["monthly"][8]
+    assert september["phase"] == ("未着手" if this_month < 9 else "進行中" if this_month == 9 else "確定待ち")
     assert data["current"]["budget"] == 10050000
     assert data["current"]["budgetRemaining"] == 5617917
     assert data["current"]["budgetAchievement"] == 44.1
