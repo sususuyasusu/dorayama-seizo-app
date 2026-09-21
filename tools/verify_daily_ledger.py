@@ -281,10 +281,16 @@ def verify_management_analysis():
         assert august_recon["salesDifference"] == august_recon["appSales"] - august_recon["freeeSales"]
     assert data["freeeProgress"]["historicalUnassignedSales"]["amount"] == 0
     assert data["workbook"]["sheetCount"] == 15
-    assert len(data["navigation"]) == 19
+    assert len(data["navigation"]) == 20
     assert any(item["id"] == "targets" for item in data["navigation"])
+    # 「今日の速報」は先頭。催事の人件費は請求書の日割り（1会場1日37,000円・税抜）、目標の人件費率は目標設定に連動
+    assert data["navigation"][0] == {"id": "today", "label": "今日の速報", "group": "速報"}
+    board = data["todayBoard"]
+    assert board["eventStaffDailyRate"] == 37000
+    assert board["laborRateTarget"] == data["goalSettings"]["rates"]["labor"] == 25.0
+    assert 111000 / 3 == 444000 / 12 == 1147000 / 31 == board["eventStaffDailyRate"]
     assert list(dict.fromkeys(item["group"] for item in data["navigation"])) == [
-        "売上", "コスト", "判断", "計画", "原本",
+        "速報", "売上", "コスト", "判断", "計画", "原本",
     ]
     snapshot = data["airmateAnalysis"]
     product_history = data["productHistory"]

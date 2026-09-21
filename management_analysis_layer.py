@@ -52,6 +52,13 @@ KNOWN_EVENT_STAFFING = {
     },
 }
 
+# 催事の人件費は、ディースパーク請求書の「開催日数×日額」を日割りにしたもの（税抜）。
+# 8月度請求書：川越3日111,000円・立川12日444,000円・上野31日1,147,000円＝どの会場も1日37,000円。
+EVENT_STAFF_DAILY_RATE = {
+    "amountExTax": 37000,
+    "sourceLabel": "ディースパーク8月度請求書（川越3日111,000円・立川12日444,000円・上野31日1,147,000円＝各会場とも1日37,000円・税抜）",
+}
+
 FLASH_ACCURACY_PATH = BASE / "data" / "flash_accuracy_2026.json"
 FLASH_STAFFING_RATE_MONTHS = 3
 
@@ -96,6 +103,7 @@ LABOR_RECONCILIATIONS = {
 MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月"]
 MONTH_COLUMNS = ["F", "G", "H", "J", "K", "L", "N"]
 NAVIGATION = [
+    {"id": "today", "label": "今日の速報", "group": "速報"},
     {"id": "store", "label": "店舗分析", "group": "売上"},
     {"id": "events", "label": "催事分析", "group": "売上"},
     {"id": "products", "label": "商品分析", "group": "売上"},
@@ -858,6 +866,12 @@ def get_management_analysis():
         },
         "monthly": monthly_rows,
         "closeStatus": close_status,
+        "todayBoard": {
+            "eventStaffDailyRate": EVENT_STAFF_DAILY_RATE["amountExTax"],
+            "eventStaffRateSource": EVENT_STAFF_DAILY_RATE["sourceLabel"],
+            "laborRateTarget": goal_settings["rates"]["labor"],
+            "storeLaborSource": "Airシフト給与計算表（打刻実績）＋タイミー",
+        },
         "pnlLines": lines,
         "costBreakdown": _cost_breakdown(confirmed),
         "costAnalysis": cost_analysis,
