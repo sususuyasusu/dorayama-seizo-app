@@ -188,6 +188,8 @@ def parse_management_values(values_by_tab, today=None):
         labor = _number(row.get("人件費合計"))
         status = str(row.get("状態") or "")
         note = status.split("：", 1)[1].strip() if "：" in status else ""
+        # 「タイミー未登録」は毎日付く恒常的な断り書きなので文面には出さない（状態欄には残る）
+        note = " / ".join(part for part in note.split(" / ") if "未登録" not in part).strip()
         if note and day_iso in daily:
             # 退勤の打刻漏れ・時給0など、人件費が低く出ている恐れは、正本を使う日でも文面に添える
             daily[day_iso]["flashNote"] = note
