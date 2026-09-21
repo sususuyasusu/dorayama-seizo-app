@@ -27,6 +27,7 @@ TABS = {
     "fixed": "11_固定費明細",
     "expense": "14_経費内訳_どら山",
 }
+FLASH_TAB = "_flash_daily"  # クラウドが書く昨日の売上・人件費（Mac停止日の代役）
 _CACHE = {"at": 0.0, "date": None, "value": None}
 _CACHE_TTL = 90.0
 _SHEET = None
@@ -172,6 +173,40 @@ def parse_management_values(values_by_tab, today=None):
             "packaging": _number(row.get("包材費")) or 0,
             "quantities": quantities,
             "status": "連携速報",
+        })
+
+    # Macが止まった日の代わり: クラウド(GitHub Actions)が取った昨日の売上・人件費。
+    # 正本（予実シートの実績）に数字が入っている日はそちらが優先で、空の日だけ埋める。
+    for row in _records(values_by_tab.get(FLASH_TAB, []), "日付"):
+        day_iso = normalize_date(row.get("日付"), today.year)
+        if not day_iso:
+            continue
+        parsed = date.fromisoformat(day_iso)
+        if (parsed.year, parsed.month) != target_month or parsed > today:
+            continue
+        sales = _number(row.get("Airレジ売上税込"))
+        labor = _number(row.get("人件費合計"))
+        if sales is None:
+            continue  # 売上が取れていない日は「入力待ち」のままにする（0円と見せない）
+        existing = daily.get(day_iso)
+        if existing and (existing["storeSales"] or existing["storeLabor"]):
+            continue
+        item = daily_row(day_iso)
+        item["storeSales"] = sales
+        item["storeLabor"] = labor or 0
+        item["storeRows"] = max(item["storeRows"], 1)
+        store_details.append({
+            "date": day_iso,
+            "store": "どら山",
+            "sales": sales,
+            "customers": None,
+            "unitPrice": None,
+            "units": None,
+            "labor": labor or 0,
+            "material": 0,
+            "packaging": 0,
+            "quantities": {},
+            "status": "クラウド速報" + ("" if labor is not None else "（人件費は取得できず）"),
         })
 
     event_rows = _records(values_by_tab.get(TABS["event"], []), "日付")
@@ -670,6 +705,10 @@ def get_management_sync(force=False, today=None):
         except Exception:
             values[title] = []
             errors.append(title)
+    try:  # 代役のタブ。読めなくても本体の取り込みは失敗扱いにしない
+        values[FLASH_TAB] = _tab_values(FLASH_TAB)
+    except Exception:
+        values[FLASH_TAB] = []
     parsed = parse_management_values(values, target)
     fallback = None
     if not parsed["records"] and not parsed["counts"]["expenseRows"] and errors:
