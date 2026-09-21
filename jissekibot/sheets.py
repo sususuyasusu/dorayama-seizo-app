@@ -72,11 +72,14 @@ class SheetsClient:
     def resolve_block(blocks: list, hint: str):
         """催事ブロックのうち hint と最長共通部分が最大(>=2)かつ一意のものを返す。曖昧なら None。"""
         cands = [b for b in blocks if b["category"] == "催事用"]
-        scored = sorted(((_lcs(b["name"], hint or ""), b) for b in cands), key=lambda x: -x[0])
-        if not scored or scored[0][0] < 2:
+        # 同点のときは「ブロック名がどれだけ丸ごと一致したか」で決める。
+        # 例: 「エキュート上野」は 上野(2/2) と 松坂屋上野(2/5) が同点 → 上野。
+        scored = sorted((((_lcs(b["name"], hint or ""), _lcs(b["name"], hint or "") / max(len(b["name"]), 1)), b)
+                         for b in cands), key=lambda x: (-x[0][0], -x[0][1]))
+        if not scored or scored[0][0][0] < 2:
             return None
         if len(scored) > 1 and scored[1][0] == scored[0][0]:
-            return None  # 同点＝曖昧 → 安全に書かない
+            return None  # 一致の度合いまで同点＝曖昧 → 安全に書かない
         return scored[0][1]
 
     @staticmethod
@@ -91,6 +94,8 @@ class SheetsClient:
             for k in ("皮4枚セット", "皮だけ（パック）"):
                 if k in rowmap:
                     return rowmap[k]
+        if prod == "抹茶" and "旬どら" in rowmap:
+            return rowmap["旬どら"]   # 抹茶行が無い古い週だけ、従来どおり旬どらへ
         return None
 
     def write_jisseki(self, hint: str, products: dict, date: dt.date) -> dict:
@@ -104,14 +109,15 @@ class SheetsClient:
         if blk is None:
             return {"ok": False, "reason": f"会場を特定できず(hint='{hint}')→書込せず", "tab": tab}
         col = ACT_COL_BASE + date.weekday()  # V..AB（月..日）
-        updates = []
         wrote = {}
+        by_row = {}   # 同じ行に落ちる商品（例: 抹茶行が無い週の 旬+抹茶）は上書きせず合算
         for prod, qty in products.items():
             r = self._find_row(blk["rows"], prod)
             if r is None:
                 continue
-            updates.append({"range": rowcol_to_a1(r, col), "values": [[qty]]})
+            by_row[r] = by_row.get(r, 0) + qty
             wrote[prod] = {"row": r, "qty": qty}
+        updates = [{"range": rowcol_to_a1(r, col), "values": [[q]]} for r, q in by_row.items()]
         if updates:
             ws.batch_update(updates, value_input_option="USER_ENTERED")
         return {"ok": True, "tab": tab, "venue": blk["name"], "col": col,
