@@ -341,6 +341,10 @@ def verify_management_analysis():
     assert pending["complete"] is False
     assert "日報の入力待ち" in pending["text"] and "製造実績 入力待ち" in pending["text"]
     assert "目標内" not in pending["text"] and "オーバー：" not in pending["text"]
+    fake["production"] = None  # 製造表を読み取れなかった場合は「入力待ち」ではなく、その旨を書く
+    unreadable = daily_brief.build_brief(fake)
+    assert "製造表を読み取れませんでした" in unreadable["text"] and "入力待ち（人件費率" not in unreadable["text"]
+    assert unreadable["complete"] is False
     assert list(dict.fromkeys(item["group"] for item in data["navigation"])) == [
         "速報", "売上", "コスト", "判断", "計画", "原本",
     ]

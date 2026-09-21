@@ -96,7 +96,10 @@ def build_brief(analysis, target=None):
     if not store_labor:
         lines.append("※店舗の打刻人件費が取得できていません")
         complete = False
-    if not prod or not prod.get("value"):
+    if not analysis.get("production"):
+        lines.append("製造実績 製造表を読み取れませんでした（人件費率は未計算）")
+        complete = False
+    elif not prod or not prod.get("value"):
         lines.append("製造実績 入力待ち（人件費率は未計算）")
         complete = False
     else:
