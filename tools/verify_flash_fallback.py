@@ -63,4 +63,13 @@ assert row is None or not row["eventRows"], row
 row = run_event([], [["2026-09-20", "58986", "39", "53438", "5", "x", "一部取得できず", "", ""]])
 assert row is None or not row["eventRows"], row
 
+# 9) 退勤の打刻漏れなどの注意書きは、正本を使う日でも記録に残る
+row = run([["2026/09/20", "60,000", "50,000", "10"]],
+          [["2026-09-20", "58986", "39", "53438", "5", "x", "取得済み（要確認）：退勤の打刻なし（人件費に入っていません）: 塩見かほり", "", ""]])
+assert "塩見かほり" in (row.get("flashNote") or ""), row
+assert row["storeSales"] == 60000, row
+# 注意書きが無ければ付かない
+assert not run([["2026/09/20", "60,000", "50,000", "10"]],
+               [["2026-09-20", "58986", "39", "53438", "5", "x", "取得済み", "", ""]]).get("flashNote")
+
 print("flash fallback: all ok")

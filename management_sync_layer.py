@@ -186,6 +186,11 @@ def parse_management_values(values_by_tab, today=None):
             continue
         sales = _number(row.get("Airレジ売上税込"))
         labor = _number(row.get("人件費合計"))
+        status = str(row.get("状態") or "")
+        note = status.split("：", 1)[1].strip() if "：" in status else ""
+        if note and day_iso in daily:
+            # 退勤の打刻漏れ・時給0など、人件費が低く出ている恐れは、正本を使う日でも文面に添える
+            daily[day_iso]["flashNote"] = note
         if sales is None:
             continue  # 売上が取れていない日は「入力待ち」のままにする（0円と見せない）
         existing = daily.get(day_iso)
@@ -195,6 +200,8 @@ def parse_management_values(values_by_tab, today=None):
         item["storeSales"] = sales
         item["storeLabor"] = labor or 0
         item["storeRows"] = max(item["storeRows"], 1)
+        if note:
+            item["flashNote"] = note
         store_details.append({
             "date": day_iso,
             "store": "どら山",
