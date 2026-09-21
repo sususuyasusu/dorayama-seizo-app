@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""毎朝6:30（日本時間）に、昨日の速報をどら山社員グループLINEへ送る（Render上で常駐・PC不要）。
+"""毎朝、昨日の速報をどら山社員グループLINEへ送る予備送信（Render上で常駐・PC不要）。
+通常は6:30に業界ウォッチ(Mac)が速報を合流させて送り、送信済みの印(brief_last_sent)を書く。
+6:40になっても印が無い日（Macが止まっていた日）だけ、ここが速報を単独で送る。
 
 送信に必要な環境変数（Renderの Environment に本人が設定する。未設定なら何も送らない）:
   BRIEF_LINE_CHANNEL_ACCESS_TOKEN … 送信に使うLINE公式アカウントのチャネルアクセストークン
@@ -20,7 +22,7 @@ import daily_brief
 import management_analysis_layer
 
 JST = timezone(timedelta(hours=9))
-SEND_AT = (6, 30)
+SEND_AT = (6, 40)  # 6:30に業界ウォッチ(Mac)が合流して送る。送られていなければ、この予備送信が単独で送る
 GRACE_UNTIL_HOUR = 12
 LINE_API = "https://api.line.me/v2/bot/message"
 
