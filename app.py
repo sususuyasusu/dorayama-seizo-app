@@ -157,6 +157,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(management_sync_layer.get_management_sync(), ensure_ascii=False))
         elif path == "/api/management/analysis":
             self._send(200, json.dumps(management_analysis_layer.get_management_analysis(), ensure_ascii=False))
+        elif path == "/api/staff-brief/html":
+            # 業界ウォッチの紙面に差し込む「昨日の速報」のデザイン版（?page=1 で単体ページ）
+            import daily_brief, brief_html
+            q = parse_qs(u.query)
+            brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis(), (q.get("date") or [None])[0])
+            body = brief_html.render_page(brief["data"]) if (q.get("page") or ["0"])[0] == "1" else (
+                "<style>" + brief_html.STYLE + "</style>" + brief_html.render_block(brief["data"]))
+            self._send(200, body, "text/html; charset=utf-8")
         elif path == "/api/staff-brief":
             # 毎朝LINEへ送る「昨日の速報」の文面を確認するだけ（送信はしない）
             import daily_brief

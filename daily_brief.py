@@ -70,7 +70,7 @@ def build_brief(analysis, target=None):
     head = f"【どら山 速報】{day.month}/{day.day}（{WEEKDAYS[day.weekday()]}）"
     if not row:
         return {"text": head + "\n売上データがまだ取得できていません。アプリで確認してください。\n" + APP_URL,
-                "date": target, "complete": False}
+                "date": target, "complete": False, "data": None}
 
     complete = True
     lines = [head, "", "■売上（予算との差）"]
@@ -126,4 +126,80 @@ def build_brief(analysis, target=None):
                          + ("" if month_ratio <= rate else f"：上限の目安を {yen(month_labor - month_prod * rate / 100)} オーバー"))
 
     lines += ["", "くわしい図は👇", APP_URL]
-    return {"text": "\n".join(lines), "date": target, "complete": complete}
+
+    # 画面・PDF（デザイン版）用の構造化データ。文面と同じ数字から作る。
+    if venues == 0:
+        event_state = "none"
+    elif not row.get("eventRows"):
+        event_state = "pending"
+    else:
+        event_state = "ok"
+    if not analysis.get("production"):
+        prod_state = "unreadable"
+    elif not prod or not prod.get("value"):
+        prod_state = "pending"
+    else:
+        prod_state = "ok"
+    blocks = []
+    if prod_state == "ok":
+        total_value = sum(item["value"] for item in prod.get("blocks", {}).values()) or prod["value"]
+        blocks = [{"name": name, "value": item["value"], "share": item["value"] / total_value * 100}
+                  for name, item in sorted(prod.get("blocks", {}).items(), key=lambda kv: -kv[1]["value"])]
+    rate_value = labor / prod["value"] * 100 if prod_state == "ok" else None
+    allowed_value = prod["value"] * rate / 100 if prod_state == "ok" else None
+    month = None
+    if month_dates:
+        month = {
+            "label": f"{day.month}月ここまで", "sales": sales_total, "target": target_total,
+            "diff": sales_total - target_total if target_total else None,
+            "rate": (month_labor / month_prod * 100) if month_prod else None, "rateTarget": rate,
+        }
+    # 小さなグラフ用の累積系列（月初〜昨日）
+    import calendar
+    days_in_month = calendar.monthrange(day.year, day.month)[1]
+    sales_actual, sales_target, sales_target_cum = [], [], 0
+    for d in range(1, days_in_month + 1):
+        key = f"{month_key}-{d:02d}"
+        sales_target_cum += sum(targets.get(key, (0, 0)))
+        sales_target.append(sales_target_cum)
+    running = 0
+    for d in range(1, day.day + 1):
+        r = rows.get(f"{month_key}-{d:02d}") or {}
+        running += (r.get("storeSales") or 0) + (r.get("eventSales") or 0)
+        sales_actual.append(running)
+    labor_store, labor_total, labor_allowed = [], [], []
+    store_run = total_run = allowed_run = 0
+    for d in range(1, day.day + 1):
+        key = f"{month_key}-{d:02d}"
+        value = (prod_by_date.get(key) or {}).get("value", 0)
+        if value:  # 製造実績が入っている日だけ数える（入力待ちの日で率が跳ねないように）
+            store_day = (rows.get(key) or {}).get("storeLabor") or 0
+            event_day = int((goal_days.get(key) or {}).get("eventCount") or 0) * staff_daily
+            store_run += store_day
+            total_run += store_day + event_day
+            allowed_run += value * rate / 100
+        labor_store.append(store_run)
+        labor_total.append(total_run)
+        labor_allowed.append(allowed_run)
+    charts = {
+        "days": days_in_month,
+        "sales": {"actual": sales_actual, "target": sales_target},
+        "labor": {"store": labor_store, "total": labor_total, "allowed": labor_allowed},
+    }
+    data = {
+        "date": target, "label": f"{day.month}/{day.day}（{WEEKDAYS[day.weekday()]}）",
+        "store": {"sales": store_sales, "target": store_target, "diff": store_sales - store_target,
+                  "achieve": store_sales / store_target * 100 if store_target else None},
+        "event": {"state": event_state, "sales": event_sales, "target": event_target, "venues": venues,
+                  "diff": event_sales - event_target if event_state == "ok" else None,
+                  "achieve": event_sales / event_target * 100 if event_state == "ok" and event_target else None},
+        "labor": {"total": labor, "store": store_labor, "event": event_labor, "storeMissing": not store_labor},
+        "production": {"state": prod_state, "value": prod["value"] if prod_state == "ok" else 0,
+                       "pieces": prod.get("pieces", 0) if prod_state == "ok" else 0, "blocks": blocks},
+        "rate": {"value": rate_value, "target": rate, "allowed": allowed_value,
+                 "gap": allowed_value - labor if prod_state == "ok" else None,
+                 "verdict": "unknown" if prod_state != "ok" else ("ok" if labor <= allowed_value else "over")},
+        "month": month,
+        "charts": charts,
+    }
+    return {"text": "\n".join(lines), "date": target, "complete": complete, "data": data}

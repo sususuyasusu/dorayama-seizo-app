@@ -341,10 +341,20 @@ def verify_management_analysis():
     assert pending["complete"] is False
     assert "日報の入力待ち" in pending["text"] and "製造実績 入力待ち" in pending["text"]
     assert "目標内" not in pending["text"] and "オーバー：" not in pending["text"]
+    # 業界ウォッチと同じデザインのHTML：数字・状態がそのまま入り、グラフ（月ここまでの累積）も付く
+    import brief_html
+    block = brief_html.render_block(brief["data"])
+    assert "昨日の速報" in block and "200円" in block and "57,000円" in block
+    assert "人件費率" in block and "14.2%" in block and "目標内" in block
+    assert block.count("<svg") == 2 and "売上の進み" in block and "人件費の進み" in block
+    assert brief["data"]["charts"]["sales"]["actual"][-1] == 150200  # 9/20までの売上累積（店舗200＋催事150,000）は月初からの合計
+    assert brief["data"]["charts"]["labor"]["allowed"][-1] == 100000  # 製造実績400,000×25%
     fake["production"] = None  # 製造表を読み取れなかった場合は「入力待ち」ではなく、その旨を書く
     unreadable = daily_brief.build_brief(fake)
     assert "製造表を読み取れませんでした" in unreadable["text"] and "入力待ち（人件費率" not in unreadable["text"]
     assert unreadable["complete"] is False
+    assert "製造表を読み取れませんでした" in brief_html.render_block(unreadable["data"])
+    assert "目標内" not in brief_html.render_block(unreadable["data"])
     assert list(dict.fromkeys(item["group"] for item in data["navigation"])) == [
         "速報", "売上", "コスト", "判断", "計画", "原本",
     ]
