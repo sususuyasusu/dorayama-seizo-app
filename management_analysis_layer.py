@@ -11,6 +11,7 @@ import budget_workbook_layer
 import airmate_targets_layer
 import management_layer
 import management_pl_workbook_layer
+import production_layer
 import management_sync_layer
 import target_settings_layer
 
@@ -866,6 +867,7 @@ def get_management_analysis():
         },
         "monthly": monthly_rows,
         "closeStatus": close_status,
+        "production": production_layer.get_production(product_history, now.date()),
         "todayBoard": {
             "eventStaffDailyRate": EVENT_STAFF_DAILY_RATE["amountExTax"],
             "eventStaffRateSource": EVENT_STAFF_DAILY_RATE["sourceLabel"],

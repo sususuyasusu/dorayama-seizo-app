@@ -289,6 +289,31 @@ def verify_management_analysis():
     assert board["eventStaffDailyRate"] == 37000
     assert board["laborRateTarget"] == data["goalSettings"]["rates"]["labor"] == 25.0
     assert 111000 / 3 == 444000 / 12 == 1147000 / 31 == board["eventStaffDailyRate"]
+    # 製造実績（作った数×売価）：店舗用と催事ごとに分け、今日より先の日は含めない。売価は商品別の販売額÷個数
+    import production_layer
+    from datetime import date
+    prices = production_layer.unit_prices({"months": [
+        {"items": [{"name": "黒どら", "quantity": 100, "sales": 30000}, {"name": "生どら", "quantity": 0, "sales": 0}]},
+        {"items": [{"name": "黒どら", "quantity": 100, "sales": 30000}]},
+    ]})
+    assert prices == {"黒どら": 300}
+    week = {"blocks": [
+        {"name": "店舗用", "category": "店舗用", "products": [{"name": "黒どら", "actual": [10, 0, None, None, None, None, None]}]},
+        {"name": "上野", "category": "催事用", "products": [
+            {"name": "あんバター", "actual": [100, 50, 999, None, None, None, None]},
+            {"name": "抹茶", "actual": [10, 0, 999, None, None, None, None]},
+        ]},
+    ]}
+    rows = production_layer.aggregate_week(
+        week, date(2026, 9, 14), {"黒どら": 300, "あんバター": 400, "旬どら": 450}, date(2026, 9, 1), date(2026, 9, 15)
+    )
+    assert sorted(rows) == ["2026-09-14", "2026-09-15"]
+    assert rows["2026-09-14"]["blocks"] == {
+        "店舗用": {"pieces": 10, "value": 3000}, "上野": {"pieces": 110, "value": 44500},
+    }
+    assert rows["2026-09-14"]["value"] == 47500 and rows["2026-09-14"]["pieces"] == 120
+    assert rows["2026-09-15"]["blocks"] == {"上野": {"pieces": 50, "value": 20000}}
+    assert data["production"] is None or data["production"]["source"]
     assert list(dict.fromkeys(item["group"] for item in data["navigation"])) == [
         "速報", "売上", "コスト", "判断", "計画", "原本",
     ]
