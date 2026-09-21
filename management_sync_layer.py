@@ -256,6 +256,44 @@ def parse_management_values(values_by_tab, today=None):
             "status": state or "連携速報",
         })
 
+    # 催事売上もMac停止日の代役。Airメイトの昨日の催事売上をクラウドが取って専用タブに書く。
+    # 催事の実績行が正本に無い日だけ、催事が1件以上あった日に限って埋める（催事なしの日は触らない）。
+    for row in _records(values_by_tab.get(FLASH_TAB, []), "日付"):
+        day_iso = normalize_date(row.get("日付"), today.year)
+        if not day_iso:
+            continue
+        parsed = date.fromisoformat(day_iso)
+        if (parsed.year, parsed.month) != target_month or parsed > today:
+            continue
+        event_sales = _number(row.get("催事売上"))
+        event_count = _number(row.get("催事件数")) or 0
+        if event_sales is None or event_count <= 0:
+            continue
+        existing = daily.get(day_iso)
+        if existing and existing["eventRows"]:
+            continue
+        item = daily_row(day_iso)
+        item["eventSales"] = event_sales
+        item["eventRows"] = max(item["eventRows"], 1)
+        state = "クラウド速報"
+        if state not in item["eventReportStates"]:
+            item["eventReportStates"].append(state)
+        event_details.append({
+            "date": day_iso,
+            "name": "催事（Airメイト）",
+            "venue": "",
+            "sales": event_sales,
+            "customers": None,
+            "units": None,
+            "commission": 0,
+            "staffCost": 0,
+            "delivery": 0,
+            "material": 0,
+            "packaging": 0,
+            "profitBeforeFixed": event_sales,
+            "status": state,
+        })
+
     records = []
     for day_iso in sorted(daily):
         item = daily[day_iso]

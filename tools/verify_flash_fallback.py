@@ -39,4 +39,28 @@ assert run([], [["2026-09-20", "", "", "53438", "5", "x", "一部取得できず
 # 5) タブが無い/空でも従来どおり動く
 assert run([], []) is None
 
+# 6) 催事売上: 正本に催事行が無い日 → クラウドの催事売上で埋まる（件数1以上のときだけ）
+EVENT_HEAD = ["日付", "催事名", "売上税込"]
+
+
+def run_event(event_rows, flash_rows):
+    values = {sync.TABS["event"]: [EVENT_HEAD] + event_rows,
+              sync.FLASH_TAB: [FLASH_HEAD + ["催事売上", "催事件数"]] + flash_rows}
+    records = {r["date"]: r for r in sync.parse_management_values(values, TODAY)["records"]}
+    return records.get("2026-09-20")
+
+
+row = run_event([], [["2026-09-20", "58986", "39", "53438", "5", "x", "取得済み", "194318", "1"]])
+assert row["eventSales"] == 194318 and row["eventRows"] == 1, row
+
+# 7) 正本に催事行がある → 正本が優先
+row = run_event([["2026/09/20", "上野", "200,000"]], [["2026-09-20", "58986", "39", "53438", "5", "x", "取得済み", "194318", "1"]])
+assert row["eventSales"] == 200000, row
+
+# 8) 催事件数0（催事なしの日）・取得失敗 → 催事売上は入れない
+row = run_event([], [["2026-09-20", "58986", "39", "53438", "5", "x", "取得済み", "0", "0"]])
+assert row is None or not row["eventRows"], row
+row = run_event([], [["2026-09-20", "58986", "39", "53438", "5", "x", "一部取得できず", "", ""]])
+assert row is None or not row["eventRows"], row
+
 print("flash fallback: all ok")
