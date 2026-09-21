@@ -314,6 +314,33 @@ def verify_management_analysis():
     assert rows["2026-09-14"]["value"] == 47500 and rows["2026-09-14"]["pieces"] == 120
     assert rows["2026-09-15"]["blocks"] == {"上野": {"pieces": 50, "value": 20000}}
     assert data["production"] is None or data["production"]["source"]
+    # 毎朝LINEへ送る速報：予算は画面と同じ配り方、数字がそろっていない項目は「入力待ち」と書き、0円や「収まり」と見せない
+    import daily_brief
+    fake = {
+        "updatedAt": "2026-09-21T06:30", "todayBoard": {"laborRateTarget": 25, "eventStaffDailyRate": 37000},
+        "goalSettings": {"months": [{"yearMonth": "2026-09", "storeTarget": 300, "eventTarget": 440000,
+                                     "daily": [{"date": "2026-09-19", "eventCount": 0, "targetSales": 0},
+                                               {"date": "2026-09-20", "eventCount": 1, "targetSales": 220000},
+                                               {"date": "2026-09-21", "eventCount": 1, "targetSales": 220000}]}]},
+        "weekdayTimeHistory": {"daily": [{"date": "2026-09-19", "storeTargetSales": 100},
+                                         {"date": "2026-09-20", "storeTargetSales": 100},
+                                         {"date": "2026-09-21", "storeTargetSales": 100}]},
+        "daily": [{"date": "2026-09-20", "storeSales": 200, "eventSales": 150000, "storeLabor": 20000, "eventRows": 1}],
+        "production": {"daily": [{"date": "2026-09-20", "value": 400000}]},
+    }
+    assert daily_brief.daily_targets(fake, "2026-09") == {
+        "2026-09-19": (100, 0), "2026-09-20": (100, 220000), "2026-09-21": (100, 220000)}
+    brief = daily_brief.build_brief(fake)
+    assert brief["date"] == "2026-09-20" and brief["complete"] is True
+    assert "人件費 57,000円（店舗 20,000円＋催事の販売員 37,000円）" in brief["text"]
+    assert "人件費率 14.2%" in brief["text"] and "目標内" in brief["text"]
+    assert "店舗 200円（予算 100円 → ＋100円）" in brief["text"]
+    fake["daily"][0]["eventRows"] = 0
+    fake["production"] = {"daily": []}
+    pending = daily_brief.build_brief(fake)
+    assert pending["complete"] is False
+    assert "日報の入力待ち" in pending["text"] and "製造実績 入力待ち" in pending["text"]
+    assert "目標内" not in pending["text"] and "オーバー：" not in pending["text"]
     assert list(dict.fromkeys(item["group"] for item in data["navigation"])) == [
         "速報", "売上", "コスト", "判断", "計画", "原本",
     ]

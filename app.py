@@ -157,6 +157,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(management_sync_layer.get_management_sync(), ensure_ascii=False))
         elif path == "/api/management/analysis":
             self._send(200, json.dumps(management_analysis_layer.get_management_analysis(), ensure_ascii=False))
+        elif path == "/api/staff-brief":
+            # 毎朝LINEへ送る「昨日の速報」の文面を確認するだけ（送信はしない）
+            import daily_brief
+            day = (parse_qs(u.query).get("date") or [None])[0]
+            self._send(200, json.dumps(daily_brief.build_brief(management_analysis_layer.get_management_analysis(), day), ensure_ascii=False))
         elif path == "/api/management/workbook":
             sheet = (parse_qs(u.query).get("sheet") or ["表紙"])[0]
             self._send(200, json.dumps(budget_workbook_layer.get_sheet(sheet), ensure_ascii=False))
@@ -316,4 +321,6 @@ if __name__ == "__main__":
         egg_stock_sync.start()   # AppSheet在庫→製造表の10分同期（Apps Scriptトリガ停止の恒久対策）
         import egg_autoheal
         egg_autoheal.start()     # 卵シートの自己修復を1日1回（発注ブロックの0埋め等を自動是正）
+        import brief_scheduler
+        brief_scheduler.start()  # 毎朝6:30に昨日の速報を社員LINEへ（BRIEF_LINE_*未設定なら何もしない）
     ThreadingHTTPServer((host, port), Handler).serve_forever()
