@@ -18,8 +18,26 @@ import data_layer
 
 TAB = "_app_egg_ordered"
 HEAD = ["キー（週タブ＋便）", "配達日", "卵黄(袋)", "卵白(袋)", "記録日時"]
-# 火曜便=行69 / 木曜便=行70 / 土曜便=行71（月=0 … 日=6）
-BIN_ROW = {1: 69, 3: 70, 5: 71}
+# 火・木・土便の行は週ごとに位置が変わる（商品行や催事ブロックの増減でずれる。抹茶行の追加後は71〜73、
+# 4会場の週は82〜84）。行番号を決め打ちすると見出し行や別の便へ書く事故になるので、A列の名前で毎回探す。
+BIN_LABEL = {1: "火曜便", 3: "木曜便", 5: "土曜便"}   # 月=0 … 日=6
+
+
+def _bin_row(ws, label):
+    """「配送便別 合算」ブロックの中から、その便の行番号を返す。見つからなければ None（＝書かない）。"""
+    vals = data_layer.cached_values(ws)
+    start = None
+    for r, row in enumerate(vals, start=1):
+        a = str(row[0]).strip() if row else ""
+        if start is None:
+            if a.startswith("【配送便別"):
+                start = r
+            continue
+        if r > start + 8:
+            break
+        if a.startswith(label):
+            return r
+    return None
 BAG_G = 5000                     # 1袋 = 5kg
 _cache = {"t": 0.0, "map": None}
 _TTL = 15.0
@@ -81,8 +99,8 @@ def set_ordered(key, date_str, yolk_bags, white_bags):
         return {"ok": False, "msg": "便が特定できません。"}
     if not d:
         return {"ok": False, "msg": f"配達日が読み取れません（{date_str}）。"}
-    row = BIN_ROW.get(d.weekday())
-    if row is None:
+    label = BIN_LABEL.get(d.weekday())
+    if label is None:
         return {"ok": False, "msg": f"{d.month}/{d.day} は火・木・土便のいずれでもありません。"}
     try:
         y = max(0, int(round(float(yolk_bags))))
@@ -98,6 +116,10 @@ def set_ordered(key, date_str, yolk_bags, white_bags):
         ws = next((tab_map[c] for c in cands if c in tab_map), None)
     if ws is None:
         return {"ok": False, "msg": f"配達日の週タブが見つかりません（候補 {cands}）。"}
+
+    row = _bin_row(ws, label)
+    if row is None:
+        return {"ok": False, "msg": f"製造表 {ws.title} に「{label}」の行が見つからないため、記録しませんでした。"}
 
     ws.batch_update([{"range": f"W{row}", "values": [[y * BAG_G]]},
                      {"range": f"Y{row}", "values": [[w * BAG_G]]}],
