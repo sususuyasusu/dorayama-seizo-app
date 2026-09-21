@@ -20,7 +20,6 @@ BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE))
 
 import management_analysis_layer as layer  # noqa: E402
-import management_sync_layer  # noqa: E402
 
 OUTPUT = layer.FLASH_ACCURACY_PATH
 JST = ZoneInfo("Asia/Tokyo")
@@ -38,10 +37,9 @@ def main() -> int:
         if month_number == 1 or row.get("phase") != "確定":
             continue
         ym = f"2026-{month_number:02d}"
-        summary = management_sync_layer.get_management_sync(
-            today=layer._month_end(2026, month_number)
-        )["monthSummary"]
-        if not summary.get("sales") or not summary.get("knownCost"):
+        complete = layer.complete_sync(layer._month_end(2026, month_number))
+        summary = (complete or {}).get("monthSummary") or {}
+        if complete is None or not summary.get("sales") or not summary.get("knownCost"):
             # 一過性の取得失敗で空の月ができても、そのまま保存しない（検証結果が静かに狂うのを防ぐ）
             print(f"{row['month']}の日次台帳を取得できませんでした。保存せずに終了します")
             return 1

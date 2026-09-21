@@ -2,6 +2,7 @@
 """店長・経営者共通の多角分析データ（読み取り専用）。"""
 from copy import deepcopy
 import json
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -598,6 +599,33 @@ def flash_components(summary, fixed_total, fixed_basis, event_staffing, staffing
     }
 
 
+_PAST_SYNC_CACHE = {}
+_PAST_SYNC_TTL = 600.0
+
+
+def complete_sync(day, first=None, attempts=3):
+    """日次台帳を「全タブ読めた状態」で取得する。一部のタブが読めない（一時的な失敗）ときは再取得し、
+    それでも欠けるなら None を返す。欠けたまま速報に使うとコストが低く出て、利益が良く見えてしまうため。
+    過去の月（先月末など）は毎回シートを読み直さないよう、10分だけ覚えておく。"""
+    is_past = day < datetime.now(JST).date()
+    cached = _PAST_SYNC_CACHE.get(day)
+    if first is None and is_past and cached and time.time() - cached[0] < _PAST_SYNC_TTL:
+        return cached[1]
+    result = first
+    for attempt in range(attempts):
+        if result is None:
+            try:
+                result = management_sync_layer.get_management_sync(today=day, force=attempt > 0)
+            except TypeError:  # 検証用の見本は force を受け取らない
+                result = management_sync_layer.get_management_sync(today=day)
+        if not result.get("partial"):
+            if is_past:
+                _PAST_SYNC_CACHE[day] = (time.time(), result)
+            return result
+        result = None
+    return None
+
+
 def _month_end(year, month):
     if month == 12:
         return datetime(year, 12, 31, tzinfo=JST).date()
@@ -655,7 +683,10 @@ def _attach_month_phases(monthly_rows, fixed_history, current_month_number, sync
             row["phase"] = "未着手"
         summary = (syncs.get(month_number) or {}).get("monthSummary")
         row["flash"] = None
-        if row["phase"] == "未着手" or not summary or not summary.get("sales"):
+        if row["phase"] == "未着手":
+            continue
+        if not summary or not summary.get("sales"):
+            row["flashNote"] = "日次台帳（Googleシート）の一部を読み取れなかったため、速報を出していません。時間をおいて再表示してください。"
             continue
         if fixed_row.get("status") == "確定" and fixed_row.get("total") is not None:
             fixed_total, fixed_basis = fixed_row["total"], "確定"
@@ -735,15 +766,20 @@ def get_management_analysis():
     monthly_rows = _monthly_rows(confirmed, goal_settings, airmate_history)
     fixed_history = _fixed_cost_history(cost_analysis)
     # 確定前の過去月（先月など）は、その月末時点の日次台帳で速報を組み立てる
-    syncs = {now.month: sync}
+    syncs = {}
+    current_sync = complete_sync(now.date(), first=sync)
+    if current_sync is not None:
+        syncs[now.month] = current_sync
     for index, row in enumerate(monthly_rows):
         month_number = index + 1
         if month_number == 1 or month_number >= now.month or row.get("dataStatus") == "管理会計PL確定":
             continue
         try:
-            syncs[month_number] = management_sync_layer.get_management_sync(today=_month_end(now.year, month_number))
+            complete = complete_sync(_month_end(now.year, month_number))
         except Exception:  # 速報が作れなくても確定側の表示は止めない
-            continue
+            complete = None
+        if complete is not None:
+            syncs[month_number] = complete
     staffing_rate, staffing_basis = _staffing_rate(
         monthly_rows, _monthly_daily_sales_totals(airmate_history)
     )
