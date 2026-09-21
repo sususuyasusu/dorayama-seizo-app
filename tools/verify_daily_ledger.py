@@ -381,11 +381,11 @@ def verify_management_analysis():
     assert july_labor["daily"][1]["laborRate"] == 25.3
     assert july_labor["daily"][6]["eventSalesStatus"] == "未取得"
     august_labor = next(row for row in labor_daily_history["months"] if row["key"] == "2026-08")
-    assert august_labor["dailyLaborTotal"] == 1766227
+    assert august_labor["dailyLaborTotal"] == 1773251
     assert august_labor["storeSalesTotal"] == 2021444
     assert august_labor["eventSalesTotal"] == 7140009
     assert august_labor["combinedSalesTotal"] == 9161453
-    assert august_labor["laborRate"] == 19.3
+    assert august_labor["laborRate"] == 19.4
     assert len(august_labor["daily"]) == 31
     assert august_labor["eventSalesPendingDates"] == []
     products = snapshot["productAnalysis"]["items"]

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "保存済みAirシフト給与計算表・タイミー・Airレジ（読み取り専用）",
-  "updatedAt": "2026-09-03",
+  "updatedAt": "2026-09-21",
   "scopeNote": "日別シフト人件費はAirシフト給与計算表とタイミー、店舗売上はAirレジ。催事販売外注は含めない。",
   "months": [
     {
@@ -1916,9 +1916,9 @@
       "month": "8月",
       "period": "2026年8月",
       "status": "日別シフト実績",
-      "dailyLaborTotal": 1766227,
+      "dailyLaborTotal": 1773251,
       "storeSalesTotal": 2021444,
-      "workHours": 1151.22,
+      "workHours": 1155.22,
       "daily": [
         {
           "day": 1,
@@ -2283,19 +2283,19 @@
         {
           "day": 31,
           "date": "2026-08-31",
-          "labor": 56400,
-          "workHours": 34.43,
-          "headcount": 4,
+          "labor": 63424,
+          "workHours": 38.43,
+          "headcount": 5,
           "storeSales": 55287,
           "eventSales": 129288,
           "combinedSales": 184575,
-          "laborRate": 30.6,
+          "laborRate": 34.4,
           "eventSalesStatus": "取得済み"
         }
       ],
       "eventSalesTotal": 7140009,
       "combinedSalesTotal": 9161453,
-      "laborRate": 19.3,
+      "laborRate": 19.4,
       "greenDays": 23,
       "redDays": 8,
       "eventSalesPendingDates": [],
