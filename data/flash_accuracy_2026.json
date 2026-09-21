@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T10:34+09:00",
+  "generatedAt": "2026-09-21T10:37+09:00",
   "method": "月末時点の日次台帳の把握費用＋固定費（確定）＋催事販売員費（他の確定月の率で仮置き）",
   "months": [
     {
@@ -32,15 +32,15 @@
     {
       "month": "4月",
       "comparable": true,
-      "opsSales": 8577951,
+      "opsSales": 6978721,
       "accountingSales": 5304725,
-      "costEstimate": 8059654,
+      "costEstimate": 5827538,
       "confirmedCost": 8854727,
-      "costDiff": -795073,
-      "costDiffPct": -9.0,
-      "opsProfit": 518297,
+      "costDiff": -3027189,
+      "costDiffPct": -34.2,
+      "opsProfit": 1151183,
       "confirmedProfit": -3549272,
-      "profitDiff": 4067569
+      "profitDiff": 4700455
     },
     {
       "month": "5月",
@@ -70,33 +70,33 @@
     },
     {
       "month": "7月",
-      "comparable": false,
-      "opsSales": 0,
+      "comparable": true,
+      "opsSales": 4917610,
       "accountingSales": 7229287,
-      "costEstimate": 419152,
+      "costEstimate": 4834570,
       "confirmedCost": 5459874,
-      "costDiff": -5040722,
-      "costDiffPct": -92.3,
-      "opsProfit": -419152,
+      "costDiff": -625304,
+      "costDiffPct": -11.5,
+      "opsProfit": 83040,
       "confirmedProfit": 1776523,
-      "profitDiff": -2195675
+      "profitDiff": -1693483
     }
   ],
   "summary": {
     "comparableMonths": [
       "4月",
       "5月",
-      "6月"
+      "6月",
+      "7月"
     ],
     "excludedMonths": [
       "2月",
-      "3月",
-      "7月"
+      "3月"
     ],
-    "costAvgAbsPct": 14.2,
-    "costMaxAbsPct": 17.5,
+    "costAvgAbsPct": 19.8,
+    "costMaxAbsPct": 34.2,
     "profitDiffMin": -3704108,
-    "profitDiffMax": 4067569,
+    "profitDiffMax": 4700455,
     "note": "コスト見込は確定コストと近い一方、損益は催事売上の会計上の計上時期でずれます。催事の運営データが会計上の売上の半分に満たない月（2〜3月）は比較から除いています。"
   }
 }

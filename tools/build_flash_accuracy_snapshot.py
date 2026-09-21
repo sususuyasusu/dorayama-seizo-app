@@ -41,6 +41,10 @@ def main() -> int:
         summary = management_sync_layer.get_management_sync(
             today=layer._month_end(2026, month_number)
         )["monthSummary"]
+        if not summary.get("sales") or not summary.get("knownCost"):
+            # 一過性の取得失敗で空の月ができても、そのまま保存しない（検証結果が静かに狂うのを防ぐ）
+            print(f"{row['month']}の日次台帳を取得できませんでした。保存せずに終了します")
+            return 1
         ops_event = summary.get("eventSales") or 0
         confirmed_event = row.get("eventSales") or 0
         # 催事の運営データが会計上の催事売上の半分にも満たない月は、比較の対象外にする
