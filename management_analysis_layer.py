@@ -30,10 +30,9 @@ FIXED_COST_RECONCILIATIONS = {
         "accrualAdjustment": 0,
         "employeeContribution": 35000,
         "netCompanyBurden": 483494,
-        # 8月固定費の締め（498,666円）のあとでfreeeへ記帳された分。Excel側が同額に更新済みなら二重に足さない。
-        "lateBookings": {"通信費": 16218, "水道光熱費": 3610},
-        "lateBookingsBaseTotal": 498666,
-        "sourceLabel": "管理会計PL（8月固定費締め）＋締め後のfreee記帳",
+        # 固定費の締め値（freeeの取引明細13件）。管理会計PL(Excel)を作り直しても、この確定値を優先する。
+        "categoryTotals": {"地代家賃": 316420, "賃借料": 82830, "水道光熱費": 98293, "通信費": 20951, "保険料": 0},
+        "sourceLabel": "8月固定費締め（freee取引明細13件・締め後の記帳3件を含む）",
         "note": (
             "8月固定費の締め（498,666円）のあとに、freeeへソフトバンク16,218円（8/15・通信費）と"
             "ニチガス3,610円（8/27・水道光熱費）が記帳されたため加算しました。"
@@ -59,21 +58,21 @@ FLASH_STAFFING_RATE_MONTHS = 3
 CLOSE_CHECKLISTS = {
     "8月": [
         {"item": "固定費", "state": "解消済み", "detail": "518,494円で確定（締め後の記帳3件を反映済み）"},
-        {"item": "管理会計PL（Excel）の8月列の更新", "state": "社内対応", "detail": "8/17時点の途中経過のまま（Excelは9/2以降未更新）。最新のfreee記帳で作り直したうえで、給与未反映などの注意点を保って反映する"},
-        {"item": "催事販売員費の請求書", "state": "解消済み", "detail": "ディースパーク8月度 税抜1,702,000円を受領。帳簿の支払月ベース計上との重複整理が残る"},
+        {"item": "管理会計PL（Excel）の8月列の更新", "state": "解消済み", "detail": "9/20に最新のfreee記帳で作り直し済み。8月の会計上の売上は362.8万円で、運営売上916.1万円との差は催事の会場入金が未記帳のため"},
+        {"item": "催事販売員費の請求書", "state": "解消済み", "detail": "ディースパーク8月度 税抜1,702,000円を受領。方針（本人確認）：速報はサービス提供月で見て、確定PLは支払月ベースのまま。この請求は9/30支払のため、確定PLでは支払月に入る"},
         {"item": "Airシフトの時給未設定・打刻漏れ", "state": "解消済み", "detail": "本人確認で解消（大西さん時給1,250円・太田さん退勤16:00）"},
         {"item": "未計上経費のfreee登録", "state": "社内対応", "detail": "登録済み：コウヤマ・スターフライヤー・カイコム・木下製粉・グラフィック・ラクスル・Indeed。残：食品微生物センター（未払金の扱い）・正体不明2件"},
         {"item": "上野・川越・立川の会場別8月精算書", "state": "先方待ち", "detail": "会場別売上が分かる精算書が未着。会計上の催事売上が確定できない最大の要因"},
         {"item": "TakeEatsの8月注文・手数料明細", "state": "社内対応", "detail": "8月の受取完了48注文172,923円は把握済み。店頭払い分のAirレジ重複整理と手数料明細が残る"},
-        {"item": "内部人件費の確定", "state": "社内対応", "detail": "給与確定額1,314,804円とシフト原価1,766,227円の整合・社会保険の会社負担配賦が残る"},
+        {"item": "内部人件費の確定", "state": "社内対応", "detail": "8/25の給与一括振込が帳簿に入ったが、社員・アルバイト・デザイン部の内訳が未確認（管理会計PL上は約271万円と過大）。給与確定額1,314,804円とシフト原価1,766,227円の整合・社会保険の会社負担配賦も残る"},
         {"item": "8月の減価償却", "state": "本人・税理士判断", "detail": "固定資産台帳と耐用年数が必要（3期分ゼロのまま）"},
     ],
 }
 LABOR_RECONCILIATIONS = {
     "8月": {
         "status": "再集計中",
-        "accountingLabor": 388764,
-        "accountingLaborNote": "管理会計PLは給与未反映で、法定福利費の支払額のみ",
+        "accountingLabor": 2708668,
+        "accountingLaborNote": "管理会計PLには8/25の給与一括振込（内訳は社員・アルバイト・デザイン部が混在）と法定福利費が入っており、どら山の内部人件費としては過大",
         "payrollGross": 1314804,
         "payrollPeriod": "2026/7/16〜8/15・8/25支給",
         "timeeInvoice": 199990,
@@ -501,15 +500,12 @@ def _fixed_cost_history(cost_analysis):
                 "transactions": category_transactions,
                 "transactionTotal": sum(row.get("amount") or 0 for row in category_transactions),
             })
-        late = reconciliation.get("lateBookings") or {}
-        if fixed_cost_closed and late:
-            base_total = sum(item["amount"] or 0 for item in details)
-            # Excelがまだ締め時点の金額のときだけ加算する。更新済みなら加算せず、下の照合に任せる。
-            if base_total == reconciliation.get("lateBookingsBaseTotal"):
-                for item in details:
-                    if item["category"] in late and item["amount"] is not None:
-                        item["amount"] += late[item["category"]]
-                        item["source"] = f"{item['source']}（締め後の記帳{late[item['category']]:,}円を加算）"
+        closed_totals = reconciliation.get("categoryTotals") or {}
+        if fixed_cost_closed and closed_totals:
+            for item in details:
+                if item["category"] in closed_totals:
+                    item["amount"] = closed_totals[item["category"]]
+                    item["source"] = reconciliation.get("sourceLabel") or item["source"]
         known_amounts = [item["amount"] for item in details if item["amount"] is not None]
         total = sum(known_amounts) if known_amounts else None
         detail_total = sum(row.get("amount") or 0 for row in transactions)

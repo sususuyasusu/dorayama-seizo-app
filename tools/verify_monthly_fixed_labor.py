@@ -16,10 +16,10 @@ def main():
         row for row in data["costAnalysis"]["series"] if row["key"] == "8月"
     )
     assert august_cost["internalLabor"] is None
-    assert august_cost["accountingInternalLabor"] == 388764
+    assert august_cost["accountingInternalLabor"] == 2708668
     assert august_cost["shiftCostEstimate"] == 1766227
     assert august_cost["profit"] is None
-    assert august_cost["accountingProfit"] == -684985
+    assert august_cost["accountingProfit"] == -4670507
     reconciliation = august_cost["laborReconciliation"]
     assert reconciliation["status"] == "再集計中"
     assert reconciliation["payrollGross"] == 1314804
@@ -27,12 +27,12 @@ def main():
     assert reconciliation["timeeServiceFee"] == 15615
 
     fixed = {row["key"]: row for row in data["fixed"]["history"]}
-    assert fixed["2月"]["total"] == 389162
-    assert fixed["3月"]["total"] == 874814
-    assert fixed["4月"]["total"] == 408961
-    assert fixed["5月"]["total"] == 489440
-    assert fixed["6月"]["total"] == 386769
-    assert fixed["7月"]["total"] == 414459
+    assert fixed["2月"]["total"] == 390002
+    assert fixed["3月"]["total"] == 896700
+    assert fixed["4月"]["total"] == 409015
+    assert fixed["5月"]["total"] == 492617
+    assert fixed["6月"]["total"] == 406627
+    assert fixed["7月"]["total"] == 419152
     # 8月固定費：締め(498,666円)後にfreeeへ記帳された3件（ソフトバンク16,218・ニチガス3,610・上下水道1,958）を反映。
     # 上下水道1,958円は締め時の月次調整と同じ請求のため、調整行は外して二重計上を避ける。
     assert fixed["8月"]["total"] == 518494

@@ -209,7 +209,7 @@ def verify_management_analysis():
     assert august["eventBudget"] == 10120000
     # 確定前の月は、会計途中の売上ではなく運営売上（このテストでは見本の日次台帳）で表示し、会計側の値は別に残す
     assert august["sales"] == 4432083
-    assert august["accountingSales"] == 2534458
+    assert august["accountingSales"] == 3627802
     assert august["salesBasis"].startswith("運営売上")
     assert august["dataStatus"] == "管理会計PL進行中"
     assert august["phase"] == "確定待ち"
@@ -235,9 +235,9 @@ def verify_management_analysis():
     assert data["current"]["budgetRemaining"] == 5617917
     assert data["current"]["budgetAchievement"] == 44.1
     assert data["goalSettings"]["months"][6]["yearMonth"] == "2026-08"
-    assert data["goalSettings"]["months"][0]["actual"]["sales"] == 11078942
-    assert data["goalSettings"]["months"][5]["actual"]["sales"] == 4286386
-    assert data["goalSettings"]["months"][6]["actual"]["sales"] == 2534458
+    assert data["goalSettings"]["months"][0]["actual"]["sales"] == 11575876
+    assert data["goalSettings"]["months"][5]["actual"]["sales"] == 7229287
+    assert data["goalSettings"]["months"][6]["actual"]["sales"] == 3627802
     assert data["goalSettings"]["months"][6]["actual"]["status"] == "進行中"
     assert data["events"]["targetPerEventDay"] == 220000
     assert data["events"]["target"] == 0
@@ -275,7 +275,10 @@ def verify_management_analysis():
     if august_recon.get("monthMismatch"):
         assert august_recon["reason"]
     else:
-        assert august_recon["storeDifference"] == 0
+        # 同じ月どうしの比較。差額は「運営売上 − 管理会計PLの途中経過」と一致する（PLの更新で値は変わる）
+        assert august_recon["appStoreSales"] == 1269106
+        assert august_recon["storeDifference"] == august_recon["appStoreSales"] - august_recon["freeeStoreSales"]
+        assert august_recon["salesDifference"] == august_recon["appSales"] - august_recon["freeeSales"]
     assert data["freeeProgress"]["historicalUnassignedSales"]["amount"] == 0
     assert data["workbook"]["sheetCount"] == 15
     assert len(data["navigation"]) == 19
