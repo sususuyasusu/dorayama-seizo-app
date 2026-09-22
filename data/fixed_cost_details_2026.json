@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-20T12:46+09:00",
+  "generatedAt": "2026-09-22T13:52+09:00",
   "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
   "privacy": "取引ID・口座番号・認証情報は保存しない",
   "months": [
@@ -1166,8 +1166,8 @@
     },
     {
       "month": "2026-09",
-      "count": 2,
-      "total": 142391,
+      "count": 7,
+      "total": 220464,
       "transactions": [
         {
           "date": "2026-09-04",
@@ -1186,6 +1186,61 @@
           "vendor": "取引先未設定",
           "description": "カ)ハルエネ提供サ-ビス利用料",
           "amount": 121711,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-09",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "ソフトバンク〔B〕",
+          "amount": 4733,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 15950,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 22550,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-15",
+          "category": "地代家賃",
+          "vendor": "取引先未設定",
+          "description": "収納ピット",
+          "amount": 29040,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-09-16",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "東京電力 電気料金等 08年09月分",
+          "amount": 5800,
           "payment": "セゾンカード",
           "department": "210 どら山 本店",
           "evidence": "証憑未確認",
