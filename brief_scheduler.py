@@ -8,7 +8,11 @@
   BRIEF_LINE_GROUP_ID             … 送信先グループのID
   BRIEF_MIN_QUOTA_LEFT（任意）    … LINEの月間送信枠の残りがこの通数を切ったら送らない（既定25。卵発注を優先する保護）
 1日1回だけ送る。送信済みの日付は製造表の _app_config に記録するので、再起動・再デプロイでも二重送信しない。
-6:30以降、正午までの間に起動していれば取り返して送る。
+6:40〜7:00の間に限って取り返して送る（それ以外の時間の再デプロイでは絶対に送らない）。
+
+【2026-09-22の事故と対策】以前は正午まで猶予があり、日中の作業用の再デプロイ（Renderの再起動）のたびに
+「今日分がまだ」なら即座に本送信してしまい、確認中の内容が無断でLINEに投稿される事故が起きた。
+再発防止として、猶予を6:40〜7:00の20分だけに縮め、日中の再デプロイでは絶対に自動送信されないようにした。
 """
 import json
 import os
@@ -23,7 +27,7 @@ import management_analysis_layer
 
 JST = timezone(timedelta(hours=9))
 SEND_AT = (6, 40)  # 6:30に業界ウォッチ(Mac)が合流して送る。送られていなければ、この予備送信が単独で送る
-GRACE_UNTIL_HOUR = 12
+SEND_UNTIL = (7, 0)  # この時刻を過ぎたら、その日はもう自動送信しない（日中の再デプロイでの誤送信を防ぐ）
 LINE_API = "https://api.line.me/v2/bot/message"
 
 
@@ -48,13 +52,20 @@ def quota_left(token):
 
 
 def push_text(token, group_id, text):
+    """送信し、(HTTPステータス, 送ったメッセージのID) を返す。
+    IDは、誤送信時にLINEの取り消しAPI（/v2/bot/message/{id}/unsend）で消せるよう記録しておく。"""
     body = json.dumps({"to": group_id, "messages": [{"type": "text", "text": text[:4900]}]}).encode("utf-8")
     request = Request(
         f"{LINE_API}/push", data=body, method="POST",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
     )
     with urlopen(request, timeout=30) as response:
-        return response.status
+        try:
+            sent = json.load(response).get("sentMessages") or []
+            message_id = sent[0]["id"] if sent else None
+        except Exception:
+            message_id = None
+        return response.status, message_id
 
 
 def send_once(now=None):
@@ -71,9 +82,11 @@ def send_once(now=None):
         config_store.set_config("brief_last_sent", today)  # 枠が無い日に何度も試さない
         return f"見送り（送信枠の残り{left}通）"
     brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis())
-    status = push_text(token, group_id, brief["text"])
+    status, message_id = push_text(token, group_id, brief["text"])
     config_store.set_config("brief_last_sent", today)
     config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・{'数字そろい' if brief['complete'] else '一部入力待ちのまま'}）")
+    if message_id:
+        config_store.set_config("brief_last_message_id", message_id)
     return f"送信 HTTP {status}"
 
 
@@ -81,14 +94,15 @@ def _loop():
     while True:
         try:
             now = datetime.now(JST)
-            due = (now.hour, now.minute) >= SEND_AT and now.hour < GRACE_UNTIL_HOUR
+            clock = (now.hour, now.minute)
+            due = SEND_AT <= clock <= SEND_UNTIL
             if due:
                 result = send_once(now)
                 if result != "送信済み":
                     print(f"[brief] {now.isoformat(timespec='minutes')} {result}", flush=True)
         except Exception as error:  # 通知が失敗してもアプリ本体は止めない
             print(f"[brief] エラー: {error}", flush=True)
-            time.sleep(300)  # 失敗時は5分あけて再試行（正午まで）
+            time.sleep(300)  # 失敗時は5分あけて再試行（6:40〜7:00の間だけ）
         time.sleep(60)
 
 
