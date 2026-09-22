@@ -131,10 +131,12 @@ def build_brief(analysis, target=None):
         labor_part += "　製造実績待ちで判定なし"
         complete = False
     else:
+        # 人件費は、その日の店舗人時＋翌日以降の催事仕込み分も含むため、当日の売上でなく
+        # 「その日作った商品の金額（製造実績）」と比べる（＝人件費率）。
         ratio = labor / prod["value"] * 100
         labor_diff_pt = ratio - rate
         emoji, tier = _labor_tier(labor_diff_pt)
-        labor_part += f"　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
+        labor_part = f"人件費 {yen(labor)}／製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
@@ -148,19 +150,18 @@ def build_brief(analysis, target=None):
     if row.get("flashNote"):
         lines.append(f"※{row['flashNote']}")
 
-    # 今月ここまで（昨日まで）
+    # 今月ここまで（昨日まで）：日々の判定は製造実績比だが、月間は本人指示により売上比で見る
     month_dates = sorted(d for d in rows if d.startswith(month_key) and d <= target)
     if month_dates:
         sales_total = sum((rows[d].get("storeSales") or 0) + (rows[d].get("eventSales") or 0) for d in month_dates)
         target_total = sum(sum(targets.get(d, (0, 0))) for d in month_dates)
         month_labor = sum((rows[d].get("storeLabor") or 0) + int((goal_days.get(d) or {}).get("eventCount") or 0) * staff_daily
-                          for d in month_dates if (prod_by_date.get(d) or {}).get("value"))
-        month_prod = sum((prod_by_date.get(d) or {}).get("value", 0) for d in month_dates)
+                          for d in month_dates)
         month_line = f"{day.month}月ここまで"
         if target_total:
             month_line += f" 売上{yen(sales_total)}（{signed(sales_total - target_total)}）"
-        if month_prod:
-            month_ratio = month_labor / month_prod * 100
+        if sales_total and month_labor:
+            month_ratio = month_labor / sales_total * 100
             m_emoji, m_tier = _labor_tier(month_ratio - rate)
             month_line += f"　{m_emoji}人件費{_LABOR_TIER_LABEL[m_tier]}（{month_ratio:.1f}%）"
         lines += ["", month_line]
@@ -192,7 +193,8 @@ def build_brief(analysis, target=None):
         month = {
             "label": f"{day.month}月ここまで", "sales": sales_total, "target": target_total,
             "diff": sales_total - target_total if target_total else None,
-            "rate": (month_labor / month_prod * 100) if month_prod else None, "rateTarget": rate,
+            # 月間の人件費率は本人指示により売上比（日々の判定は製造実績比のまま）
+            "rate": (month_labor / sales_total * 100) if sales_total else None, "rateTarget": rate,
         }
     # 小さなグラフ用の累積系列（月初〜昨日）
     import calendar

@@ -333,11 +333,14 @@ def verify_management_analysis():
     brief = daily_brief.build_brief(fake)
     assert brief["date"] == "2026-09-20" and brief["complete"] is True
     # LINEの文面は短く：数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉のみ（率だけの「目標内」判定は撤去）
-    assert "人件費 57,000円" in brief["text"]
+    # 人件費は当日売上でなく、その日の製造実績（作った数×売価）と比べる。文面にも比較先の金額を出す
+    assert "人件費 57,000円／製造 400,000円" in brief["text"]
     assert "14.2%" in brief["text"] and "ちょうどよい" in brief["text"] and "目標内" not in brief["text"]
     assert "✅ 店舗 200円（＋100円）" in brief["text"]
     # 一日全体の一言まとめ（headline）：この日は売上未達・人件費は良好 → 中間判定
     assert "🙂 まずまず" in brief["text"]
+    # 月間の人件費率は本人指示(2026-09-22)により売上比で見る（日々の判定は製造実績比のまま）
+    assert "9月ここまで 売上150,200円（▲69,900円）　😥人件費かなり多め（37.9%）" in brief["text"]
     fake["daily"][0]["eventRows"] = 0
     fake["production"] = {"daily": []}
     pending = daily_brief.build_brief(fake)
