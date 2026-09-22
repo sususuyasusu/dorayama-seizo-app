@@ -334,7 +334,7 @@ def verify_management_analysis():
     assert brief["date"] == "2026-09-20" and brief["complete"] is True
     # LINEの文面は短く：数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉のみ（率だけの「目標内」判定は撤去）
     # 人件費は当日売上でなく、その日の製造実績（作った数×売価）と比べる。文面にも比較先の金額を出す
-    assert "人件費 57,000円／製造 400,000円" in brief["text"]
+    assert "人件費 57,000円（店舗20,000円＋催事37,000円）／製造 400,000円" in brief["text"]
     assert "14.2%" in brief["text"] and "ちょうどよい" in brief["text"] and "目標内" not in brief["text"]
     assert "✅ 店舗 200円（＋100円）" in brief["text"]
     # 一日全体の一言まとめ（headline）：この日は売上未達・人件費は良好 → 中間判定

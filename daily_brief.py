@@ -121,7 +121,8 @@ def build_brief(analysis, target=None):
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
     labor_diff_pt = None
-    labor_part = f"人件費 {yen(labor)}"
+    breakdown = f"（店舗{yen(store_labor)}＋催事{yen(event_labor)}）" if event_labor else ""
+    labor_part = f"人件費 {yen(labor)}{breakdown}"
     if not store_labor:
         complete = False
     if not analysis.get("production"):
@@ -136,7 +137,7 @@ def build_brief(analysis, target=None):
         ratio = labor / prod["value"] * 100
         labor_diff_pt = ratio - rate
         emoji, tier = _labor_tier(labor_diff_pt)
-        labor_part = f"人件費 {yen(labor)}／製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
+        labor_part = f"人件費 {yen(labor)}{breakdown}／製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
