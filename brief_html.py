@@ -157,15 +157,6 @@ def render_block(data):
             f'<span>売上 <b>{_yen(month["sales"])}</b></span><span>{diff}</span><span>人件費率 {rate_text}</span></div>')
 
     parts.append(_mini_charts(data))
-
-    if prod["state"] == "ok" and prod["blocks"]:
-        names = [b["name"] for b in prod["blocks"]]
-        color = {name: BLOCK_COLORS[i % len(BLOCK_COLORS)] for i, name in enumerate(names)}
-        parts.append('<h3>製造実績の内訳</h3><div class="stack">'
-                     + "".join(f'<i style="width:{b["share"]:.2f}%;background:{color[b["name"]]}"></i>' for b in prod["blocks"])
-                     + '</div><div class="legend">'
-                     + "".join(f'<span><b style="background:{color[b["name"]]}"></b>{escape(b["name"])}　{b["share"]:.0f}%</span>' for b in prod["blocks"])
-                     + "</div>")
     parts.append("</div>")
     return "".join(parts)
 
