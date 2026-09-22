@@ -332,17 +332,17 @@ def verify_management_analysis():
         "2026-09-19": (100, 0), "2026-09-20": (100, 220000), "2026-09-21": (100, 220000)}
     brief = daily_brief.build_brief(fake)
     assert brief["date"] == "2026-09-20" and brief["complete"] is True
-    assert "人件費 57,000円（店舗 20,000円＋催事の販売員 37,000円）" in brief["text"]
-    # 数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉（率だけの「目標内」判定は文面から撤去）
-    assert "人件費率 14.2%" in brief["text"] and "ちょうどよい" in brief["text"] and "目標内" not in brief["text"]
-    assert "✅ 店舗 200円（予算 100円 → ＋100円）" in brief["text"]
+    # LINEの文面は短く：数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉のみ（率だけの「目標内」判定は撤去）
+    assert "人件費 57,000円" in brief["text"]
+    assert "14.2%" in brief["text"] and "ちょうどよい" in brief["text"] and "目標内" not in brief["text"]
+    assert "✅ 店舗 200円（＋100円）" in brief["text"]
     # 一日全体の一言まとめ（headline）：この日は売上未達・人件費は良好 → 中間判定
-    assert "まずまずの一日でした" in brief["text"]
+    assert "🙂 まずまず" in brief["text"]
     fake["daily"][0]["eventRows"] = 0
     fake["production"] = {"daily": []}
     pending = daily_brief.build_brief(fake)
     assert pending["complete"] is False
-    assert "日報の入力待ち" in pending["text"] and "製造実績 入力待ち" in pending["text"]
+    assert "⏳ 催事 入力待ち" in pending["text"] and "製造実績待ちで判定なし" in pending["text"]
     assert "目標内" not in pending["text"] and "オーバー：" not in pending["text"]
     # 業界ウォッチと同じデザインのHTML：数字・状態がそのまま入り、グラフ（月ここまでの累積）も付く
     import brief_html
@@ -352,9 +352,9 @@ def verify_management_analysis():
     assert block.count("<svg") == 2 and "売上の進み" in block and "人件費の進み" in block
     assert brief["data"]["charts"]["sales"]["actual"][-1] == 150200  # 9/20までの売上累積（店舗200＋催事150,000）は月初からの合計
     assert brief["data"]["charts"]["labor"]["allowed"][-1] == 100000  # 製造実績400,000×25%
-    fake["production"] = None  # 製造表を読み取れなかった場合は「入力待ち」ではなく、その旨を書く
+    fake["production"] = None  # 製造表を読み取れなかった場合は「入力待ち」ではなく、読めなかった旨を書く（別の言葉で区別）
     unreadable = daily_brief.build_brief(fake)
-    assert "製造表を読み取れませんでした" in unreadable["text"] and "入力待ち（人件費率" not in unreadable["text"]
+    assert "製造実績を読めず判定なし" in unreadable["text"] and "製造実績待ちで判定なし" not in unreadable["text"]
     assert unreadable["complete"] is False
     assert "製造表を読み取れませんでした" in brief_html.render_block(unreadable["data"])
     assert "目標内" not in brief_html.render_block(unreadable["data"])

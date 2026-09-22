@@ -21,10 +21,8 @@ def signed(value):
     return ("＋" if value >= 0 else "▲") + f"{abs(round(value)):,}円"
 
 
-# 数字を普段扱わないスタッフにも一目で伝わるように、判定を絵文字＋短い言葉にする。
-_LABOR_DAILY_WORDS = {"good": "人手はちょうどよい感じでした", "mid": "人が少し多めでした", "bad": "人がかなり多めでした"}
-_LABOR_MONTH_WORDS = {"good": "人件費は今のところちょうどよいペースです",
-                       "mid": "人件費は少し多めのペースです", "bad": "人件費はかなり多めのペースです"}
+# 数字を普段扱わないスタッフにも一目で伝わるように、判定を絵文字＋短い言葉にする（長文は避け、一言で）。
+_LABOR_TIER_LABEL = {"good": "ちょうどよい", "mid": "やや多め", "bad": "かなり多め"}
 
 
 def _labor_tier(diff_pt):
@@ -43,10 +41,10 @@ def _headline(day_achieve, labor_diff_pt):
     bad = (day_achieve is not None and day_achieve < 60) or (labor_diff_pt is not None and labor_diff_pt > 10)
     good = (day_achieve is None or day_achieve >= 100) and (labor_diff_pt is None or labor_diff_pt <= 0)
     if bad:
-        return "😥 踏ん張りどころの一日でした"
+        return "😥 踏ん張りどころ"
     if good:
-        return "😊 順調な一日でした"
-    return "🙂 まずまずの一日でした"
+        return "😊 順調"
+    return "🙂 まずまず"
 
 
 def _distribute(total, weights):
@@ -101,57 +99,54 @@ def build_brief(analysis, target=None):
                 "date": target, "complete": False, "data": None}
 
     complete = True
-    lines = [head, "", "■売上（予算との差）"]
+    lines = [head]
     store_target, event_target = targets.get(target, (0, 0))
     venues = int((goal_days.get(target) or {}).get("eventCount") or 0)
     store_sales = row.get("storeSales") or 0
     event_sales = row.get("eventSales") or 0
     event_pending = venues > 0 and not row.get("eventRows")
     store_diff = store_sales - store_target
-    lines.append(f"{'✅' if store_diff >= 0 else '⚠️'} 店舗 {yen(store_sales)}（予算 {yen(store_target)} → {signed(store_diff)}）")
+    store_part = f"{'✅' if store_diff >= 0 else '⚠️'} 店舗 {yen(store_sales)}（{signed(store_diff)}）"
     if venues == 0:
-        lines.append("催事 この日は催事なし")
+        event_part = "催事なし"
     elif event_pending:
-        lines.append(f"⏳ 催事 日報の入力待ち（予算 {yen(event_target)}）")
+        event_part = "⏳ 催事 入力待ち"
         complete = False
     else:
         event_diff = event_sales - event_target
-        lines.append(f"{'✅' if event_diff >= 0 else '⚠️'} 催事 {yen(event_sales)}（予算 {yen(event_target)} → {signed(event_diff)}）")
+        event_part = f"{'✅' if event_diff >= 0 else '⚠️'} 催事 {yen(event_sales)}（{signed(event_diff)}）"
 
     store_labor = row.get("storeLabor") or 0
     event_labor = venues * staff_daily
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
     labor_diff_pt = None
-    lines += ["", "■人件費（店舗の打刻＋催事の販売員）と製造実績"]
-    lines.append(f"人件費 {yen(labor)}（店舗 {yen(store_labor)}＋催事の販売員 {yen(event_labor)}）")
+    labor_part = f"人件費 {yen(labor)}"
     if not store_labor:
-        lines.append("※店舗の打刻人件費が取得できていません")
         complete = False
-    if row.get("flashNote"):
-        lines.append(f"※要確認：{row['flashNote']}")
     if not analysis.get("production"):
-        lines.append("製造実績 製造表を読み取れませんでした（人件費率は未計算）")
+        labor_part += "　製造実績を読めず判定なし"
         complete = False
     elif not prod or not prod.get("value"):
-        lines.append("製造実績 入力待ち（人件費率は未計算）")
+        labor_part += "　製造実績待ちで判定なし"
         complete = False
     else:
-        allowed = prod["value"] * rate / 100
         ratio = labor / prod["value"] * 100
         labor_diff_pt = ratio - rate
         emoji, tier = _labor_tier(labor_diff_pt)
-        lines.append(f"その日作った商品 {yen(prod['value'])} に対して…")
-        lines.append(f"{emoji} {_LABOR_DAILY_WORDS[tier]}（人件費率 {ratio:.1f}%・目標 {rate:.0f}%）")
-        if tier != "good":
-            lines.append(f"　目安より {signed(allowed - labor)}")
+        labor_part += f"　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
     day_achieve = None if event_pending else (day_actual_total / day_target_total * 100 if day_target_total > 0 else None)
     headline = _headline(day_achieve, labor_diff_pt)
     if headline:
-        lines.insert(1, headline)
+        lines.append(headline)
+    lines += ["", f"{store_part}　{event_part}", labor_part]
+    if not store_labor:
+        lines.append("※店舗の打刻未取得")
+    if row.get("flashNote"):
+        lines.append(f"※{row['flashNote']}")
 
     # 今月ここまで（昨日まで）
     month_dates = sorted(d for d in rows if d.startswith(month_key) and d <= target)
@@ -161,16 +156,14 @@ def build_brief(analysis, target=None):
         month_labor = sum((rows[d].get("storeLabor") or 0) + int((goal_days.get(d) or {}).get("eventCount") or 0) * staff_daily
                           for d in month_dates if (prod_by_date.get(d) or {}).get("value"))
         month_prod = sum((prod_by_date.get(d) or {}).get("value", 0) for d in month_dates)
-        lines += ["", f"■{day.month}月ここまで（{day.month}/1〜{day.month}/{day.day}）"]
+        month_line = f"{day.month}月ここまで"
         if target_total:
-            lines.append(f"売上 {yen(sales_total)}（予算累計 {yen(target_total)} → {signed(sales_total - target_total)}）")
+            month_line += f" 売上{yen(sales_total)}（{signed(sales_total - target_total)}）"
         if month_prod:
             month_ratio = month_labor / month_prod * 100
-            month_diff_pt = month_ratio - rate
-            m_emoji, m_tier = _labor_tier(month_diff_pt)
-            lines.append(f"{m_emoji} {_LABOR_MONTH_WORDS[m_tier]}（人件費率 {month_ratio:.1f}%・目標 {rate:.0f}%）")
-            if m_tier != "good":
-                lines.append(f"　目安より {yen(month_labor - month_prod * rate / 100)} 多い状態です")
+            m_emoji, m_tier = _labor_tier(month_ratio - rate)
+            month_line += f"　{m_emoji}人件費{_LABOR_TIER_LABEL[m_tier]}（{month_ratio:.1f}%）"
+        lines += ["", month_line]
 
     lines += ["", "くわしい図は👇", APP_URL]
 
