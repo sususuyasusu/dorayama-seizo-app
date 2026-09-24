@@ -175,22 +175,9 @@ def get_target_settings(cost_analysis=None):
         source = airmate.get(key) or {}
         calendar_month = _calendar_month(year, month, events)
         base_store = source.get("store") or 0
-        airmate_event = source.get("event")
-        calendar_event = airmate_targets_layer.event_sales_target(calendar_month["eventDays"])
-        if airmate_event:
-            # Airメイトに設定済みの月間催事目標を正とする（店舗と同じ扱い）。
-            # カレンダー計算（開催日数×22万円）は複数会場が重なる日を重複カウントするため、
-            # 会場が増えるほど実態より過大な目標になり、達成率が不当に低く出る欠陥があった
-            # （2026-09-24発覚：Airメイト実績94.7%に対しアプリ表示67.6%）。
-            base_event = airmate_event
-            event_source_label = "Airメイト目標"
-            if calendar_event:
-                scale = airmate_event / calendar_event
-                for day in calendar_month["daily"]:
-                    day["targetSales"] = round(day["targetSales"] * scale)
-        else:
-            base_event = calendar_event
-            event_source_label = "Googleカレンダー × 220,000円（Airメイト未設定のため代用）"
+        # 催事目標は「1催事1日 税込220,000円 × 開催日数」を本人確定運用ルールとして使う
+        # （2026-09-24再確認。Airメイト本体の月間目標より厳しめの自社基準として意図的に採用）。
+        base_event = airmate_targets_layer.event_sales_target(calendar_month["eventDays"])
         override = overrides["months"].get(key) or {}
         store_target = override.get("store", base_store)
         event_target = override.get("event", base_event)
@@ -205,9 +192,8 @@ def get_target_settings(cost_analysis=None):
             "storeSource": "手動変更" if "store" in override else "Airメイト目標",
             "airmateEventReference": source.get("event"),
             "eventBase": base_event,
-            "eventBaseSource": event_source_label,
             "eventTarget": event_target,
-            "eventSource": "手動変更" if "event" in override else event_source_label,
+            "eventSource": "手動変更" if "event" in override else "Googleカレンダー × 220,000円",
             "totalTarget": total,
             "materialTarget": round(total * rates["material"] / 100),
             "laborTarget": round(total * rates["labor"] / 100),

@@ -92,7 +92,7 @@ function salesPaceChart(rows,references,current,channel='total'){
   const config={
     total:{label:'店舗・催事 合計',actual:'sales',target:'targetSales',previous:'previousYearSales',budget:'budget'},
     store:{label:'店舗',actual:'storeSales',target:'storeTargetSales',previous:'storePreviousYearSales',budget:'storeBudget'},
-    event:{label:'催事',actual:'eventSales',target:'eventTargetSales',previous:'eventPreviousYearSales',budget:'eventBudget',targetRule:'催事目標はAirメイトに設定済みの月間目標を優先（未設定の月のみ税込22万円×催事数×開催日数で代用）'}
+    event:{label:'催事',actual:'eventSales',target:'eventTargetSales',previous:'eventPreviousYearSales',budget:'eventBudget',targetRule:'催事目標は税込22万円 × 催事数 × 開催日数。催事のない日は0円'}
   }[channel];
   const dayOf=value=>Number(String(value||'').split('-')[2]);
   const actualByDay={};rows.forEach(row=>{const day=dayOf(row.date);if(day)actualByDay[day]=Number(row[config.actual]||0)});
