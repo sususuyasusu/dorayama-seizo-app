@@ -170,6 +170,16 @@ class Handler(BaseHTTPRequestHandler):
             import daily_brief
             day = (parse_qs(u.query).get("date") or [None])[0]
             self._send(200, json.dumps(daily_brief.build_brief(management_analysis_layer.get_management_analysis(), day), ensure_ascii=False))
+        elif path == "/api/staff-brief/sent-today":
+            # 今日、速報がすでにLINEへ送信済みか（Render予備送信・手動送信を含む）。
+            # 業界ウォッチ(Mac側)が二重に速報を合流させないための確認用。
+            import config_store
+            from datetime import datetime, timedelta, timezone
+            today = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+            self._send(200, json.dumps({
+                "sentToday": config_store.get_config("brief_last_sent") == today,
+                "status": config_store.get_config("brief_last_status"),
+            }, ensure_ascii=False))
         elif path == "/api/management/workbook":
             sheet = (parse_qs(u.query).get("sheet") or ["表紙"])[0]
             self._send(200, json.dumps(budget_workbook_layer.get_sheet(sheet), ensure_ascii=False))
