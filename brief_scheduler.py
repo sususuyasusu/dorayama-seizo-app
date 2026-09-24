@@ -6,8 +6,12 @@
 送信に必要な環境変数（Renderの Environment に本人が設定する。未設定なら何も送らない）:
   BRIEF_LINE_CHANNEL_ACCESS_TOKEN … 送信に使うLINE公式アカウントのチャネルアクセストークン
   BRIEF_LINE_GROUP_ID             … 送信先グループのID
-  BRIEF_MIN_QUOTA_LEFT（任意）    … LINEの月間送信枠の残りがこの通数を切ったら送らない（既定25。卵発注を優先する保護）
 1日1回だけ送る。送信済みの日付は製造表の _app_config に記録するので、再起動・再デプロイでも二重送信しない。
+
+【2026-09-24 卵発注Bot優先の保護を撤廃・本人指示】以前は月間送信枠の残りが少ない日（既定25通未満）は
+速報を見送っていたが、卵発注Bot（Render上の別サービス dw_line_egg_order_bot）はLINEへの送信を一切せず
+（受信して製造表へ書くだけ／証憑取込の応答はreplyで枠を消費しない）枠を使っていないと判明したため、
+この保護は不要と判断し撤廃した。速報は枠の残りに関わらず常に送る。
 6:40〜7:00の間に限って取り返して送る（それ以外の時間の再デプロイでは絶対に送らない）。
 
 【2026-09-22の事故と対策】以前は正午まで猶予があり、日中の作業用の再デプロイ（Renderの再起動）のたびに
@@ -40,17 +44,6 @@ def _line_get(path, token):
         return json.load(response)
 
 
-def quota_left(token):
-    """今月あと何通送れるか。上限なし・取得失敗のときは None。"""
-    try:
-        quota = _line_get("quota", token)
-        if quota.get("type") != "limited":
-            return None
-        return int(quota["value"]) - int(_line_get("quota/consumption", token).get("totalUsage", 0))
-    except Exception:
-        return None
-
-
 def push_text(token, group_id, text):
     """送信し、(HTTPステータス, 送ったメッセージのID) を返す。
     IDは、誤送信時にLINEの取り消しAPI（/v2/bot/message/{id}/unsend）で消せるよう記録しておく。"""
@@ -76,11 +69,6 @@ def send_once(now=None):
         return "送信済み"
     token = os.environ["BRIEF_LINE_CHANNEL_ACCESS_TOKEN"]
     group_id = os.environ["BRIEF_LINE_GROUP_ID"]
-    left = quota_left(token)
-    if left is not None and left < int(os.environ.get("BRIEF_MIN_QUOTA_LEFT", "25")):
-        config_store.set_config("brief_last_status", f"{today} 見送り：LINEの月間送信枠の残り{left}通")
-        config_store.set_config("brief_last_sent", today)  # 枠が無い日に何度も試さない
-        return f"見送り（送信枠の残り{left}通）"
     brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis())
     status, message_id = push_text(token, group_id, brief["text"])
     config_store.set_config("brief_last_sent", today)
