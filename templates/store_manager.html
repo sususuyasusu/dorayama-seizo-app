@@ -107,9 +107,9 @@ function salesPaceChart(rows,references,current,channel='total'){
   const latestReferenceDay=Math.max(0,...Object.keys(referenceByDay).filter(day=>Number.isFinite(referenceByDay[day]?.[config.previous])).map(Number));
   const actualPoints=[],targetPoints=[],previousPoints=[];let actualTotal=0,targetTotal=0,previousTotal=0;
   for(let day=1;day<=days;day++){
-    targetTotal+=targetByDay[day]||0;targetPoints.push({day,value:targetTotal});
-    if(day<=latestActualDay){actualTotal+=actualByDay[day]||0;actualPoints.push({day,value:actualTotal})}
-    if(day<=latestReferenceDay){previousTotal+=Number(referenceByDay[day]?.[config.previous]||0);previousPoints.push({day,value:previousTotal})}
+    const targetDaily=targetByDay[day]||0;targetTotal+=targetDaily;targetPoints.push({day,value:targetTotal,daily:targetDaily});
+    if(day<=latestActualDay){const actualDaily=actualByDay[day]||0;actualTotal+=actualDaily;actualPoints.push({day,value:actualTotal,daily:actualDaily})}
+    if(day<=latestReferenceDay){const previousDaily=Number(referenceByDay[day]?.[config.previous]||0);previousTotal+=previousDaily;previousPoints.push({day,value:previousTotal,daily:previousDaily})}
   }
   const w=900,h=280,left=54,right=18,top=18,bottom=48,plotW=w-left-right,baseY=h-bottom;
   const values=[...actualPoints,...targetPoints,...previousPoints].map(point=>point.value);const max=Math.max(...values,1)*1.08;
@@ -124,9 +124,9 @@ function salesPaceChart(rows,references,current,channel='total'){
   const achievement=hasActual&&monthBudget?actualTotal/monthBudget*100:null;
   const yoy=previousTotal?actualTotal/previousTotal*100:null;
   const latestPoint=actualPoints.at(-1);
-  const latestMarker=latestPoint?'<circle class="pace-latest" cx="'+x(latestPoint.day)+'" cy="'+y(latestPoint.value)+'" r="5"><title>'+latestPoint.day+'日 累積 '+yenAbs(latestPoint.value)+'</title></circle>':'';
+  const latestMarker=latestPoint?'<circle class="pace-latest" cx="'+x(latestPoint.day)+'" cy="'+y(latestPoint.value)+'" r="5"><title>'+latestPoint.day+'日 累積実績\nその日: '+yenAbs(latestPoint.daily)+'\n累計: '+yenAbs(latestPoint.value)+'</title></circle>':'';
   const previousLabel=previousPoints.length?'前年同月':'前年同月（未取得）';
-  const hoverPoints=(points,label)=>points.map(point=>'<circle class="pace-hover" cx="'+x(point.day)+'" cy="'+y(point.value)+'" r="7"><title>'+point.day+'日 '+label+' '+yenAbs(point.value)+'</title></circle>').join('');
+  const hoverPoints=(points,label)=>points.map(point=>'<circle class="pace-hover" cx="'+x(point.day)+'" cy="'+y(point.value)+'" r="7"><title>'+point.day+'日 '+label+'\nその日: '+yenAbs(point.daily)+'\n累計: '+yenAbs(point.value)+'</title></circle>').join('');
   const hoverLayer=hoverPoints(previousPoints,previousLabel)+hoverPoints(targetPoints,'目標累積')+hoverPoints(actualPoints,'累積実績');
   const sourceNote=previousPoints.length?'前年同月はAirメイトで取得済みの'+latestReferenceDay+'日まで表示':'前年同月は未取得のため、推測値を表示していません';
   const gapLabel=hasActual?(latestActualDay>=days?'月末時点の目標差':latestActualDay+'日時点の目標差'):'実績取得後の目標差';
