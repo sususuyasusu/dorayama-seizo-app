@@ -105,12 +105,28 @@ def build_brief(analysis, target=None):
     store_sales = row.get("storeSales") or 0
     event_sales = row.get("eventSales") or 0
     event_pending = venues > 0 and not row.get("eventRows")
-    store_diff = store_sales - store_target
-    store_part = f"{'✅' if store_diff >= 0 else '⚠️'} 店舗 {yen(store_sales)}（{signed(store_diff)}）"
+
+    # 【2026-09-25追加】店舗は定休日なく毎日営業しているため、確定済みの前日について
+    # 「店舗売上ちょうど0円」は実売上ではなく、予実シートへの反映がまだ済んでいない兆候と見て
+    # 自動で疑う（2026-09-24、日報は「入力済」なのに反映額が0円のまま速報が出た事故を受けての対策）。
+    # 「日報は入力済なのに金額が0円」も同様に、反映待ちの疑いとして扱う。
+    store_suspect = store_sales == 0
+    event_suspect = venues > 0 and not event_pending and event_sales == 0
+
+    if store_suspect:
+        store_part = "⏳ 店舗 反映待ち（0円のまま＝未反映の疑い、確定額ではありません）"
+        complete = False
+    else:
+        store_diff = store_sales - store_target
+        store_part = f"{'✅' if store_diff >= 0 else '⚠️'} 店舗 {yen(store_sales)}（{signed(store_diff)}）"
+
     if venues == 0:
         event_part = "催事なし"
     elif event_pending:
         event_part = "⏳ 催事 入力待ち"
+        complete = False
+    elif event_suspect:
+        event_part = "⏳ 催事 反映待ち（0円のまま＝未反映の疑い、確定額ではありません）"
         complete = False
     else:
         event_diff = event_sales - event_target
@@ -141,7 +157,9 @@ def build_brief(analysis, target=None):
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
-    day_achieve = None if event_pending else (day_actual_total / day_target_total * 100 if day_target_total > 0 else None)
+    day_achieve = None if (event_pending or store_suspect or event_suspect) else (
+        day_actual_total / day_target_total * 100 if day_target_total > 0 else None
+    )
     headline = _headline(day_achieve, labor_diff_pt)
     if headline:
         lines.append(headline)

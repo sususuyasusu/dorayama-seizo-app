@@ -62,7 +62,12 @@ def push_text(token, group_id, text):
 
 
 def send_once(now=None):
-    """今日分がまだなら、昨日の速報を送る。返り値は結果の説明。"""
+    """今日分がまだなら、昨日の速報を送る。返り値は結果の説明。
+
+    【2026-09-25追加】数字が「未反映の疑い」(daily_brief.pyのstore_suspect/event_suspect)で
+    complete=Falseの間は、締切(SEND_UNTIL)前ならまだ送らずリトライに回す。0円のまま自信満々に
+    送って翌朝の実績と全く違う、という事故（2026-09-24）の再発防止。締切に達したらそれ以上待てない
+    ため、未確定である旨を隠さない文面のまま送る。"""
     now = now or datetime.now(JST)
     today = now.date().isoformat()
     if config_store.get_config("brief_last_sent") == today:
@@ -70,9 +75,12 @@ def send_once(now=None):
     token = os.environ["BRIEF_LINE_CHANNEL_ACCESS_TOKEN"]
     group_id = os.environ["BRIEF_LINE_GROUP_ID"]
     brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis())
+    at_deadline = (now.hour, now.minute) >= SEND_UNTIL
+    if not brief["complete"] and not at_deadline:
+        return "未反映の疑いありのため待機（リトライ）"
     status, message_id = push_text(token, group_id, brief["text"])
     config_store.set_config("brief_last_sent", today)
-    config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・{'数字そろい' if brief['complete'] else '一部入力待ちのまま'}）")
+    config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・{'数字そろい' if brief['complete'] else '未確定のまま締切送信'}）")
     if message_id:
         config_store.set_config("brief_last_message_id", message_id)
     return f"送信 HTTP {status}"
