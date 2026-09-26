@@ -83,9 +83,16 @@ def _calendar_month(year, month, events, store_daily_rate=0):
     for current in _month_dates(year, month):
         active = [item for item in events if item["startDate"] <= current <= item["endDate"]]
         day_target = round(sum(_event_day_rate(item.get("venue"), store_daily_rate) for item in active))
+        # ディースパークに日割り費用を払う会場数（富岡八幡宮など店舗と同水準の会場は、
+        # 実際にディースパークを使っておらず店舗側の人件費に含まれるため除外する）。
+        staffed_count = sum(
+            1 for item in active
+            if not any(v in (item.get("venue") or "") for v in STORE_LIKE_VENUES)
+        )
         days.append({
             "date": current.isoformat(),
             "eventCount": len(active),
+            "staffedEventCount": staffed_count,
             "targetSales": day_target,
             "events": [item.get("name") or "名称未設定" for item in active],
             "tentativeCount": sum(1 for item in active if item.get("tentative")),

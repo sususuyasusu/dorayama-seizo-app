@@ -164,12 +164,12 @@ function todayRefsCache(date){const goal=goalForMonth(date);state._todayRefs=sta
 function todayModel(date){
   const d=state.data,board=d.todayBoard||{},row=(d.daily||[]).find(item=>item.date===date)||{date},{goal,refs}=todayRefsCache(date);
   const ref=refs.find(item=>item.date===date)||{},day=((goal&&goal.daily)||[]).find(item=>item.date===date)||{};
-  const rate=Number(board.laborRateTarget??25),dailyRate=Number(board.eventStaffDailyRate||0),venues=Number(day.eventCount||0);
+  const rate=Number(board.laborRateTarget??25),dailyRate=Number(board.eventStaffDailyRate||0),venues=Number(day.eventCount||0),laborVenues=Number(day.staffedEventCount??venues);
   const today=String(d.updatedAt||'').slice(0,10)===date;
   const build=(sales,target,labor)=>({sales,target,diff:target>0?sales-target:null,achieve:target>0?sales/target*100:null,labor});
   const store=build(row.storeSales||0,ref.storeTargetSales,row.storeLabor||0);
-  const event=build(row.eventSales||0,ref.eventTargetSales,venues*dailyRate);
-  event.venues=venues;event.names=day.events||[];event.reportDone=Number(row.eventRows||0)>0;
+  const event=build(row.eventSales||0,ref.eventTargetSales,laborVenues*dailyRate);
+  event.venues=venues;event.laborVenues=laborVenues;event.names=day.events||[];event.reportDone=Number(row.eventRows||0)>0;
   const total=build(store.sales+event.sales,(store.target||0)+(event.target||0),store.labor+event.labor);
   const prod=d.production,prodDay=prod?(prod.daily||[]).find(item=>item.date===date):null;
   const production={available:!!prodDay,value:prodDay?prodDay.value:0,pieces:prodDay?prodDay.pieces:0,blocks:prodDay?prodDay.blocks:{},names:prod?prod.blocks:[]};
@@ -201,7 +201,7 @@ function todaySalesCard(m,title,part,isEvent){
 }
 function todayLaborCards(m){
   const c=m.combined,p=m.production,rows=(items)=>'<div class="today-rows">'+items.map(item=>'<div><span>'+item[0]+'</span><b>'+item[1]+'</b></div>').join('')+'</div>';
-  const laborCard='<div class="today-card"><h4>人件費（店舗＋催事の販売員）</h4><div class="num">'+yenFull(c.labor)+'</div><div class="sub">店舗は打刻した勤務、催事は日割り</div>'+stackBar([{value:m.store.labor,color:LABOR_COLORS.store,label:'店舗の人件費'},{value:m.event.labor,color:LABOR_COLORS.event,label:'催事の販売員'}])+rows([[swatch(LABOR_COLORS.store,'店舗（打刻・Airシフト）'),yenFull(m.store.labor)],[swatch(LABOR_COLORS.event,'催事の販売員（ディースパーク日割り'+(m.event.venues?'：'+yenFull(m.dailyRate)+'×'+m.event.venues+'会場':'')+'）'),yenFull(m.event.labor)]])+'</div>';
+  const laborCard='<div class="today-card"><h4>人件費（店舗＋催事の販売員）</h4><div class="num">'+yenFull(c.labor)+'</div><div class="sub">店舗は打刻した勤務、催事は日割り</div>'+stackBar([{value:m.store.labor,color:LABOR_COLORS.store,label:'店舗の人件費'},{value:m.event.labor,color:LABOR_COLORS.event,label:'催事の販売員'}])+rows([[swatch(LABOR_COLORS.store,'店舗（打刻・Airシフト）'),yenFull(m.store.labor)],[swatch(LABOR_COLORS.event,'催事の販売員（ディースパーク日割り'+(m.event.laborVenues?'：'+yenFull(m.dailyRate)+'×'+m.event.laborVenues+'会場':'')+'）'),yenFull(m.event.labor)]])+'</div>';
   const prodCard=!p.available?'<div class="today-card"><h4>製造実績</h4><div class="num">—</div><div class="sub">製造表を読み取れませんでした</div><div style="font-size:12px;line-height:1.7">時間をおいて開き直してください。</div></div>'
     :'<div class="today-card"><h4>製造実績（作った数×売価）</h4><div class="num">'+yenFull(p.value)+'</div><div class="sub">'+p.pieces.toLocaleString('ja-JP')+'個'+(m.today?'（今日は入力途中）':'')+'</div>'+stackBar(Object.entries(p.blocks).map(([name,item])=>({value:item.value,color:blockColor(name,p.names),label:name})))+(Object.keys(p.blocks).length?rows(Object.entries(p.blocks).map(([name,item])=>[swatch(blockColor(name,p.names),name),yenFull(item.value)+'（'+item.pieces.toLocaleString('ja-JP')+'個）'])):'<div style="font-size:12px;color:var(--muted);margin-top:8px">まだ製造実績が入っていません。</div>')+'</div>';
   let cls,text,line;
@@ -235,7 +235,8 @@ function laborProductionChart(){
   const storeCum=[],totalCum=[],allowed=[];let store=0,event=0,production=0;
   for(let day=1;day<=Math.min(lastDay,f.days);day++){
     const date=latest.slice(0,8)+String(day).padStart(2,'0');
-    store+=Number((byDate[date]||{}).storeLabor)||0;event+=Number((goalByDate[date]||{}).eventCount||0)*dailyRate;production+=Number((prodByDate[date]||{}).value)||0;
+    const gd=goalByDate[date]||{};
+    store+=Number((byDate[date]||{}).storeLabor)||0;event+=Number(gd.staffedEventCount??gd.eventCount??0)*dailyRate;production+=Number((prodByDate[date]||{}).value)||0;
     storeCum.push({day,value:store});totalCum.push({day,value:store+event});allowed.push({day,value:production*rate/100});
   }
   if(!totalCum.length)return '';

@@ -102,6 +102,7 @@ def build_brief(analysis, target=None):
     lines = [head]
     store_target, event_target = targets.get(target, (0, 0))
     venues = int((goal_days.get(target) or {}).get("eventCount") or 0)
+    staffed_venues = int((goal_days.get(target) or {}).get("staffedEventCount") or 0)
     store_sales = row.get("storeSales") or 0
     event_sales = row.get("eventSales") or 0
     event_pending = venues > 0 and not row.get("eventRows")
@@ -133,7 +134,12 @@ def build_brief(analysis, target=None):
         event_part = f"{'✅' if event_diff >= 0 else '⚠️'} 催事 {yen(event_sales)}（{signed(event_diff)}）"
 
     store_labor = row.get("storeLabor") or 0
-    event_labor = venues * staff_daily
+    # 富岡八幡宮など店舗と同水準の会場はディースパークを使わないため、
+    # ディースパーク日割り費用は staffed_venues（対象会場数）だけで計算する
+    # （2026-09-26、本人指示：富岡はその日のタイミー実費を人件費とする＝
+    # 実際のタイミー費用は既に店舗の人件費(storeLabor)に含まれているため、
+    # ここで固定の日割り費用を上乗せしない）。
+    event_labor = staffed_venues * staff_daily
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
     labor_diff_pt = None
