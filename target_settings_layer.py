@@ -49,7 +49,19 @@ def _calendar_schedule():
     return source, events
 
 
-def _calendar_month(year, month, events):
+# 地元の神社の屋台出店など、百貨店催事と違い店舗と同水準の売上・予算感になる会場。
+# 標準の「1催事1日22万円」を当てると実態よりかなり過大な予算になるため、
+# 店舗の月間目標を日数で割った額を使う（2026-09-26、富岡八幡宮の件で本人指示）。
+STORE_LIKE_VENUES = ("富岡八幡宮",)
+
+
+def _event_day_rate(venue, store_daily_rate):
+    if any(name in (venue or "") for name in STORE_LIKE_VENUES):
+        return store_daily_rate
+    return airmate_targets_layer.event_daily_sales_target()
+
+
+def _calendar_month(year, month, events, store_daily_rate=0):
     days = []
     event_rows = []
     first = date(year, month, 1)
@@ -70,10 +82,11 @@ def _calendar_month(year, month, events):
         })
     for current in _month_dates(year, month):
         active = [item for item in events if item["startDate"] <= current <= item["endDate"]]
+        day_target = round(sum(_event_day_rate(item.get("venue"), store_daily_rate) for item in active))
         days.append({
             "date": current.isoformat(),
             "eventCount": len(active),
-            "targetSales": airmate_targets_layer.event_sales_target(len(active)),
+            "targetSales": day_target,
             "events": [item.get("name") or "名称未設定" for item in active],
             "tentativeCount": sum(1 for item in active if item.get("tentative")),
         })
@@ -173,11 +186,13 @@ def get_target_settings(cost_analysis=None):
     for year, month in _fiscal_months():
         key = f"{year:04d}-{month:02d}"
         source = airmate.get(key) or {}
-        calendar_month = _calendar_month(year, month, events)
         base_store = source.get("store") or 0
+        store_daily_rate = base_store / monthrange(year, month)[1]
+        calendar_month = _calendar_month(year, month, events, store_daily_rate=store_daily_rate)
         # 催事目標は「1催事1日 税込220,000円 × 開催日数」を本人確定運用ルールとして使う
         # （2026-09-24再確認。Airメイト本体の月間目標より厳しめの自社基準として意図的に採用）。
-        base_event = airmate_targets_layer.event_sales_target(calendar_month["eventDays"])
+        # ただし富岡八幡宮など店舗と同水準の会場はSTORE_LIKE_VENUES扱いで店舗の日割り額を使う。
+        base_event = sum(day["targetSales"] for day in calendar_month["daily"])
         override = overrides["months"].get(key) or {}
         store_target = override.get("store", base_store)
         event_target = override.get("event", base_event)
@@ -244,8 +259,10 @@ def save_target_settings(payload, cost_analysis=None):
             continue
         year, month = (int(value) for value in key.split("-"))
         base_store = (airmate.get(key) or {}).get("store") or 0
-        base_event = airmate_targets_layer.event_sales_target(
-            _calendar_month(year, month, events)["eventDays"]
+        store_daily_rate = base_store / monthrange(year, month)[1]
+        base_event = sum(
+            day["targetSales"]
+            for day in _calendar_month(year, month, events, store_daily_rate=store_daily_rate)["daily"]
         )
         store = _number(values.get("store", base_store))
         event = _number(values.get("event", base_event))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """店長・経営者共通の多角分析データ（読み取り専用）。"""
+from calendar import monthrange
 from copy import deepcopy
 import json
 import time
@@ -555,8 +556,15 @@ def _fixed_cost_history(cost_analysis):
     return rows
 
 
-def _event_target_summary(details):
+def _event_target_summary(details, store_daily_rate=0):
     per_day = airmate_targets_layer.event_daily_sales_target()
+
+    def _day_rate(key):
+        name, venue = key
+        if any(v in name or v in venue for v in target_settings_layer.STORE_LIKE_VENUES):
+            return store_daily_rate
+        return per_day
+
     by_date = {}
     for item in details:
         day = item.get("date")
@@ -567,11 +575,11 @@ def _event_target_summary(details):
     daily = [{
         "date": day,
         "eventCount": len(events),
-        "targetSales": airmate_targets_layer.event_sales_target(len(events)),
+        "targetSales": round(sum(_day_rate(key) for key in events)),
     } for day, events in sorted(by_date.items())]
     event_days = sum(item["eventCount"] for item in daily)
     sales = sum(item.get("sales") or 0 for item in details)
-    target = airmate_targets_layer.event_sales_target(event_days)
+    target = sum(item["targetSales"] for item in daily)
     return {
         "targetPerEventDay": per_day,
         "noEventDayTarget": 0,
@@ -582,7 +590,7 @@ def _event_target_summary(details):
         "variance": sales - target,
         "achievement": round(sales / target * 100, 1) if target else None,
         "dailyTargets": daily,
-        "rule": "税込220,000円 × 催事数 × 開催日数。催事のない日は0円",
+        "rule": "税込220,000円 × 催事数 × 開催日数（富岡八幡宮など店舗と同水準の会場は店舗の日割り額）。催事のない日は0円",
         "scopeNote": "取得済みの催事日程分。今後の開催予定は日程登録後に加算。",
     }
 
@@ -809,7 +817,8 @@ def get_management_analysis():
     current_budget = current_goal.get("totalTarget", current_target.get("total"))
     store_details = sync.get("storeDetails") or []
     event_details = sync.get("eventDetails") or []
-    event_target = _event_target_summary(event_details)
+    store_daily_rate = (current_goal.get("storeTarget") or 0) / monthrange(now.year, now.month)[1]
+    event_target = _event_target_summary(event_details, store_daily_rate=store_daily_rate)
     airmate_analysis = _airmate_analysis_snapshot()
     product_history = _product_analysis_history()
     provisional_month = (
