@@ -32,7 +32,9 @@ for _p in fe.PRODUCTS:
     _QTY_HEADERS += [f"{_p} 販売", f"{_p} 夜在庫"]
 DAILY_HEADERS = (["日付", "会場", "曜日", "売上(税抜)", "売上(税込)", "客数"] + _QTY_HEADERS +
                  ["味別内訳", "天気", "最高気温", "最低気温", "雨量mm(営業時間)", "雨の時間数", "雲量%",
-                  "暦", "データ元", "固定", "注意", "所感", "日報の提出日時", "更新日時"])
+                  "暦", "データ元", "固定", "注意", "メモ", "日報の提出日時", "更新日時"])
+# 「メモ」は人が書き足す欄（例: 台風で早じまい）。日報の所感（自由記入）はここへ写さない。
+# 製造表は「リンクを知っている人は閲覧可」の共有なので、スタッフの文章は持ち込まない。
 LOG_HEADERS = (["予測した日", "会場", "対象日", "何日先", "天気の前提", "最高気温", "雨量mm"] +
                [f"{p} 予測" for p in fe.PRODUCTS] + ["売上 予測", "客数 予測"] +
                [f"{p} 納品" for p in fe.PRODUCTS] + ["記録日時"])
@@ -166,7 +168,7 @@ def record_to_row(rec, wx=None, flags=None, locked="", now=None):
     row += [w.get("label", ""), _cell(w.get("tmax")), _cell(w.get("tmin")), _cell(w.get("rain")),
             _cell(w.get("rainHours")) if w else "", _cell(w.get("cloud"))]
     row += [_calendar_text(d), rec.get("source", "日報フォーム"), locked,
-            " / ".join(flags or []), (rec.get("comment") or "")[:500],
+            " / ".join(flags or []), rec.get("memo", ""),      # メモは人が書く欄（新規の行は空）
             rec.get("submittedAt", ""), (now or _now()).strftime("%Y-%m-%d %H:%M")]
     return row
 
@@ -180,7 +182,7 @@ def row_to_record(row):
            "salesExcl": fe.to_number(row[COL["売上(税抜)"]]), "salesIncl": fe.to_number(row[COL["売上(税込)"]]),
            "customers": fe.to_number(row[COL["客数"]]), "qty": {}, "stock": {},
            "flavors": text_to_flavors(row[COL["味別内訳"]]), "stockFlavors": {},
-           "comment": row[COL["所感"]], "source": row[COL["データ元"]] or "日報フォーム",
+           "comment": "", "memo": row[COL["メモ"]], "source": row[COL["データ元"]] or "日報フォーム",
            "locked": bool(str(row[COL["固定"]]).strip()), "flagsText": row[COL["注意"]],
            "submittedAt": row[COL["日報の提出日時"]], "updatedAt": str(row[COL["更新日時"]]).strip()}
     for p in fe.PRODUCTS:
@@ -215,7 +217,7 @@ def load_daily(venue=None):
 
 # ───────────────────────── 取り込み（フォーム → アーカイブ） ─────────────────────────
 
-_SYNC_COLS = (["売上(税抜)", "売上(税込)", "客数"] + _QTY_HEADERS + ["味別内訳", "所感", "日報の提出日時"])
+_SYNC_COLS = (["売上(税抜)", "売上(税込)", "客数"] + _QTY_HEADERS + ["味別内訳", "日報の提出日時"])
 
 
 def _norm(v):
