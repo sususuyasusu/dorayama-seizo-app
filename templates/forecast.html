@@ -53,6 +53,15 @@ h3{margin:0 0 8px;font-size:13px;font-weight:700}
 .daytab b{display:block;color:var(--ink);font-size:13px}
 .daytab.off b{color:#e9b0a9}
 .daytab[aria-selected="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.chgdot{display:block;margin-top:2px;color:#f2c46a;font-size:10px;font-weight:700}
+.wxnote{margin:0 0 10px;color:var(--muted);font-size:11px;line-height:1.6}
+.wxnote b{color:var(--ink)}
+.wxnote.stale{color:#ead7a8}
+.chg{margin:0 0 12px;padding:11px 13px;border:1px solid #6b5630;border-left:4px solid #f2c46a;border-radius:10px;background:var(--gold-soft);color:#ead7a8;font-size:12px;line-height:1.65}
+.chg b{display:block;color:#fff1cf;font-size:13px}
+.chg ul{margin:6px 0 0;padding:0;list-style:none}
+.chg li{display:grid;grid-template-columns:78px 1fr;gap:8px;padding:2px 0;font-variant-numeric:tabular-nums}
+.chg li span{color:#d6bd85}
 .ctx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
 .tag{display:inline-block;padding:3px 9px;border:1px solid var(--line);border-radius:99px;background:var(--surface2);color:var(--muted);font-size:11px;white-space:nowrap}
 .tag.hol{border-color:#7a433d;background:var(--red-soft);color:#f0c4be}
@@ -196,7 +205,7 @@ function md(iso){const p=iso.split('-');return Number(p[1])+'/'+Number(p[2]);}
 function dayLabel(d){return d.md+'('+d.wdLabel+')';}
 function isOff(d){return d.isOff;}
 function wxText(d){
-  if(!d.weather)return '天気は平年並みとして計算';
+  if(!d.weather)return '天気予報はまだ無し（平年の気温'+(d.normalTmax!=null?' '+Math.round(d.normalTmax)+'℃':'')+'で計算）';
   const w=d.weather;
   let s=(w.emoji?w.emoji+' ':'')+w.label+'　'+Math.round(w.tmax)+'℃';
   if(w.rain>=0.5)s+='・雨'+w.rain.toFixed(w.rain>=10?0:1)+'mm';
@@ -211,12 +220,17 @@ function valueOf(item,t){
 function p50(item,t){const v=valueOf(item,t);return v==null?null:(typeof v==='object'?v.p50:v);}
 
 /* ── 読み込み ── */
-async function load(refresh){
+let lastLoad=0,loading=false;
+async function load(refresh,silent){
+  // silent＝開いたままの画面を自動で最新にするとき。表示を暗くしたり、見ている位置を動かしたりしない
+  if(loading)return;
+  loading=true;
   const btn=document.getElementById('reload');
   const st=document.getElementById('status');
-  btn.disabled=true;st.textContent=refresh?'最新の日報と天気を確認中…':'読み込み中…';
+  btn.disabled=true;
+  if(!silent)st.textContent=refresh?'最新の日報と天気を確認中…':'読み込み中…';
   const main=document.getElementById('main');
-  if(S.data)main.style.opacity='.55';
+  if(S.data&&!silent)main.style.opacity='.55';
   try{
     const q=new URLSearchParams(location.search);
     const p=new URLSearchParams();
@@ -225,19 +239,23 @@ async function load(refresh){
     const r=await fetch('/api/forecast'+(p.toString()?'?'+p:''),{cache:'no-store'});
     const j=await r.json();
     if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));
+    const selected=S.data&&planDays()[S.planIdx]?planDays()[S.planIdx].date:null;
     S.data=j;
+    lastLoad=Date.now();
     const all=j.products.concat(TARGETS);
     if(!all.includes(S.target))S.target='合計個数';
-    if(S.planIdx>=planDays().length)S.planIdx=0;
-    render();
+    // 見ていた納品日を保つ（日付が変わって無くなったら先頭へ）
+    const idx=selected?planDays().findIndex(d=>d.date===selected):-1;
+    S.planIdx=idx>=0?idx:(S.planIdx<planDays().length&&!selected?S.planIdx:0);
+    if(silent)rerenderKeepScroll();else render();
   }catch(e){
     if(!S.data){
       main.replaceChildren(h('div',{class:'panel'},h('div',{class:'errbox'},
         h('b',{text:'予測を読み込めませんでした'}),h('div',{text:String(e.message||e)}),
         h('div',{text:'少し待ってから「最新にする」を押してください。続く場合は日報フォームと製造表の接続を確認します。'}))));
     }
-    st.textContent='読み込み失敗';
-  }finally{btn.disabled=false;main.style.opacity='';}
+    st.textContent=silent?'自動更新に失敗（前回の表示のまま）':'読み込み失敗';
+  }finally{btn.disabled=false;main.style.opacity='';loading=false;}
 }
 function planDays(){return S.data?S.data.forecast.filter(d=>d.plan):[];}
 
@@ -276,14 +294,24 @@ function secPlan(){
   const D=S.data,days=planDays();
   const sec=h('section',{class:'panel',id:'sec-plan'},
     h('h2',{text:'16時に納品する数（＝本店で作る数）'}),
-    h('p',{class:'lead',text:'前の晩の在庫を引いた数です。日報が届くと自動で計算し直します。'}));
+    h('p',{class:'lead',text:'前の晩の在庫を引いた数です。日報が届いたとき・天気予報が変わったときに、自動で計算し直します。'}));
   if(!days.length){sec.appendChild(h('div',{class:'empty',text:'納品計画を作れる日がありません。'}));return sec;}
+  const changed={};
+  ((D.sinceMorning||{}).days||[]).forEach(c=>{changed[c.date]=c;});
   const tabs=h('div',{class:'daytabs',role:'tablist','aria-label':'納品日'});
   days.forEach((d,i)=>tabs.appendChild(h('button',{class:'daytab'+(isOff(d)?' off':''),type:'button',role:'tab',
     'aria-selected':String(i===S.planIdx),onclick:()=>{S.planIdx=i;rerenderKeepScroll();}},
-    h('b',{text:dayLabel(d)}),(d.weather&&d.weather.emoji?d.weather.emoji+' ':'')+(d.date===D.today?'きょう':i===0?'次の納品':''))));
+    h('b',{text:dayLabel(d)}),(d.weather&&d.weather.emoji?d.weather.emoji+' ':'')+(d.date===D.today?'きょう':i===0?'次の納品':''),
+    changed[d.date]?h('span',{class:'chgdot',text:'変更あり'}):null)));
   sec.appendChild(tabs);
   const d=days[S.planIdx];
+  const W=D.weatherInfo||{};
+  sec.appendChild(h('p',{class:'wxnote'+(W.stale?' stale':'')},
+    h('b',{text:'天気予報　'}),
+    W.fetchedAt?(W.fetchedAt.slice(11)+' に取得'+(W.stale?'（更新できず、この時刻の予報で計算中）':'')):'取得できていません',
+    '。'+(W.everyMin||10)+'分ごとに取り直し、予報が変わると下の数も自動で変わります。'));
+  const chg=changed[d.date];
+  if(chg)sec.appendChild(changeBox(chg,D.sinceMorning.loggedAt));
   const ctx=h('div',{class:'ctx'},h('span',{class:'tag wx',text:wxText(d)}));
   if(d.holiday)ctx.appendChild(h('span',{class:'tag hol',text:d.holiday}));
   if(d.period)ctx.appendChild(h('span',{class:'tag hol',text:d.period}));
@@ -291,8 +319,12 @@ function secPlan(){
   (d.events||[]).forEach(e=>ctx.appendChild(h('span',{class:'tag ev',text:'特別日：'+e})));
   const f=(d.factors||{})['合計個数']||{};
   Object.keys(GROUP_LABEL).forEach(g=>{
+    if(g==='wx')return;     // 天気は下で「平年と比べて」の形で出す
     if(f[g]!=null&&Math.abs(f[g]-1)>=0.03)ctx.appendChild(h('span',{class:'tag num',text:GROUP_LABEL[g]+' '+mult(f[g])}));
   });
+  const wn=(d.wxVsNormal||{})['合計個数'];
+  if(d.weather&&wn!=null&&Math.abs(wn-1)>=0.015)
+    ctx.appendChild(h('span',{class:'tag num',text:'天気の影響（平年比）'+(wn>1?'＋':'−')+Math.abs(Math.round((wn-1)*100))+'%'}));
   sec.appendChild(ctx);
   let baked=0,nama=0;
   D.products.forEach(p=>{const it=d.plan[p];if(!it)return;if(D.nama.includes(p))nama+=it.delivery;else baked+=it.delivery;});
@@ -335,12 +367,36 @@ function secPlan(){
   return sec;
 }
 
+function wxShort(w){
+  if(!w||!w.label)return '平年並み';
+  let s=w.label;
+  if(w.tmax!=null)s+=' '+Math.round(w.tmax)+'℃';
+  if(w.rain!=null&&w.rain>=0.5)s+='・雨'+(w.rain>=10?Math.round(w.rain):w.rain.toFixed(1))+'mm';
+  return s;
+}
+function signed(v){return (v>0?'＋':v<0?'−':'±')+Math.abs(Math.round(v));}
+function changeBox(c,loggedAt){
+  const box=h('div',{class:'chg',role:'status'});
+  const when=loggedAt?('けさ（'+loggedAt.slice(11)+'）の予測から'):'けさの予測から';
+  box.appendChild(h('b',{text:c.weatherChanged?'天気予報が変わったため、'+when+'数が変わりました':when+'数が変わりました（日報の更新など）'}));
+  const ul=h('ul');
+  if(c.weatherChanged)ul.appendChild(h('li',null,h('span',{text:'天気'}),wxShort(c.weatherBefore)+' → '+wxShort(c.weatherNow)));
+  if(Math.abs(c.totalNow-c.totalBefore)>=1)
+    ul.appendChild(h('li',null,h('span',{text:'販売見込み'}),n0(c.totalBefore)+'個 → '+n0(c.totalNow)+'個（'+signed(c.totalNow-c.totalBefore)+'）'));
+  const dl=c.items.filter(x=>x.deliveryBefore!=null&&x.deliveryNow!=null&&Math.abs(x.deliveryNow-x.deliveryBefore)>=1);
+  if(dl.length)ul.appendChild(h('li',null,h('span',{text:'納品数'}),
+    dl.map(x=>x.product+' '+n0(x.deliveryBefore)+'→'+n0(x.deliveryNow)+'個（'+signed(x.deliveryNow-x.deliveryBefore)+'）').join('、')));
+  else ul.appendChild(h('li',null,h('span',{text:'納品数'}),'変わりません'));
+  box.appendChild(ul);
+  return box;
+}
+
 /* ── 2. これからの見通し ── */
 function secOutlook(){
   const D=S.data;
   const sec=h('section',{class:'panel',id:'sec-outlook'},
     h('h2',{text:'これから5週間の販売見込み'}),
-    h('p',{class:'lead',text:'天気予報があるのは16日先まで。それより先は、平年並みの天気として計算しています。'}));
+    h('p',{class:'lead',text:'天気予報があるのは16日先まで。それより先は、その時期の平年の気温で計算し、予報が出た日から自動で置き換わります。「平年より ＋◯%」は、天気予報による上げ下げです。'}));
   sec.appendChild(h('div',{class:'chips'},h('button',{class:'chip',type:'button','aria-pressed':String(S.showRange),
     onclick:()=>{S.showRange=!S.showRange;rerenderKeepScroll();}},'幅（少なめ〜多め）も表示')));
   const head=h('tr',null,h('th',{text:'日付'}),h('th',{style:'text-align:left',text:'天気'}),h('th',{text:'売上（税込）'}),
@@ -370,8 +426,11 @@ function secOutlook(){
     const marks=[d.holiday,d.period].filter(Boolean).concat((d.events||[]).map(e=>'特別日'));
     if(marks.length)first.appendChild(h('span',{class:'sub',text:marks.join('・')}));
     const cls=[isOff(d)?'off':'',d.date===D.today?'today':'',d.weatherAssumed?'far':''].filter(Boolean).join(' ');
-    tb.appendChild(h('tr',{class:cls},first,
-      h('td',{style:'text-align:left',text:d.weather?((d.weather.emoji||'')+' '+Math.round(d.weather.tmax)+'℃'+(d.weather.rain>=1?' 雨'+Math.round(d.weather.rain)+'mm':'')):'平年並み'}),
+    const wtd=h('td',{style:'text-align:left',text:d.weather?((d.weather.emoji||'')+' '+Math.round(d.weather.tmax)+'℃'+(d.weather.rain>=1?' 雨'+Math.round(d.weather.rain)+'mm':'')):('平年並み'+(d.normalTmax!=null?'（'+Math.round(d.normalTmax)+'℃）':''))});
+    const wf=(d.wxVsNormal||{})['合計個数'];
+    if(d.weather&&wf!=null&&Math.abs(wf-1)>=0.015)
+      wtd.appendChild(h('span',{class:'sub',text:'平年より '+(wf>1?'＋':'−')+Math.abs(Math.round((wf-1)*100))+'%'}));
+    tb.appendChild(h('tr',{class:cls},first,wtd,
       cell(d.sales),cell(d.customers),cell(d.total),...D.products.map(p=>cell(d.qty[p]))));
   });
   flush();
@@ -646,7 +705,7 @@ function secArchive(){
   const D=S.data,A=D.data;
   const sec=h('section',{class:'panel',id:'sec-archive'},
     h('h2',{text:'溜まっているデータ（アーカイブ）'}),
-    h('p',{class:'lead',text:'売上日報が出るたびに、実績とその日の天気が自動で追加されます（30分ごとに確認）。溜まるほど予測が当たるようになります。'}));
+    h('p',{class:'lead',text:'売上日報が出るたびに、実績とその日の天気が自動で追加されます（15分ごとに確認）。溜まるほど予測が当たるようになります。'}));
   const src=Object.keys(A.sources).map(k=>k+' '+A.sources[k]+'日').join('・');
   sec.appendChild(h('div',{class:'kv'},
     h('div',{class:'tile'},h('span',{text:'実績の日数'}),h('strong',{class:'num',text:A.days+'日'}),h('small',{text:src})),
@@ -710,6 +769,12 @@ document.getElementById('reload').addEventListener('click',()=>load(true));
 let rz=null;
 window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data)drawTrend();},150);});
 load(false);
+// 開いたままでも最新に保つ: 5分ごと、または画面に戻ってきたとき（3分以上たっていれば）に取り直す
+const AUTO_MS=5*60*1000;
+setInterval(()=>{if(document.visibilityState==='visible'&&S.data)load(false,true);},AUTO_MS);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&S.data&&Date.now()-lastLoad>3*60*1000)load(false,true);
+});
 </script>
 </body>
 </html>

@@ -124,6 +124,49 @@ check("過去検証のずれが小さい（作ったばらつき8%に対し15%�
 sim = fe.simulate_policy(bt, fe.DEFAULT_SETTINGS)
 check("納品ルールの再現ができる", "黒どら" in sim and sim["黒どら"]["delivered"] > 0)
 
+print("5. 天気予報が変わったときの動き")
+import forecast_weather as fw
+import forecast_layer as fl
+
+sunny = fe.forecast_day(tr, date(2026, 9, 5), {"tmax": 27.0, "rain": 0.0}, {})
+rainy = fe.forecast_day(tr, date(2026, 9, 5), {"tmax": 27.0, "rain": 15.0}, {})
+check("同じ日でも、天気予報が晴れ→大雨に変わると販売見込みが変わる",
+      abs(sunny[fe.TOTAL]["p50"] - rainy[fe.TOTAL]["p50"]) >= 1,
+      f"晴れ{sunny[fe.TOTAL]['p50']:.0f} / 大雨{rainy[fe.TOTAL]['p50']:.0f}")
+plan_s = fe.recommend([{"date": date(2026, 9, 5), "qty": {p: sunny[p]["p50"] for p in fe.PRODUCTS}},
+                       {"date": date(2026, 9, 6), "qty": {p: sunny[p]["p50"] for p in fe.PRODUCTS}}], {"黒どら": 50},
+                      fe.DEFAULT_SETTINGS)[0]["items"]["黒どら"]["delivery"]
+plan_r = fe.recommend([{"date": date(2026, 9, 5), "qty": {p: rainy[p]["p50"] for p in fe.PRODUCTS}},
+                       {"date": date(2026, 9, 6), "qty": {p: rainy[p]["p50"] for p in fe.PRODUCTS}}], {"黒どら": 50},
+                      fe.DEFAULT_SETTINGS)[0]["items"]["黒どら"]["delivery"]
+check("販売見込みが変わると、納品数も変わる", abs(plan_s - plan_r) >= 1, f"晴れ{plan_s:.0f}個 / 大雨{plan_r:.0f}個")
+base = {"label": "晴れ", "tmax": 25.0, "rain": 0.0}
+check("同じ天気なら「変わっていない」", not fl._weather_changed(base, dict(base)))
+check("気温が0.5℃ちがうだけなら「変わっていない」", not fl._weather_changed(base, {"label": "晴れ", "tmax": 25.5, "rain": 0.0}))
+check("区分が変わったら「変わった」", fl._weather_changed(base, {"label": "雨", "tmax": 25.0, "rain": 0.6}))
+check("気温が1.5℃ちがえば「変わった」", fl._weather_changed(base, {"label": "晴れ", "tmax": 26.5, "rain": 0.0}))
+check("予報が無くなったら「変わった」", fl._weather_changed(base, {"label": "平年並み", "tmax": None, "rain": None}))
+calls = {"n": 0}
+
+
+def flaky():
+    calls["n"] += 1
+    if calls["n"] == 1:
+        return {"2026-09-05": {"label": "晴れ"}}
+    raise OSError("通信できません（点検用のわざとの失敗）")
+
+
+key = ("selftest", "天気")
+first = fw._cached(key, 0.0, flaky, stale_ok=3600.0)
+second = fw._cached(key, 0.0, flaky, stale_ok=3600.0)
+check("天気の取得に失敗しても、直前の予報で計算を続ける", second == first and fw._info[key]["stale"] is True, str(fw._info.get(key)))
+try:
+    fw._cached(("selftest", "初回から失敗"), 0.0, flaky, stale_ok=3600.0)
+    check("直前の予報も無いときは、失敗を隠さない", False, "例外が出なかった")
+except OSError:
+    check("直前の予報も無いときは、失敗を隠さない", True)
+check("天気予報の取り直しは10分以内", fw.FORECAST_TTL <= 600)
+
 print()
 if failed:
     print(f"✗ {len(failed)}件の点検に失敗: " + " / ".join(failed))

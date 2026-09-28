@@ -46,13 +46,27 @@ def _get(url, timeout=25):
         return json.loads(r.read().decode("utf-8"))
 
 
-def _cached(key, ttl, fn):
+FORECAST_TTL = 600.0            # 天気予報は10分ごとに取り直す（予報が変わったら、予測もすぐ変わるように）
+STALE_OK = 12 * 3600.0          # 取得に失敗したとき、ここまで古い予報なら代わりに使う（12時間）
+_info = {}                      # {キー: {"fetchedAt": 時刻, "stale": 古い予報で代用中か, "error": 理由}}
+
+
+def _cached(key, ttl, fn, stale_ok=0.0):
+    """ttl秒は使い回す。取り直しに失敗したら、stale_ok秒以内の前回分で代用する（代用中の印を残す）。
+    前回分も無ければ例外を上げる（黙って空を返さない）。"""
     now = time.time()
     hit = _cache.get(key)
     if hit and now - hit[0] < ttl:
         return hit[1]
-    val = fn()
+    try:
+        val = fn()
+    except Exception as e:
+        if hit and now - hit[0] < stale_ok:
+            _info[key] = {"fetchedAt": hit[0], "stale": True, "error": str(e)[:100]}
+            return hit[1]
+        raise
     _cache[key] = (now, val)
+    _info[key] = {"fetchedAt": now, "stale": False, "error": None}
     return val
 
 
@@ -132,15 +146,27 @@ def _coords(venue):
 
 
 def recent_and_forecast(venue, past_days=92, forecast_days=16):
-    """直近の実績（最大92日前まで）と16日先までの予報。1時間キャッシュ。"""
+    """直近の実績（最大92日前まで）と16日先までの予報。10分ごとに取り直す。"""
     lat, lon = _coords(venue)
 
     def load():
         url = ("https://api.open-meteo.com/v1/forecast"
                f"?latitude={lat}&longitude={lon}&hourly={_HOURLY},precipitation_probability&daily={_DAILY}"
                f"&timezone=Asia%2FTokyo&past_days={past_days}&forecast_days={forecast_days}")
-        return _aggregate(_get(url), with_pop=True)
-    return _cached(("fc", venue, past_days, forecast_days), 3600.0, load)
+        data = _aggregate(_get(url), with_pop=True)
+        if not data:
+            raise RuntimeError("天気予報が空で返ってきました")
+        return data
+    return _cached(("fc", venue, past_days, forecast_days), FORECAST_TTL, load, stale_ok=STALE_OK)
+
+
+def forecast_info(venue, past_days=92, forecast_days=16):
+    """天気予報をいつ取得したか。返り値: {"fetchedAt": "YYYY-MM-DD HH:MM", "stale": bool, "error": str|None}"""
+    i = _info.get(("fc", venue, past_days, forecast_days))
+    if not i:
+        return {"fetchedAt": None, "stale": False, "error": None}
+    at = datetime.fromtimestamp(i["fetchedAt"], JST).strftime("%Y-%m-%d %H:%M")
+    return {"fetchedAt": at, "stale": i["stale"], "error": i["error"]}
 
 
 def history(venue, start, end):

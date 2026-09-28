@@ -24,8 +24,8 @@ DEFAULT_VENUE = "エキュート上野"
 HORIZON_DAYS = 35            # 何日先まで出すか
 PLAN_DAYS = 7                # 納品計画を出す日数
 LOG_HORIZONS = 7             # 予測の控えを残す日数（今日から7日先まで）
-SYNC_INTERVAL_SEC = 30 * 60
-PAYLOAD_TTL = 600.0
+SYNC_INTERVAL_SEC = 15 * 60  # 日報の確認と、予測の作り直しの間隔
+PAYLOAD_TTL = 300.0          # 画面用データは5分で作り直す（天気予報の取り直しは10分ごと）
 FIRST_DELAY_SEC = 45
 
 _lock = threading.Lock()
@@ -275,10 +275,16 @@ def build(venue=None, today=None):
     if no_wx:
         warnings.append(f"天気が未取得の日が{len(no_wx)}日あります（次の取り込みで自動的に埋めます）")
 
+    # 天気予報は10分ごとに取り直す。予報が変われば、この後の予測・納品数もそのまま変わる
     try:
         fwx = {date(*map(int, k.split("-"))): v for k, v in fw.forecast(venue).items()}
+        wx_info = fw.forecast_info(venue)
+        if wx_info["stale"]:
+            warnings.append(f"天気予報を更新できなかったため、{(wx_info['fetchedAt'] or '')[11:]} に取得した予報で"
+                            f"計算しています（復旧すると自動で最新に戻ります）")
     except Exception as e:
         fwx = {}
+        wx_info = {"fetchedAt": None, "stale": True, "error": str(e)[:60]}
         warnings.append(f"天気予報を取得できませんでした。天気は平年並みとして計算しています（{str(e)[:60]}）")
 
     trained = fe.train(recs, hist_wx, events)
@@ -328,7 +334,12 @@ def build(venue=None, today=None):
         wx = fwx.get(d)
         item = _day_info(d, events)
         item["weather"] = wx
-        item["weatherAssumed"] = wx is None
+        item["weatherAssumed"] = wx is None      # 天気予報がまだ無い日＝その時期の平年の気温で計算
+        item["normalTmax"] = fe.normal_tmax(d)
+        # 天気予報による上げ下げ（平年並みの天気だった場合と比べて何倍か）
+        item["wxVsNormal"] = {t: round(fc[t]["wxVsNormal"], 3)
+                              for t in list(fe.PRODUCTS) + [fe.TOTAL, "売上", "客数"]
+                              if t in fc and "wxVsNormal" in fc[t]}
         item["qty"] = {p: {"p50": _round(fc[p]["p50"]), "lo": _round(fc[p]["lo"]), "hi": _round(fc[p]["hi"])}
                        for p in fe.PRODUCTS if p in fc}
         for key, t in (("total", fe.TOTAL), ("sales", "売上"), ("customers", "客数")):
@@ -387,6 +398,9 @@ def build(venue=None, today=None):
         "generatedAt": now.strftime("%Y-%m-%d %H:%M"), "today": today.isoformat(),
         "products": fe.PRODUCTS, "nama": sorted(fe.NAMA), "settings": st,
         "planStart": plan_start.isoformat(), "stockNote": stock_note,
+        "weatherInfo": {"fetchedAt": wx_info.get("fetchedAt"), "stale": bool(wx_info.get("stale")),
+                        "everyMin": int(fw.FORECAST_TTL // 60), "days": len(fwx)},
+        "sinceMorning": changes_since_morning(venue, today, forecast),
         "data": {"days": len(recs), "first": recs[0]["date"].isoformat(), "last": last["date"].isoformat(),
                  "sources": sources, "missing": missing, "flagged": flagged,
                  # 再起動の直後でも分かるよう、取り込み時刻が無ければシートの更新日時の最新を使う
@@ -402,6 +416,59 @@ def build(venue=None, today=None):
                    for d in sorted(events) for e in events[d] if d >= today - timedelta(days=60)],
         "warnings": warnings + list(cal.warnings),
     }
+
+
+def _weather_changed(before, now):
+    """天気の前提が変わったか（区分が変わる／最高気温が1℃以上／雨量が1mm以上ちがう）。"""
+    if (before.get("label") or "") != (now.get("label") or ""):
+        return True
+    for key, limit in (("tmax", 1.0), ("rain", 1.0)):
+        a, b = before.get(key), now.get(key)
+        if (a is None) != (b is None):
+            return True
+        if a is not None and abs(a - b) >= limit:
+            return True
+    return False
+
+
+def changes_since_morning(venue, today, forecast):
+    """けさ控えた予測と、いまの予測の違い（天気予報が変わった・日報が届いた等で変わった分）。
+    けさの控えがまだ無いときは None。返り値の days は、変わった日だけ。"""
+    try:
+        logs = [lg for lg in archive.load_log(venue) if lg["made"] == today]
+    except Exception:
+        return None
+    if not logs:
+        return None
+    by_target = {lg["target"]: lg for lg in logs}
+    days = []
+    for item in forecast:
+        d = date(*map(int, item["date"].split("-")))
+        lg = by_target.get(d)
+        if not lg:
+            continue
+        wx_now = item.get("weather") or {}
+        now_w = {"label": wx_now.get("label") or "平年並み", "tmax": wx_now.get("tmax"), "rain": wx_now.get("rain")}
+        before_w = {"label": lg["weather"] or "平年並み", "tmax": lg["tmax"], "rain": lg["rain"]}
+        rows = []
+        tot_before = tot_now = 0
+        for p in fe.PRODUCTS:
+            pb, pn = lg["pred"].get(p), (item["qty"].get(p) or {}).get("p50")
+            db, dn = lg["delivery"].get(p), ((item.get("plan") or {}).get(p) or {}).get("delivery")
+            if pb is not None and pn is not None:
+                tot_before += pb
+                tot_now += pn
+            pred_diff = pb is not None and pn is not None and abs(pn - pb) >= 1
+            deliv_diff = db is not None and dn is not None and abs(dn - db) >= 1
+            if pred_diff or deliv_diff:
+                rows.append({"product": p, "predBefore": pb, "predNow": pn,
+                             "deliveryBefore": db, "deliveryNow": dn})
+        w_changed = _weather_changed(before_w, now_w)
+        if rows or w_changed:
+            days.append({"date": item["date"], "weatherChanged": w_changed,
+                         "weatherBefore": before_w, "weatherNow": now_w,
+                         "totalBefore": tot_before, "totalNow": tot_now, "items": rows})
+    return {"loggedAt": logs[0].get("loggedAt") or "", "days": days}
 
 
 def log_accuracy(venue, by_date):
@@ -509,7 +576,7 @@ def _loop():
 
 def start():
     threading.Thread(target=_loop, name="forecast-archive", daemon=True).start()
-    print("[forecast] 製造数予測のアーカイブ更新を開始（30分ごと）", flush=True)
+    print("[forecast] 製造数予測のアーカイブ更新を開始（15分ごと）", flush=True)
 
 
 def get_status():

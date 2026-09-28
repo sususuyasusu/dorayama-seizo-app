@@ -263,18 +263,41 @@ def group_of(name):
     return "cal"
 
 
+# 東京の最高気温の平年値（1991〜2020年の月ごとの平均・気象庁）。各月の15日の値として、間の日は按分する。
+NORMAL_TMAX = [9.8, 10.9, 14.2, 19.4, 23.6, 26.1, 29.9, 31.3, 27.5, 22.0, 16.7, 12.0]
+
+
+def normal_tmax(d):
+    """その日の「平年の最高気温」。"""
+    m = d.month - 1
+    if d.day >= 15:
+        a, b = NORMAL_TMAX[m], NORMAL_TMAX[(m + 1) % 12]
+        t = (d.day - 15) / 30.0
+    else:
+        a, b = NORMAL_TMAX[(m - 1) % 12], NORMAL_TMAX[m]
+        t = (d.day + 15) / 30.0
+    return round(a + (b - a) * min(1.0, t), 1)
+
+
+def normal_weather(d):
+    """天気予報がまだ無い日に使う「平年並み」。気温は平年値、雨は「わからない」（＝これまでの平均的な降り方）。"""
+    return {"tmax": normal_tmax(d), "rain": None, "normal": True}
+
+
 def weather_features(wx):
-    """天気 → 要因の値。天気が無い日は空（＝平年並みとして扱われる）。"""
+    """天気 → 要因の値。雨量が分からない日（平年並みで計算する日）は、雨の要因を入れない
+    （＝これまでの平均的な降り方として扱う）。天気がまったく無い日は空。"""
     if not wx or wx.get("tmax") is None:
         return {}
-    rain = wx.get("rain") or 0.0
     tmax = wx["tmax"]
-    f = {"rain": math.log1p(max(0.0, rain)),
-         "hot": max(0.0, tmax - 30.0) / 5.0, "cool": max(0.0, 20.0 - tmax) / 5.0}
+    f = {"hot": max(0.0, tmax - 30.0) / 5.0, "cool": max(0.0, 20.0 - tmax) / 5.0}
     if OPT["useTemp"]:
         f["temp"] = (tmax - 25.0) / 10.0
-    if rain >= 10:
-        f["rain_heavy"] = 1.0
+    rain = wx.get("rain")
+    if rain is not None:
+        f["rain"] = math.log1p(max(0.0, rain))
+        if rain >= 10:
+            f["rain_heavy"] = 1.0
     return f
 
 
@@ -420,8 +443,9 @@ class Design:
         self.rows = [self.row(d["feats"], has_weather=("rain" in d["feats"])) for d in days]
 
     def row(self, feats, has_weather=True):
-        """要因dict → 疎な行 [(列番号, 値)]。天気が無い日は天気の列を0（＝平均的な天気）にする。
-        雨量・気温は、学習データで経験した範囲の外へは延長しない（真冬の気温などで暴れないように）。"""
+        """要因dict → 疎な行 [(列番号, 値)]。入っていない要因は0（連続の要因なら学習データの平均）として扱う。
+        雨量・気温は、学習データで経験した範囲の外へは延長しない（真冬の気温などで暴れないように）。
+        has_weather は以前の呼び出し方との互換のために残してあるだけで、使わない。"""
         r = [(0, 1.0)]
         for k, v in feats.items():
             j = self.index.get(k)
@@ -432,10 +456,7 @@ class Design:
                 mu, sd = self.scale[k]
                 v = (min(max(v, lo), hi) - mu) / sd
             r.append((j, v))
-        if has_weather:
-            for k, (mu, sd) in self.scale.items():     # 値が無い連続要因は0として標準化
-                if k not in feats:
-                    r.append((self.index[k], (0.0 - mu) / sd))
+        # 入っていない連続の要因（雨量が分からない日の雨など）は、0のまま＝学習データの平均として扱う
         return r
 
     def penalty(self, lam):
@@ -668,16 +689,21 @@ def train(records, weather, events, as_of=None, targets=None, lambdas=None, robu
 
 
 def forecast_day(trained, d, wx, events, calib=None):
-    """1日ぶんの全項目の予測。wx が None なら「平年並みの天気」として計算。
-    calib: 過去検証で測ったばらつき {項目: 値}。あれば予測の幅に使う。"""
-    feats = features_for(d, wx, events)
+    """1日ぶんの全項目の予測。wx が None（天気予報がまだ無い日）は、その時期の平年の気温で計算する。
+    calib: 過去検証で測ったばらつき {項目: 値}。あれば予測の幅に使う。
+    各項目の wxVsNormal は「平年並みの天気だった場合と比べて何倍か」（天気予報による上げ下げ）。"""
+    normal = normal_weather(d)
+    used = wx if (wx and wx.get("tmax") is not None) else normal
+    feats = features_for(d, used, events)
+    feats_normal = features_for(d, normal, events)
     manual = None
     for e in (events or {}).get(d, []):
         if e.get("kind") != "除外" and e.get("factor"):
             manual = float(e["factor"])
-    has_wx = bool(wx and wx.get("tmax") is not None)
-    raw = {t: predict(trained["design"], m, feats, has_weather=has_wx, event_factor=manual)
+    raw = {t: predict(trained["design"], m, feats, event_factor=manual)
            for t, m in trained["models"].items()}
+    base_wx = {t: predict(trained["design"], m, feats_normal, event_factor=manual)["factors"].get("wx", 1.0)
+               for t, m in trained["models"].items()}
     shares = trained.get("shares")
     total = raw.get(TOTAL)
     out = {}
@@ -687,7 +713,8 @@ def forecast_day(trained, d, wx, events, calib=None):
             p50 = (1.0 - BLEND) * p50 + BLEND * total["p50"] * shares[t]
         sigma = (calib or {}).get(t) or trained["models"][t]["sigma"] * 1.25
         out[t] = {"p50": p50, "lo": p50 * math.exp(-Z80 * sigma), "hi": p50 * math.exp(Z80 * sigma),
-                  "sigma": sigma, "factors": r["factors"], "base": r["base"]}
+                  "sigma": sigma, "factors": r["factors"], "base": r["base"],
+                  "wxVsNormal": r["factors"].get("wx", 1.0) / base_wx[t] if base_wx.get(t) else 1.0}
     for p in PRODUCTS:                      # 商品モデルが作れなかった商品は、全体×比率だけで出す
         if p not in out and total and shares:
             sigma = (calib or {}).get(p) or 0.45

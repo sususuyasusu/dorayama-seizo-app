@@ -440,7 +440,8 @@ def load_log(venue):
         if not made or not target or str(row[1]).strip() != venue:
             continue
         rec = {"made": made, "target": target, "horizon": fe.to_number(row[3]),
-               "weather": row[4], "pred": {}, "delivery": {}}
+               "weather": row[4], "tmax": fe.to_number(row[5]), "rain": fe.to_number(row[6]),
+               "loggedAt": str(row[len(LOG_HEADERS) - 1]).strip(), "pred": {}, "delivery": {}}
         for k, p in enumerate(fe.PRODUCTS):
             rec["pred"][p] = fe.to_number(row[7 + k])
             rec["delivery"][p] = fe.to_number(row[7 + len(fe.PRODUCTS) + 2 + k])
