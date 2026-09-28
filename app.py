@@ -202,6 +202,19 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/raw_styled":
             import sheetfmt_layer
             self._send(200, json.dumps(sheetfmt_layer.get_raw_styled(tab), ensure_ascii=False))
+        elif path == "/forecast" or path == "/forecast/":
+            # 製造数予測（上野エキュート）。読み込みはここでだけ行い、不具合が出ても他の画面を巻き込まない
+            self._send(200, (BASE / "templates" / "forecast.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
+        elif path == "/api/forecast":
+            import forecast_layer
+            q = parse_qs(u.query)
+            self._send(200, json.dumps(forecast_layer.get_forecast(
+                (q.get("venue") or [None])[0], refresh=(q.get("refresh") or ["0"])[0] == "1"),
+                ensure_ascii=False))
+        elif path == "/api/forecast/status":
+            import forecast_layer
+            self._send(200, json.dumps(forecast_layer.get_status(), ensure_ascii=False, default=str))
         elif path.startswith("/static/"):
             p = (STATIC / path[len("/static/"):]).resolve()
             if STATIC in p.parents and p.is_file() and p.suffix.lower() in MIME:
@@ -341,4 +354,9 @@ if __name__ == "__main__":
         egg_autoheal.start()     # 卵シートの自己修復を1日1回（発注ブロックの0埋め等を自動是正）
         import brief_scheduler
         brief_scheduler.start()  # 毎朝6:30に昨日の速報を社員LINEへ（BRIEF_LINE_*未設定なら何もしない）
+        try:
+            import forecast_layer
+            forecast_layer.start()   # 製造数予測のアーカイブ更新（日報の取り込み・天気・予測の控え。外部へは何も送らない）
+        except Exception as error:   # 予測が起動できなくても、アプリ本体は止めない
+            print(f"[forecast] 起動できませんでした: {error}", flush=True)
     ThreadingHTTPServer((host, port), Handler).serve_forever()
