@@ -47,7 +47,8 @@ def _get(url, timeout=25):
 
 
 FORECAST_TTL = 600.0            # 天気予報は10分ごとに取り直す（予報が変わったら、予測もすぐ変わるように）
-STALE_OK = 12 * 3600.0          # 取得に失敗したとき、ここまで古い予報なら代わりに使う（12時間）
+STALE_OK = 36 * 3600.0          # 取得に失敗したとき、ここまで古い予報なら代わりに使う（36時間）
+MIN_FUTURE_DAYS = 7             # きょう以降がこの日数そろっていない予報は「取得失敗」として扱う
 _info = {}                      # {キー: {"fetchedAt": 時刻, "stale": 古い予報で代用中か, "error": 理由}}
 
 
@@ -154,8 +155,13 @@ def recent_and_forecast(venue, past_days=92, forecast_days=16):
                f"?latitude={lat}&longitude={lon}&hourly={_HOURLY},precipitation_probability&daily={_DAILY}"
                f"&timezone=Asia%2FTokyo&past_days={past_days}&forecast_days={forecast_days}")
         data = _aggregate(_get(url), with_pop=True)
-        if not data:
-            raise RuntimeError("天気予報が空で返ってきました")
+        # 返ってきた予報が欠けていないか確かめる。きょう以降が抜けた予報をそのまま使うと、
+        # 全日が「平年並み」扱いになってしまう（2026-09-29 朝の控えで発生）。欠けていたら失敗として扱い、
+        # 直前の予報で計算を続ける。
+        today = datetime.now(JST).date().isoformat()
+        future = [k for k in data if k >= today]
+        if today not in data or len(future) < MIN_FUTURE_DAYS:
+            raise RuntimeError(f"天気予報が欠けています（きょう以降が{len(future)}日分）")
         return data
     return _cached(("fc", venue, past_days, forecast_days), FORECAST_TTL, load, stale_ok=STALE_OK)
 

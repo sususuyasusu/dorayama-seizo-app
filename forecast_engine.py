@@ -736,10 +736,12 @@ def weekday_baseline(records, d, target, weeks=4):
     return sum(near) / len(near) if near else None
 
 
-def backtest(records, weather, events, min_train=28, max_days=56):
+def backtest(records, weather, events, min_train=28, max_days=56, preds_out=None):
     """過去にさかのぼって「その日より前のデータだけで予測したら当たったか」を確かめる。
     天気は実績を使う（＝天気予報が外れる分は含まない）。
-    翌日の予測も同時に出す（納品ルールの検証に使う）。"""
+    翌日の予測も同時に出す（納品ルールの検証に使う）。
+    preds_out に辞書を渡すと、実績が0・未記入の項目も含めた全項目の予測を {日付: {項目: 予測}} で入れる
+    （画面の「過去の予測と実績」用。採点には使わない）。"""
     recs = sorted(records, key=lambda r: r["date"])
     test = [r for i, r in enumerate(recs) if i >= min_train][-max_days:]
     rows = []
@@ -759,6 +761,8 @@ def backtest(records, weather, events, min_train=28, max_days=56):
         nd = d + timedelta(days=1)
         fc_next = forecast_day(trained, nd, weather.get(nd), events)
         feats = features_for(d, weather.get(d), events)
+        if preds_out is not None:
+            preds_out[d] = {t: fc[t]["p50"] for t in ALL_TARGETS if t in fc}
         for t in ALL_TARGETS:
             actual = target_value(r, t)
             if not actual or t not in fc:

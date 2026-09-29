@@ -167,6 +167,77 @@ except OSError:
     check("直前の予報も無いときは、失敗を隠さない", True)
 check("天気予報の取り直しは10分以内", fw.FORECAST_TTL <= 600)
 
+
+def broken_weather(url, timeout=25):
+    """きょう以降が抜けた応答（2026-09-29の朝に起きた形）。過去の3日分しか入っていない。"""
+    now = fw.datetime.now(fw.JST).date()
+    ds = [(now - timedelta(days=k)).isoformat() for k in (3, 2, 1)]
+    return {"hourly": {"time": [], "temperature_2m": [], "precipitation": [], "cloud_cover": []},
+            "daily": {"time": ds, "temperature_2m_max": [25, 26, 27], "temperature_2m_min": [18, 18, 19],
+                      "precipitation_sum": [0, 0, 0], "weather_code": [0, 0, 0]}}
+
+
+orig_get = fw._get
+fw._get = broken_weather
+fw._cache.pop(("fc", "エキュート上野", 92, 16), None)
+try:
+    fw.recent_and_forecast("エキュート上野")
+    check("きょう以降が抜けた天気予報は、失敗として扱う", False, "例外が出なかった")
+except RuntimeError as e:
+    check("きょう以降が抜けた天気予報は、失敗として扱う", "欠けて" in str(e), str(e))
+finally:
+    fw._get = orig_get
+    fw._cache.pop(("fc", "エキュート上野", 92, 16), None)
+
+print("6. 過去の予測と実績（答え合わせ）")
+today = date(2026, 8, 30)                       # 4.で作った実績は 6/1〜8/29
+
+
+def log_row(made, target, each, wx=("晴れ", 27.0, 0.0), at=""):
+    pred = {p: each for p in fe.PRODUCTS}
+    pred.update({"売上": each * 5000, "客数": each * 4})
+    return {"made": made, "target": target, "horizon": (target - made).days, "weather": wx[0], "tmax": wx[1],
+            "rain": wx[2], "loggedAt": at, "pred": pred, "delivery": {p: each // 2 for p in fe.PRODUCTS}}
+
+
+logs = [log_row(date(2026, 8, 27), date(2026, 8, 28), 10, at="2026-08-27 05:10"),
+        log_row(date(2026, 8, 28), date(2026, 8, 28), 12, wx=("平年並み", None, None), at="2026-08-28 05:12"),
+        log_row(date(2026, 8, 30), date(2026, 8, 30), 10)]          # きょうの分は「過去」に出さない
+bt_like = {"preds": {date(2026, 8, 27): dict({p: 50.6 for p in fe.PRODUCTS},
+                                             **{fe.TOTAL: 300.4, "売上": 400000.2, "客数": 350.0})}}
+orig_log = fl.archive.load_log
+fl.archive.load_log = lambda venue: logs
+try:
+    past = fl.past_forecasts("テスト店", recs, {}, today, bt_like)
+finally:
+    fl.archive.load_log = orig_log
+by_day = {x["date"]: x for x in past}
+check("新しい日が先・きょう以降は出さない", past[0]["date"] == "2026-08-29" and all(x["date"] < "2026-08-30" for x in past),
+      past[0]["date"])
+check("さかのぼるのは90日まで", len(past) == 90 and past[-1]["date"] == "2026-06-01", f"{len(past)}日・{past[-1]['date']}")
+f28 = by_day["2026-08-28"]["forecast"]
+check("控えがある日は、対象日にいちばん近い控えを使う", f28["kind"] == "logged" and f28["daysBefore"] == 0
+      and f28["qty"]["黒どら"] == 12 and f28["total"] == 12 * len(fe.PRODUCTS) and f28["madeAt"] == "2026-08-28 05:12", str(f28))
+check("もっと前の控えも残す", [e["daysBefore"] for e in by_day["2026-08-28"].get("earlier", [])] == [1]
+      and by_day["2026-08-28"]["earlier"][0]["total"] == 10 * len(fe.PRODUCTS), str(by_day["2026-08-28"].get("earlier")))
+check("天気予報なしで控えた日は、その旨が分かる", f28["weather"]["tmax"] is None and f28["weather"]["label"] == "平年並み",
+      str(f28["weather"]))
+f27 = by_day["2026-08-27"]["forecast"]
+check("控えが無い日は、あとから計算した予測を使う", f27["kind"] == "backtest" and f27["total"] == 300
+      and f27["qty"]["黒どら"] == 51 and f27["sales"] == 400000, str(f27))
+check("どちらも無い日は「予測なし」", by_day["2026-08-26"]["forecast"] is None)
+a29 = by_day["2026-08-29"]
+check("実際の納品（推定）＝今夜の在庫−前夜の在庫＋販売数",
+      a29["deliveredEst"] == {p: a29["actual"]["qty"][p] for p in fe.PRODUCTS}, str(a29["deliveredEst"]))
+recs0 = [dict(r, qty=dict(r["qty"])) for r in recs]
+recs0[-1]["qty"]["皮だけ"] = 0
+preds = {}
+rows0 = fe.backtest(recs0, weather, {}, max_days=3, preds_out=preds)
+last = recs0[-1]["date"]
+check("実績が0個の商品も、過去の予測には残す（採点には入れない）",
+      "皮だけ" in preds.get(last, {}) and not any(r["date"] == last and r["target"] == "皮だけ" for r in rows0),
+      str(sorted(preds.get(last, {}))))
+
 print()
 if failed:
     print(f"✗ {len(failed)}件の点検に失敗: " + " / ".join(failed))

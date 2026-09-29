@@ -28,14 +28,64 @@ SYNC_INTERVAL_SEC = 15 * 60  # 日報の確認と、予測の作り直しの間�
 PAYLOAD_TTL = 300.0          # 画面用データは5分で作り直す（天気予報の取り直しは10分ごと）
 FIRST_DELAY_SEC = 45
 
+LOG_FROM_HOUR = 5            # 予測の控えは朝5時以降に取る
+LOG_DEADLINE_HOUR = 9        # 天気予報が取れない朝は、この時刻まで待ってから控える（待っても無ければそのまま控える）
+WX_SAVE_INTERVAL = 3600.0    # 直近の天気予報を設定タブへ控える間隔（再起動しても予報を失わないため）
+WX_SAVED_MAX_AGE_H = 36      # 控えた天気予報を使ってよい古さ（時間）
+PAST_DAYS = 90               # 「過去の予測と実績」に出す日数
+
 _lock = threading.Lock()
 _payload = {}                # {venue: (時刻, データ)}
 _backtest = {}               # {venue: {"key":..., "rows":..., "calib":..., "accuracy":..., "policy":...}}
-status = {"lastTick": None, "lastResult": None, "lastError": None, "lastLog": None}
+_wx_saved = {}               # {venue: 最後に設定タブへ控えた時刻}
+status = {"lastTick": None, "lastResult": None, "lastError": None, "lastLog": None,
+          "startedAt": datetime.now(JST).strftime("%Y-%m-%d %H:%M"), "weather": None, "logWaiting": None}
 
 
 def _now():
     return datetime.now(JST)
+
+
+# ───────────────────────── 天気予報の控え（再起動や取得失敗にそなえる） ─────────────────────────
+
+_WX_KEYS = ("label", "tmax", "tmin", "rain", "rainHours", "cloud", "pop")
+
+
+def _remember_weather(venue, fwx, info):
+    """取れたての天気予報を、1時間に1回だけ設定タブへ控える。"""
+    if info.get("stale") or not fwx:
+        return
+    now = time.time()
+    if now - _wx_saved.get(venue, 0.0) < WX_SAVE_INTERVAL:
+        return
+    _wx_saved[venue] = now
+    try:
+        days = {d.isoformat(): [w.get(k) for k in _WX_KEYS] for d, w in sorted(fwx.items())}
+        config_store.set_config(f"fc_wx_last_{venue}", json.dumps(
+            {"at": info.get("fetchedAt"), "days": days}, ensure_ascii=False, separators=(",", ":")))
+    except Exception:
+        pass        # 控えに失敗しても、予測そのものは止めない
+
+
+def _recall_weather(venue, today):
+    """設定タブに控えた天気予報を読む。古すぎる・きょう以降が無いときは None。"""
+    try:
+        raw = config_store.get_config(f"fc_wx_last_{venue}")
+        saved = json.loads(raw) if raw else None
+        at = datetime.strptime(saved["at"], "%Y-%m-%d %H:%M").replace(tzinfo=JST)
+    except Exception:
+        return None
+    if (_now() - at).total_seconds() > WX_SAVED_MAX_AGE_H * 3600:
+        return None
+    out = {}
+    for key, vals in (saved.get("days") or {}).items():
+        d = fe.parse_date(key)
+        if d is None or d < today:
+            continue
+        w = dict(zip(_WX_KEYS, vals))
+        w["emoji"] = fw.EMOJI.get(w.get("label") or "", "")
+        out[d] = w
+    return {"fetchedAt": saved["at"], "days": out} if out else None
 
 
 def settings():
@@ -78,13 +128,14 @@ def run_backtest(venue, recs, events):
     if hit and hit["key"] == key:
         return hit
     if len(recs) < 35:
-        res = {"key": key, "rows": [], "calib": {}, "accuracy": {}, "policy": {}, "at": None,
+        res = {"key": key, "rows": [], "preds": {}, "calib": {}, "accuracy": {}, "policy": {}, "at": None,
                "note": f"データが{len(recs)}日分のため、過去検証はまだできません（35日分から）"}
         _backtest[venue] = res
         return res
-    rows = fe.backtest(recs, _weather_of(recs), events)
+    preds = {}
+    rows = fe.backtest(recs, _weather_of(recs), events, preds_out=preds)
     calib = fe.calibration(rows)
-    res = {"key": key, "rows": rows, "calib": calib,
+    res = {"key": key, "rows": rows, "preds": preds, "calib": calib,
            "accuracy": fe.accuracy_summary(rows, calib),
            "policy": fe.simulate_policy(rows, settings()),
            "at": _now().strftime("%Y-%m-%d %H:%M"), "note": ""}
@@ -280,18 +331,28 @@ def build(venue=None, today=None):
         fwx = {date(*map(int, k.split("-"))): v for k, v in fw.forecast(venue).items()}
         wx_info = fw.forecast_info(venue)
         if wx_info["stale"]:
-            warnings.append(f"天気予報を更新できなかったため、{(wx_info['fetchedAt'] or '')[11:]} に取得した予報で"
-                            f"計算しています（復旧すると自動で最新に戻ります）")
+            warnings.append(f"天気予報を更新できなかったため、{(wx_info['fetchedAt'] or '')[5:].replace('-', '/')} に"
+                            f"取得した予報で計算しています（復旧すると自動で最新に戻ります）")
+        _remember_weather(venue, fwx, wx_info)
     except Exception as e:
-        fwx = {}
-        wx_info = {"fetchedAt": None, "stale": True, "error": str(e)[:60]}
-        warnings.append(f"天気予報を取得できませんでした。天気は平年並みとして計算しています（{str(e)[:60]}）")
+        saved = _recall_weather(venue, today)       # 再起動の直後など、手元に予報が無いときの控え
+        if saved:
+            fwx = saved["days"]
+            wx_info = {"fetchedAt": saved["fetchedAt"], "stale": True, "error": str(e)[:60]}
+            warnings.append(f"天気予報を更新できなかったため、{saved['fetchedAt'][5:].replace('-', '/')} に"
+                            f"取得した予報で計算しています（復旧すると自動で最新に戻ります）")
+        else:
+            fwx = {}
+            wx_info = {"fetchedAt": None, "stale": True, "error": str(e)[:60]}
+            warnings.append(f"天気予報を取得できませんでした。その時期の平年の気温で計算しています（{str(e)[:60]}）")
+    status["weather"] = {"at": now.strftime("%Y-%m-%d %H:%M"), "fetchedAt": wx_info.get("fetchedAt"),
+                         "stale": bool(wx_info.get("stale")), "days": len(fwx), "error": wx_info.get("error")}
 
     trained = fe.train(recs, hist_wx, events)
     if not trained or fe.TOTAL not in trained["models"]:
         raise RuntimeError(f"「{venue}」は実績が{len(recs)}日分のため、まだ予測できません"
                            f"（{fe.MIN_TRAIN_DAYS}日分から）")
-    bt = _backtest.get(venue)
+    bt = bt_any = _backtest.get(venue)             # bt_any＝少し古くても「過去の予測」の表示には使う
     if bt and bt["key"] != _data_key(recs, events):
         bt = None                                  # データが変わったので、検証は作り直し待ち
     if bt is None:
@@ -411,11 +472,81 @@ def build(venue=None, today=None):
                   "shares": {p: round(v, 4) for p, v in (trained.get("shares") or {}).items()},
                   "calibrated": bool(calib)},
         "forecast": forecast, "history": history, "factors": factors,
+        "past": past_forecasts(venue, recs, events, today, bt_any),
+        "pastPending": bt is None,                 # あとから計算する分を、いま裏で作り直している最中か
         "flavorMix": mix, "accuracy": accuracy, "logAccuracy": log_accuracy(venue, by_date),
         "events": [{"date": d.isoformat(), "name": e["name"], "kind": e["kind"], "factor": e["factor"]}
                    for d in sorted(events) for e in events[d] if d >= today - timedelta(days=60)],
         "warnings": warnings + list(cal.warnings),
     }
+
+
+def past_forecasts(venue, recs, events, today, bt):
+    """過去の日ごとに「そのときの予測」と「実績」を並べる（答え合わせ用）。新しい日が先。
+
+    予測の出どころは2種類:
+      logged   … その日の朝（または数日前）に実際に出して控えておいた予測。天気は当時の予報
+      backtest … 控えが無い日について、あとから「その日より前のデータだけ」で計算し直した予測。
+                 天気は実際の天気を使っている（当時の予報ではない）
+    """
+    try:
+        logs = archive.load_log(venue)
+    except Exception:
+        logs = []
+    by_target = {}
+    for lg in logs:
+        if lg["horizon"] is None or lg["target"] >= today:
+            continue
+        by_target.setdefault(lg["target"], {})[int(lg["horizon"])] = lg
+    bt_rows = dict((bt or {}).get("preds") or {})      # {日付: {項目: 予測}}（実績が0の項目も含む）
+
+    def from_log(lg):
+        qty = {p: lg["pred"].get(p) for p in fe.PRODUCTS}
+        have = [v for v in qty.values() if v is not None]
+        return {"qty": qty, "total": sum(have) if len(have) == len(fe.PRODUCTS) else None,
+                "sales": lg["pred"].get("売上"), "customers": lg["pred"].get("客数")}
+
+    by_date = {r["date"]: r for r in recs}
+    out = []
+    for r in sorted(recs, key=lambda x: x["date"], reverse=True):
+        d = r["date"]
+        if d >= today or (today - d).days > PAST_DAYS:
+            continue
+        item = _day_info(d, events)
+        item["weather"] = r.get("weather")
+        item["actual"] = {"total": fe.target_value(r, fe.TOTAL), "sales": fe.target_value(r, "売上"),
+                          "customers": fe.target_value(r, "客数"),
+                          "qty": {p: r["qty"].get(p) for p in fe.PRODUCTS},
+                          "stock": {p: r["stock"].get(p) for p in fe.PRODUCTS}}
+        item["soldout"] = [p for p in fe.PRODUCTS if fe.is_sold_out(r["qty"].get(p), r["stock"].get(p))]
+        # 実際の納品（推定）＝ 今夜の在庫 − 前夜の在庫 ＋ きょうの販売。ロスや他店への移動は分からないので含まない
+        prev = by_date.get(d - timedelta(days=1))
+        est = {}
+        for p in fe.PRODUCTS:
+            a, b, q = r["stock"].get(p), (prev or {"stock": {}})["stock"].get(p), r["qty"].get(p)
+            if a is not None and b is not None and q is not None:
+                est[p] = max(0, int(round(a - b + q)))
+        item["deliveredEst"] = est
+
+        hz = by_target.get(d) or {}
+        fc = None
+        if hz:
+            h = min(hz)
+            lg = hz[h]
+            fc = from_log(lg)
+            fc.update({"kind": "logged", "daysBefore": h, "madeAt": lg.get("loggedAt") or lg["made"].isoformat(),
+                       "weather": {"label": lg["weather"] or "平年並み", "tmax": lg["tmax"], "rain": lg["rain"]},
+                       "delivery": {p: lg["delivery"].get(p) for p in fe.PRODUCTS}})
+            item["earlier"] = [{"daysBefore": k, "total": from_log(hz[k])["total"], "sales": hz[k]["pred"].get("売上")}
+                               for k in sorted(hz) if k != h]
+        elif d in bt_rows:
+            b = bt_rows[d]
+            fc = {"kind": "backtest", "qty": {p: _round(b.get(p)) for p in fe.PRODUCTS},
+                  "total": _round(b.get(fe.TOTAL)), "sales": _round(b.get("売上")),
+                  "customers": _round(b.get("客数"))}
+        item["forecast"] = fc
+        out.append(item)
+    return out
 
 
 def _weather_changed(before, now):
@@ -466,6 +597,8 @@ def changes_since_morning(venue, today, forecast):
         w_changed = _weather_changed(before_w, now_w)
         if rows or w_changed:
             days.append({"date": item["date"], "weatherChanged": w_changed,
+                         # けさは天気予報そのものが取れていなかった（予報が変わったわけではない）
+                         "morningNoWeather": before_w["tmax"] is None and now_w["tmax"] is not None,
                          "weatherBefore": before_w, "weatherNow": now_w,
                          "totalBefore": tot_before, "totalNow": tot_now, "items": rows})
     return {"loggedAt": logs[0].get("loggedAt") or "", "days": days}
@@ -554,11 +687,20 @@ def tick(venue=None, with_log=True):
         payload = build(venue)
         _payload[venue] = (time.time(), payload)
     res["forecastDays"] = len(payload["forecast"])
-    # 予測の控えは朝5時以降に1日1回（前夜の日報が入ってから。夜中の再起動で古い状態を控えない）
-    if with_log and _now().hour >= 5:
-        res["logged"] = write_log(venue, payload)
-        if res["logged"]:
-            status["lastLog"] = payload["today"]
+    # 予測の控えは朝5時以降に1日1回（前夜の日報が入ってから。夜中の再起動で古い状態を控えない）。
+    # 天気予報が取れていない朝は、取れるまで待つ（9時になっても取れなければ、そのまま控える）。
+    hour = _now().hour
+    if with_log and hour >= LOG_FROM_HOUR:
+        w = payload.get("weatherInfo") or {}
+        weather_ok = not w.get("stale") and (w.get("days") or 0) >= fw.MIN_FUTURE_DAYS
+        if weather_ok or hour >= LOG_DEADLINE_HOUR:
+            res["logged"] = write_log(venue, payload)
+            if res["logged"]:
+                status["lastLog"] = payload["today"]
+            status["logWaiting"] = None
+        else:
+            res["logged"] = 0
+            status["logWaiting"] = f"{res['at']} 天気予報が取れていないため、けさの控えを待っています"
     status.update({"lastTick": res["at"], "lastResult": res, "lastError": None})
     return res
 

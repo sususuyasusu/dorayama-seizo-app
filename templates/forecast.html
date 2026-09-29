@@ -12,9 +12,12 @@
   --ink:#eee8df;--muted:#b9aea0;--faint:#a39a8e;--page:#171512;--surface:#27231e;--surface2:#312b24;
   --line:#4b4237;--grid:#3a342c;--gold:#c29853;--gold-soft:#453921;--green:#78aa8e;--green-soft:#243b30;
   --red:#b96058;--red-soft:#4b2c29;--blue-soft:#23353e;
-  --series:#3987e5;      /* 実績・予測の線（1系列） */
+  --series:#3987e5;      /* 実績の線 */
+  --fc:#d95926;          /* 予測の線（過去に出していた予測・これからの予測） */
   --up:#3987e5;          /* 倍率が1より大きい（よく売れる） */
   --down:#e66767;        /* 倍率が1より小さい（売れにくい） */
+  --up-text:#7db3f2;     /* 文字で使うときの青（小さい字でも読める明るさ） */
+  --down-text:#f08a8a;   /* 文字で使うときの赤 */
   --shadow:0 14px 36px rgba(0,0,0,.2);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -100,21 +103,29 @@ tr.flavrow td>div{position:sticky;left:10px;max-width:min(680px,calc(100vw - 70p
 .gridline{stroke:var(--grid);stroke-width:1}
 .baseline{stroke:var(--line);stroke-width:1}
 .line-actual{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.line-fc{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2 5}
-.band{fill:var(--series);opacity:.13}
+.line-fc{fill:none;stroke:var(--fc);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2 5}
+.band{fill:var(--fc);opacity:.15}
 .dot{fill:var(--series);stroke:var(--surface);stroke-width:2}
+.dot-fc{fill:var(--fc);stroke:var(--surface);stroke-width:2}
+.pt-fc{fill:var(--fc)}
 .cross{stroke:var(--muted);stroke-width:1}
 .today-line{stroke:var(--gold);stroke-width:1}
 .today-label{fill:var(--gold);font-size:10px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0;color:var(--muted);font-size:11px;align-items:center}
 .legend i{display:inline-block;vertical-align:middle;margin-right:5px}
 .key-line{width:18px;height:0;border-top:2px solid var(--series)}
-.key-dash{width:18px;height:0;border-top:2px dotted var(--series)}
-.key-band{width:18px;height:10px;background:var(--series);opacity:.2;border-radius:2px}
+.key-dash{width:18px;height:0;border-top:2px dotted var(--fc)}
+.key-band{width:18px;height:10px;background:var(--fc);opacity:.25;border-radius:2px}
+.tip .k{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+.tip .k.a{background:var(--series)}
+.tip .k.f{background:var(--fc)}
 .tip{position:absolute;z-index:10;pointer-events:none;min-width:150px;max-width:240px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#1b1815;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:11px;line-height:1.55;color:var(--muted)}
 .tip b{display:block;color:var(--ink);font-size:12px}
 .tip .v{display:block;color:var(--ink);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
 .tip[hidden]{display:none}
+/* スマホ幅では、数字を線に重ねず、グラフの下に出す */
+.tip.inline{position:static;max-width:none;min-height:128px;margin:8px 0 0;box-shadow:none}
+.tip.inline .v{display:inline-block;margin-right:16px}
 
 /* 要因（倍率の棒） */
 .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -136,6 +147,47 @@ tr.flavrow td>div{position:sticky;left:10px;max-width:min(680px,calc(100vw - 70p
 .scale{display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr) 52px;gap:8px;color:var(--faint);font-size:10px;margin-top:2px}
 .scale div{display:flex;justify-content:space-between}
 
+/* ページ内の移動 */
+.jump{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch}
+.jump a{flex:0 0 auto;padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--muted);font-size:12px;text-decoration:none;white-space:nowrap}
+.jump a:hover{border-color:var(--gold);color:var(--ink)}
+.jump a:focus-visible,.phead:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+
+/* 過去の予測と実績（答え合わせ） */
+.pdays{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pday+.pday{border-top:1px solid var(--line)}
+.phead{appearance:none;display:grid;grid-template-columns:112px minmax(0,1fr) 104px 104px 132px 16px;grid-template-areas:"date wx fc ac df chev";gap:10px;align-items:center;width:100%;margin:0;padding:9px 12px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;text-align:right;cursor:pointer;font-variant-numeric:tabular-nums}
+.phead:hover{background:rgba(255,255,255,.04)}
+.pday.open>.phead{background:var(--gold-soft)}
+.phead small{display:block;color:var(--faint);font-size:10px;font-weight:400;line-height:1.4}
+.pday.open>.phead small{color:#d6bd85}
+.phead .pdate{grid-area:date;text-align:left}
+.phead .pdate b{font-size:13px}
+.pday.off .pdate b{color:#e9b0a9}
+.phead .pwx{grid-area:wx;text-align:left;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phead .pwx small{overflow:hidden;text-overflow:ellipsis}
+.phead .pnums{display:contents}
+.phead .pfc{grid-area:fc}
+.phead .pac{grid-area:ac}
+.phead .pdf{grid-area:df}
+.phead .pn{display:block;font-size:15px;font-weight:700;line-height:1.35}
+.phead .pfc .pn{font-weight:400;color:var(--muted)}
+.pday.open>.phead .pfc .pn{color:var(--ink)}
+.up-t{color:var(--up-text)}
+.down-t{color:var(--down-text)}
+.phead .pchev{grid-area:chev;color:var(--muted);font-size:16px;line-height:1;transition:transform .15s}
+.pday.open .pchev{transform:rotate(90deg)}
+.pbody{padding:12px;border-top:1px solid var(--line);background:#211e1a}
+.pbody .note{margin:10px 0 0}
+.pbody td.diff{font-weight:700}
+.ptable th,.ptable td{padding:7px 10px}
+.ptable th{line-height:1.35;vertical-align:bottom}
+.pfacts{margin:10px 0 0;padding:0;list-style:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pfacts li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;padding:3px 0}
+.pfacts li>b{color:var(--ink);font-weight:700}
+.pfacts li span b{color:var(--ink);font-weight:700}
+.pfacts li span span{display:inline-block;white-space:nowrap}
+
 /* アーカイブ */
 .kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px}
 .list{margin:0;padding:0;list-style:none}
@@ -152,6 +204,17 @@ footer{margin-top:18px;color:var(--faint);font-size:11px;text-align:center;line-
   .top h1{font-size:14px}
   main{padding:10px 10px 56px}
   .panel{padding:13px}
+  .phead{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) 14px;grid-template-areas:"date wx chev" "nums nums chev";gap:6px 8px;padding:10px}
+  .phead .pwx{text-align:right}
+  .phead .pnums{grid-area:nums;display:flex;flex-wrap:wrap;gap:2px 14px;align-items:baseline;text-align:left}
+  .phead .pnums small{display:inline;margin-right:5px;font-size:11px}
+  .phead .pnums .pn{display:inline}
+  .phead .pnums .pdf{margin-left:auto}
+  .pbody{padding:10px}
+  .ptable th,.ptable td{padding:7px 8px}
+}
+@media(max-width:600px){
+  .legend .hint{display:none}
 }
 </style>
 </head>
@@ -167,8 +230,11 @@ footer{margin-top:18px;color:var(--faint);font-size:11px;text-align:center;line-
 
 <script>
 'use strict';
-const S={data:null,target:'合計個数',planIdx:0,range:'recent',showRange:false,showAllHist:false};
+const S={data:null,target:'合計個数',planIdx:0,range:'recent',showRange:false,showAllHist:false,
+  showPast:true,pastOpen:undefined,showAllPast:false};
 const TARGETS=['合計個数','売上','客数'];
+const NAV=[['sec-plan','納品数'],['sec-outlook','これから'],['sec-trend','グラフ'],['sec-past','過去の予測'],
+  ['sec-factors','何が効くか'],['sec-accuracy','当たり具合'],['sec-archive','データ']];
 const WD=['月','火','水','木','金','土','日'];
 const GROUP_LABEL={dow:'曜日',cal:'祝日・連休',month:'月',wx:'天気',event:'特別日',level:'直近の勢い'};
 
@@ -218,6 +284,40 @@ function valueOf(item,t){
   return item.qty?item.qty[t]:null;
 }
 function p50(item,t){const v=valueOf(item,t);return v==null?null:(typeof v==='object'?v.p50:v);}
+/* 過去の日の「そのとき出していた予測」と実績 */
+function pick(o,t){
+  if(!o)return null;
+  if(t==='合計個数')return o.total;
+  if(t==='売上')return o.sales;
+  if(t==='客数')return o.customers;
+  return o.qty?o.qty[t]:null;
+}
+const pastFc=(x,t)=>pick(x&&x.forecast,t);
+const pastActual=(x,t)=>pick(x&&x.actual,t);
+function kindLabel(f){
+  if(!f)return '予測なし';
+  if(f.kind==='logged')return f.daysBefore>0?f.daysBefore+'日前に出した予測':'当日の朝に出した予測';
+  return 'あとから計算した予測';
+}
+function kindShort(f){
+  if(!f)return '予測なし';
+  if(f.kind==='logged')return f.daysBefore>0?f.daysBefore+'日前の予測':'朝の予測';
+  return 'あとから計算';
+}
+function diffOf(a,f,t){
+  // ずれ＝実績−予測。＋は予測より多く売れた、−は予測より少なかった
+  if(a==null||f==null)return null;
+  const d=Math.round(a)-Math.round(f),sg=d>0?'＋':d<0?'−':'±';
+  const r=f>0?Math.abs(Math.round(d/f*100)):null;
+  return {d,cls:d>0?'up-t':d<0?'down-t':'',
+    text:sg+Math.abs(d).toLocaleString('ja-JP')+(t==='売上'?'円':''),
+    rate:r==null?'':(r===0?'±':sg)+r+'%'};
+}
+const diffFull=df=>df?df.text+(df.rate?'（'+df.rate+'）':''):'—';
+function wxPast(w){
+  if(!w)return '天気の記録なし';
+  return (w.emoji?w.emoji+' ':'')+w.label+' '+Math.round(w.tmax)+'℃'+(w.rain>=1?' 雨'+Math.round(w.rain)+'mm':'');
+}
 
 /* ── 読み込み ── */
 let lastLoad=0,loading=false;
@@ -266,11 +366,11 @@ function render(){
   document.title=document.getElementById('title').textContent+'｜どら山';
   document.getElementById('status').textContent='更新 '+D.generatedAt.slice(5).replace('-','/')+'　実績'+D.data.days+'日分';
   const main=document.getElementById('main');
-  const kids=[];
+  const kids=[jumpNav()];
   if(D.warnings&&D.warnings.length){
     kids.push(h('div',{class:'warn'},h('b',{text:'お知らせ　'}),D.warnings.join(' ／ ')));
   }
-  kids.push(secPlan(),secOutlook(),secTrend(),secFactors(),secAccuracy(),secArchive());
+  kids.push(secPlan(),secOutlook(),secTrend(),secPast(),secFactors(),secAccuracy(),secArchive());
   kids.push(h('footer',null,
     '学習に使った実績 '+D.model.trainedDays+'日・要因 '+D.model.factorsCount+'個。',
     h('br'),'予測は目安です。実際の納品数は、当日の状況を見て決めてください。'));
@@ -288,6 +388,19 @@ function targetChips(onchange){
   return wrap;
 }
 function rerenderKeepScroll(){const y=window.scrollY;render();window.scrollTo(0,y);}
+function jumpNav(){
+  // 長いページなので、見たいところへ一度で飛べるようにする
+  const nav=h('nav',{class:'jump','aria-label':'ページ内の移動'});
+  NAV.forEach(x=>nav.appendChild(h('a',{href:'#'+x[0],onclick:ev=>{
+    const el=document.getElementById(x[0]);
+    if(!el)return;
+    ev.preventDefault();
+    const top=el.getBoundingClientRect().top+window.scrollY-document.querySelector('.top').offsetHeight-8;
+    const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({top:Math.max(0,top),behavior:calm?'auto':'smooth'});
+  }},x[1])));
+  return nav;
+}
 
 /* ── 1. 次の納品 ── */
 function secPlan(){
@@ -378,9 +491,11 @@ function signed(v){return (v>0?'＋':v<0?'−':'±')+Math.abs(Math.round(v));}
 function changeBox(c,loggedAt){
   const box=h('div',{class:'chg',role:'status'});
   const when=loggedAt?('けさ（'+loggedAt.slice(11)+'）の予測から'):'けさの予測から';
-  box.appendChild(h('b',{text:c.weatherChanged?'天気予報が変わったため、'+when+'数が変わりました':when+'数が変わりました（日報の更新など）'}));
+  // けさ天気予報そのものが取れていなかった日は「予報が変わった」とは言わない
+  box.appendChild(h('b',{text:c.morningNoWeather?'けさ'+(loggedAt?'（'+loggedAt.slice(11)+'）':'')+'は天気予報を取得できず、平年の気温で計算していました。いまは天気予報を反映した数です'
+    :c.weatherChanged?'天気予報が変わったため、'+when+'数が変わりました':when+'数が変わりました（日報の更新など）'}));
   const ul=h('ul');
-  if(c.weatherChanged)ul.appendChild(h('li',null,h('span',{text:'天気'}),wxShort(c.weatherBefore)+' → '+wxShort(c.weatherNow)));
+  if(c.weatherChanged)ul.appendChild(h('li',null,h('span',{text:'天気'}),(c.morningNoWeather?'予報なし（平年並み）':wxShort(c.weatherBefore))+' → '+wxShort(c.weatherNow)));
   if(Math.abs(c.totalNow-c.totalBefore)>=1)
     ul.appendChild(h('li',null,h('span',{text:'販売見込み'}),n0(c.totalBefore)+'個 → '+n0(c.totalNow)+'個（'+signed(c.totalNow-c.totalBefore)+'）'));
   const dl=c.items.filter(x=>x.deliveryBefore!=null&&x.deliveryNow!=null&&Math.abs(x.deliveryNow-x.deliveryBefore)>=1);
@@ -442,15 +557,18 @@ function secOutlook(){
 function secTrend(){
   const sec=h('section',{class:'panel',id:'sec-trend'},
     h('h2',{text:'販売の推移と予測'}),
-    h('p',{class:'lead',text:'実線が実績、点線がこれからの予測。薄い帯は「少なめ〜多め」の幅（10日のうち6日はこの中に収まる見込み）。'}));
+    h('p',{class:'lead',text:'青い実線が実績、橙の点線が予測です。過去の部分の点線は「そのとき出していた予測」なので、実績の線と見比べると、どの日にどれだけずれたかが分かります。薄い帯は、これからの予測の「少なめ〜多め」の幅（10日のうち6日はこの中に収まる見込み）。'}));
   sec.appendChild(targetChips(rerenderKeepScroll));
   sec.appendChild(h('div',{class:'chips'},
     h('button',{class:'chip',type:'button','aria-pressed':String(S.range==='recent'),onclick:()=>{S.range='recent';rerenderKeepScroll();}},'直近8週間＋予測2週間'),
-    h('button',{class:'chip',type:'button','aria-pressed':String(S.range==='all'),onclick:()=>{S.range='all';rerenderKeepScroll();}},'すべての期間＋予測5週間')));
+    h('button',{class:'chip',type:'button','aria-pressed':String(S.range==='all'),onclick:()=>{S.range='all';rerenderKeepScroll();}},'すべての期間＋予測5週間'),
+    h('span',{class:'sep'}),
+    h('button',{class:'chip',type:'button','aria-pressed':String(S.showPast),onclick:()=>{S.showPast=!S.showPast;rerenderKeepScroll();}},'過去の予測も重ねる')));
   sec.appendChild(h('div',{class:'chart-wrap',id:'trend-wrap'},h('div',{class:'tip',id:'trend-tip',hidden:true})));
   sec.appendChild(h('div',{class:'legend'},
-    h('span',null,h('i',{class:'key-line'}),'実績'),h('span',null,h('i',{class:'key-dash'}),'予測'),
-    h('span',null,h('i',{class:'key-band'}),'予測の幅'),h('span',{text:'グラフに指を置くと、その日の数字と天気が出ます'})));
+    h('span',null,h('i',{class:'key-line'}),'実績'),
+    h('span',null,h('i',{class:'key-dash'}),S.showPast?'予測（過去に出していた分・これからの分）':'これからの予測'),
+    h('span',null,h('i',{class:'key-band'}),'これからの予測の幅'),h('span',{class:'hint',text:'グラフに指を置くと、その日の数字と天気が出ます'})));
   return sec;
 }
 function trendPoints(){
@@ -459,6 +577,8 @@ function trendPoints(){
   // 会期の切れ目（7日より長い空き）より前は、直近表示では出さない
   if(S.range==='recent')hist=hist.filter(x=>(new Date(D.today)-new Date(x.date))/864e5<=56);
   const fc=D.forecast.slice(0,S.range==='recent'?14:35);
+  const past={};
+  (D.past||[]).forEach(x=>{past[x.date]=x;});
   const pts=[];
   let prev=null;
   hist.forEach(x=>{
@@ -467,7 +587,9 @@ function trendPoints(){
       if(gap>7)pts.push({gap:true});
       else for(let k=1;k<gap;k++)pts.push({missing:true,date:null});
     }
-    pts.push({d:x,actual:p50(x,t)});prev=x;
+    const px=past[x.date];
+    // pf＝その日に向けて出していた予測、pk＝その予測の素性（朝の控え／あとから計算）
+    pts.push({d:x,actual:p50(x,t),pf:pastFc(px,t),pk:px?px.forecast:null});prev=x;
   });
   const lastDate=hist.length?hist[hist.length-1].date:null;
   fc.forEach(x=>{
@@ -478,9 +600,9 @@ function trendPoints(){
   return pts;
 }
 function niceScale(v){
-  // 目盛りは切りのよい数（1・2・2.5・5の倍数）で、4〜6本に収める
+  // 目盛りは切りのよい数（1・2・2.5・5の倍数）で、4〜6本に収める（上に余白を作りすぎない）
   if(!(v>0))return {max:10,step:2.5};
-  const raw=v/4,e=Math.pow(10,Math.floor(Math.log10(raw)));
+  const raw=v/5,e=Math.pow(10,Math.floor(Math.log10(raw)));
   let step=10*e;
   for(const m of [1,2,2.5,5,10]){if(raw<=m*e){step=m*e;break;}}
   return {max:step*Math.ceil(v/step),step};
@@ -489,18 +611,27 @@ function drawTrend(){
   const wrap=document.getElementById('trend-wrap');
   if(!wrap)return;
   const tip=document.getElementById('trend-tip');
-  wrap.querySelectorAll('svg').forEach(x=>x.remove());
+  wrap.querySelectorAll('svg,.empty').forEach(x=>x.remove());
   const pts=trendPoints(),t=S.target;
   const W=Math.max(320,wrap.clientWidth),H=Math.round(Math.min(340,Math.max(230,W*0.34)));
   const m={l:t==='売上'?62:40,r:14,t:16,b:30};
   const n=pts.length;
-  const vals=pts.flatMap(p=>[p.actual,p.hi,p.fc]).filter(v=>v!=null);
+  const pfOf=p=>S.showPast&&p.pf!=null?p.pf:null;       // 過去に出していた予測（重ねる設定のときだけ）
+  const fvOf=p=>p.fc!=null?p.fc:pfOf(p);                // 予測の線に使う値（これから／過去）
+  const vals=pts.flatMap(p=>[p.actual,p.hi,p.fc,pfOf(p)]).filter(v=>v!=null);
+  const inline=window.innerWidth<=600;
+  tip.className='tip'+(inline?' inline':'');
+  tip.hidden=true;
   if(!vals.length){wrap.appendChild(h('div',{class:'empty',text:'この項目の実績がまだありません。'}));return;}
+  if(inline){
+    tip.replaceChildren(h('div',{text:'グラフに指を置くと、その日の実績・予測・天気がここに出ます。'}));
+    tip.hidden=false;
+  }
   const sc=niceScale(Math.max(...vals)*1.02),ymax=sc.max;
   const X=i=>m.l+(n<=1?0:(W-m.l-m.r)*i/(n-1));
   const Y=v=>m.t+(H-m.t-m.b)*(1-v/ymax);
   const g=svg('svg',{class:'chart-svg',viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img',tabindex:0,
-    'aria-label':t+'の実績と予測の折れ線グラフ。数字は下の「これから5週間の販売見込み」と「直近の実績」の表でも見られます'});
+    'aria-label':t+'の実績と予測の折れ線グラフ。数字は「これから5週間の販売見込み」「過去の予測と実績」「直近の実績」の表でも見られます'});
   const ax=svg('g',{class:'axis'});
   for(let k=0;k*sc.step<=ymax+1e-9;k++){
     const v=k*sc.step,y=Y(v);
@@ -534,47 +665,82 @@ function drawTrend(){
     path+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(p.actual).toFixed(1);pen=true;
   });
   if(path)g.appendChild(svg('path',{class:'line-actual',d:path}));
-  // 予測の線（最後の実績からつなぐ）
+  // 予測の線。過去（そのとき出していた予測）から、これからの予測までを1本でつなぐ。値の無い日で線を切る
   let lastA=-1;pts.forEach((p,i)=>{if(p.actual!=null)lastA=i;});
+  let fp='',pen2=false;
+  const lone=[];
+  pts.forEach((p,i)=>{
+    const v=fvOf(p);
+    if(v==null){pen2=false;return;}
+    if(!pen2){
+      if(p.fc!=null&&i===fi[0]&&lastA>=0&&i-lastA<=3&&fvOf(pts[lastA])==null){
+        // 直前の日に予測が無いときは、最後の実績から線を出す
+        fp+='M'+X(lastA).toFixed(1)+' '+Y(pts[lastA].actual).toFixed(1)+'L';
+      }else{
+        fp+='M';
+        if(!(i+1<n&&fvOf(pts[i+1])!=null))lone.push(i);      // 前後に予測が無い日は、点で示す
+      }
+    }else fp+='L';
+    fp+=X(i).toFixed(1)+' '+Y(v).toFixed(1);
+    pen2=true;
+  });
+  if(fp)g.appendChild(svg('path',{class:'line-fc',d:fp}));
+  lone.forEach(i=>g.appendChild(svg('circle',{class:'pt-fc',cx:X(i),cy:Y(fvOf(pts[i])),r:2.4})));
   if(fi.length){
-    let fp='';
-    if(lastA>=0&&fi[0]-lastA<=3)fp='M'+X(lastA).toFixed(1)+' '+Y(pts[lastA].actual).toFixed(1);
-    fi.forEach(i=>{fp+=(fp?'L':'M')+X(i).toFixed(1)+' '+Y(pts[i].fc).toFixed(1);});
-    g.appendChild(svg('path',{class:'line-fc',d:fp}));
-    const x0=X(fi[0])-((W-m.l-m.r)/(n-1))/2;
+    const x0=X(fi[0])-((W-m.l-m.r)/Math.max(1,n-1))/2;
     g.appendChild(svg('line',{class:'today-line',x1:x0,x2:x0,y1:m.t-6,y2:H-m.b}));
-    g.appendChild(svg('text',{class:'today-label',x:x0+5,y:m.t+3},'ここから予測'));
+    // 右側が狭いときは、線の左に書く
+    if(W-m.r-x0>=62)g.appendChild(svg('text',{class:'today-label',x:x0+5,y:m.t+3},'これから →'));
+    else g.appendChild(svg('text',{class:'today-label',x:x0-5,y:m.t+3,'text-anchor':'end'},'これから →'));
   }
   if(lastA>=0)g.appendChild(svg('circle',{class:'dot',cx:X(lastA),cy:Y(pts[lastA].actual),r:4.5}));
   const cross=svg('line',{class:'cross',y1:m.t,y2:H-m.b,visibility:'hidden'});
+  const fdot=svg('circle',{class:'dot-fc',r:4.5,visibility:'hidden'});
   const cdot=svg('circle',{class:'dot',r:4.5,visibility:'hidden'});
-  g.appendChild(cross);g.appendChild(cdot);
+  g.appendChild(cross);g.appendChild(fdot);g.appendChild(cdot);
   let cur=-1;
+  const put=(dot,j,v)=>{
+    if(v==null){dot.setAttribute('visibility','hidden');return;}
+    dot.setAttribute('cx',X(j));dot.setAttribute('cy',Y(v));dot.setAttribute('visibility','visible');
+  };
   const show=i=>{
     let j=i;
     for(let k=0;k<n&&!(pts[j]&&pts[j].d);k++){j=Math.min(n-1,j+1);}   // 空きの日は次の日へ寄せる
     const p=pts[j];
     if(!p||!p.d){hide();return;}
     cur=j;
-    const v=p.actual!=null?p.actual:p.fc;
+    const pf=pfOf(p),isFuture=p.fc!=null;
     cross.setAttribute('x1',X(j));cross.setAttribute('x2',X(j));cross.setAttribute('visibility','visible');
-    if(v!=null){cdot.setAttribute('cx',X(j));cdot.setAttribute('cy',Y(v));cdot.setAttribute('visibility','visible');}
-    else cdot.setAttribute('visibility','hidden');
-    const kids=[h('span',{class:'v',text:v==null?'記入なし':fmtT(t,v)}),
-      h('b',{text:p.d.date.slice(0,4)+'年'+dayLabel(p.d)+(p.actual!=null?' の実績':' の予測')})];
-    if(p.fc!=null)kids.push(h('div',{text:'幅 '+n0(p.lo)+'〜'+n0(p.hi)+unitOf(t)}));
-    kids.push(h('div',{text:wxText(p.d)}));
+    put(cdot,j,p.actual);
+    put(fdot,j,fvOf(p));
+    const kids=[h('b',{text:p.d.date.slice(0,4)+'年'+dayLabel(p.d)+(isFuture?' の予測':'')})];
+    if(!isFuture)kids.push(h('span',{class:'v'},h('i',{class:'k a'}),'実績 '+(p.actual==null?'記入なし':fmtT(t,p.actual))));
+    if(isFuture){
+      kids.push(h('span',{class:'v'},h('i',{class:'k f'}),fmtT(t,p.fc)));
+      kids.push(h('div',{text:'幅 '+n0(p.lo)+'〜'+n0(p.hi)+unitOf(t)}));
+    }else if(pf!=null){
+      kids.push(h('span',{class:'v'},h('i',{class:'k f'}),'予測 '+fmtT(t,pf)));
+      const df=diffOf(p.actual,pf,t);
+      kids.push(h('div',{text:kindLabel(p.pk)+(df?'。実績は予測より '+diffFull(df):'')}));
+    }
+    kids.push(h('div',{text:isFuture?wxText(p.d):wxPast(p.d.weather)}));
     const tags=[p.d.holiday,p.d.period,p.d.vacation].filter(Boolean).concat((p.d.events||[]));
     if(tags.length)kids.push(h('div',{text:tags.join('・')}));
     if(p.d.soldout&&p.d.soldout.length&&(p.d.soldout.includes(t)||TARGETS.includes(t)))
       kids.push(h('div',{text:'売り切れに近かった商品：'+p.d.soldout.join('・')}));
     if(p.d.source&&p.d.source!=='日報フォーム')kids.push(h('div',{text:'データ元：'+p.d.source}));
     tip.replaceChildren(...kids);tip.hidden=false;
+    if(inline){tip.style.left='';tip.style.top='';return;}
     const tw=tip.offsetWidth,px=X(j)/W*wrap.clientWidth;
     tip.style.left=Math.max(4,Math.min(wrap.clientWidth-tw-4,px+(px>wrap.clientWidth/2?-tw-14:14)))+'px';
     tip.style.top='8px';
   };
-  const hide=()=>{cross.setAttribute('visibility','hidden');cdot.setAttribute('visibility','hidden');tip.hidden=true;cur=-1;};
+  const hide=()=>{
+    if(inline&&cur>=0)return;       // スマホ幅では、指を離しても選んだ日の数字を残す
+    [cross,cdot,fdot].forEach(x=>x.setAttribute('visibility','hidden'));
+    if(!inline)tip.hidden=true;
+    cur=-1;
+  };
   const at=ev=>{
     const r=g.getBoundingClientRect();
     const x=(ev.clientX-r.left)/r.width*W;
@@ -593,6 +759,134 @@ function drawTrend(){
     show(j);
   });
   wrap.insertBefore(g,tip);
+}
+
+/* ── 3.5 過去の予測と実績（答え合わせ） ── */
+function secPast(){
+  const D=S.data,t=S.target;
+  const sec=h('section',{class:'panel',id:'sec-past'},
+    h('h2',{text:'過去の予測と実績（答え合わせ）'}),
+    h('p',{class:'lead',text:'過去の日について、そのとき出していた予測と、実際に売れた数を並べています。日付を押すと、商品ごとの内訳と納品数が開きます。'}));
+  const all=D.past||[];
+  const rows=all.filter(x=>x.forecast);
+  if(!rows.length){
+    sec.appendChild(h('div',{class:'empty',text:D.pastPending?'過去の予測を計算しています。数分後に自動で表示されます。':'まだ、答え合わせできる日がありません。'}));
+    return sec;
+  }
+  sec.appendChild(targetChips(rerenderKeepScroll));
+  if(S.pastOpen===undefined)S.pastOpen=rows[0].date;      // はじめは、いちばん新しい日を開いておく
+  // まとめ（直近14日）
+  const recent=rows.slice(0,14).filter(x=>pastActual(x,t)!=null&&pastFc(x,t)!=null);
+  if(recent.length){
+    let sa=0,sf=0,se=0,over=0,under=0;
+    recent.forEach(x=>{
+      const a=pastActual(x,t),f=pastFc(x,t);
+      sa+=a;sf+=f;se+=Math.abs(a-f);
+      if(Math.round(a)>Math.round(f))over++;else if(Math.round(a)<Math.round(f))under++;
+    });
+    const df=diffOf(sa,sf,t);
+    sec.appendChild(h('div',{class:'tiles'},
+      h('div',{class:'tile'},h('span',{text:'直近'+recent.length+'日のずれ（平均）'}),h('strong',{class:'num',text:sa?pct(se/sa):'—'}),
+        h('small',{class:'num',text:'1日あたり ±'+fmtT(t,se/recent.length)})),
+      h('div',{class:'tile'},h('span',{text:'予測の合計（直近'+recent.length+'日）'}),h('strong',{class:'num',text:fmtT(t,sf)})),
+      h('div',{class:'tile'},h('span',{text:'実績の合計（直近'+recent.length+'日）'}),h('strong',{class:'num',text:fmtT(t,sa)}),
+        h('small',{class:'num '+df.cls,text:'予測より '+diffFull(df)})),
+      h('div',{class:'tile'},h('span',{text:'予測より多く売れた日／少なかった日'}),h('strong',{class:'num',text:over+'日／'+under+'日'}),
+        h('small',{text:'どちらかに偏るときは、予測にくせがあります'}))));
+  }
+  const shown=S.showAllPast?rows:rows.slice(0,14);
+  const list=h('div',{class:'pdays'});
+  shown.forEach(x=>{
+    const a=pastActual(x,t),f=pastFc(x,t),df=diffOf(a,f,t);
+    const open=S.pastOpen===x.date;
+    const marks=[x.holiday,x.period].filter(Boolean).concat(x.events||[]);
+    const head=h('button',{class:'phead',type:'button','aria-expanded':String(open),'aria-controls':open?'pd-'+x.date:null,
+      onclick:()=>{S.pastOpen=open?null:x.date;rerenderKeepScroll();}},
+      h('span',{class:'pdate'},h('b',{text:dayLabel(x)}),h('small',{text:kindShort(x.forecast)})),
+      h('span',{class:'pwx'},wxPast(x.weather),marks.length?h('small',{text:marks.join('・')}):null),
+      h('span',{class:'pnums'},
+        h('span',{class:'pfc'},h('small',{text:'予測'}),h('span',{class:'pn',text:fmtT(t,f)})),
+        h('span',{class:'pac'},h('small',{text:'実績'}),h('span',{class:'pn',text:fmtT(t,a)})),
+        h('span',{class:'pdf'},h('small',{text:'ずれ'}),h('span',{class:'pn '+(df?df.cls:''),text:diffFull(df)}))),
+      h('span',{class:'pchev','aria-hidden':'true',text:'›'}));
+    const day=h('div',{class:'pday'+(open?' open':'')+(isOff(x)?' off':'')},head);
+    if(open)day.appendChild(pastDetail(x));
+    list.appendChild(day);
+  });
+  sec.appendChild(list);
+  if(rows.length>14)sec.appendChild(h('div',{class:'chips',style:'margin:10px 0 0'},h('button',{class:'chip',type:'button','aria-pressed':String(S.showAllPast),
+    onclick:()=>{S.showAllPast=!S.showAllPast;rerenderKeepScroll();}},S.showAllPast?'直近14日だけにする':'すべての日を表示（'+rows.length+'日）')));
+  const logged=rows.filter(x=>x.forecast.kind==='logged').length;
+  const none=all.length-rows.length;
+  sec.appendChild(h('p',{class:'note',style:'margin:10px 0 0'},
+    h('b',{text:'予測の種類　'}),
+    '「朝の予測」は、その日の朝にこの画面が実際に出していた予測です（毎朝5時以降に自動で控えています。いま'+logged+'日分）。',
+    '「あとから計算」は、控えを取り始める前の日について、その日より前のデータだけで計算し直したものです（天気は実際の天気を使用）。',
+    D.pastPending?'いま「あとから計算」の分を作り直しています。数分後に自動で最新になります。':'',
+    none>0?'このほか、古いほうの'+none+'日分は、その時点では学習に使えるデータが足りなかったため、予測がありません。':'',
+    h('br'),h('b',{text:'ずれの見かた　'}),'＋は予測より多く売れた日、−は予測より少なかった日です。'));
+  return sec;
+}
+function pastDetail(x){
+  const D=S.data,f=x.forecast,a=x.actual;
+  const box=h('div',{class:'pbody',id:'pd-'+x.date});
+  const ctx=h('div',{class:'ctx'},h('span',{class:'tag wx',text:'実際の天気：'+wxPast(x.weather)}));
+  if(f.kind==='logged')ctx.appendChild(h('span',{class:'tag',text:'予測したときの天気予報：'+
+    (f.weather&&f.weather.tmax!=null?wxShort(f.weather):'取得できず（平年の気温で計算）')}));
+  if(x.holiday)ctx.appendChild(h('span',{class:'tag hol',text:x.holiday}));
+  if(x.period)ctx.appendChild(h('span',{class:'tag hol',text:x.period}));
+  if(x.vacation)ctx.appendChild(h('span',{class:'tag',text:x.vacation}));
+  (x.events||[]).forEach(e=>ctx.appendChild(h('span',{class:'tag ev',text:'特別日：'+e})));
+  if(x.excluded)ctx.appendChild(h('span',{class:'tag ev',text:'学習から除外した日'}));
+  box.appendChild(ctx);
+  const hasDeliv=!!f.delivery&&D.products.some(p=>f.delivery[p]!=null);
+  const est=x.deliveredEst||{};
+  const hasEst=D.products.some(p=>est[p]!=null);
+  const head=[h('th',{text:'商品'}),h('th',{text:'予測'}),h('th',{text:'実績'}),h('th',{text:'ずれ'})];
+  if(hasDeliv)head.push(h('th',null,'おすすめ',h('br'),'した納品数'));
+  if(hasEst)head.push(h('th',null,'実際の納品',h('br'),'（推定）'));
+  head.push(h('th',{text:'夜の在庫'}));
+  const tb=h('tbody');
+  const sum=o=>{let s=0,k=0;D.products.forEach(p=>{if(o&&o[p]!=null){s+=o[p];k++;}});return k?s:null;};
+  const line=(label,fv,av,cells,cls,soldout)=>{
+    const df=diffOf(av,fv,label);
+    const dtd=h('td',{class:'diff '+(df?df.cls:'')},df?df.text:'—');
+    if(df&&df.rate)dtd.appendChild(h('span',{class:'sub',text:df.rate}));
+    const tr=h('tr',{class:cls||null},h('td',null,h('b',{text:label})),h('td',{text:n0(fv)}),
+      h('td',null,n0(av),soldout?h('span',{class:'sub',text:'売り切れに近い'}):null),dtd);
+    cells.forEach(v=>tr.appendChild(h('td',{text:v})));
+    return tr;
+  };
+  const tail=(dv,ev,sv)=>[].concat(hasDeliv?[n0(dv)]:[],hasEst?[n0(ev)]:[],[n0(sv)]);
+  D.products.forEach(p=>tb.appendChild(line(p,f.qty?f.qty[p]:null,a.qty?a.qty[p]:null,
+    tail(f.delivery?f.delivery[p]:null,est[p],a.stock?a.stock[p]:null),'',(x.soldout||[]).includes(p))));
+  tb.appendChild(line('合計',f.total,a.total,tail(sum(f.delivery),sum(est),sum(a.stock)),'total'));
+  box.appendChild(h('div',{class:'scroll'},h('table',{class:'ptable'},h('thead',null,h('tr',null,...head)),tb)));
+  // 売上と客数は桁が多いので、表に入れず文章で出す（スマホで表の右が切れないように）
+  const fact=(label,t2)=>{
+    const fv=pastFc(x,t2),av=pastActual(x,t2),df=diffOf(av,fv,t2);
+    return h('li',null,h('b',{text:label}),h('span',null,'予測 '+fmtT(t2,fv)+' → 実績 ',h('b',{text:fmtT(t2,av)}),
+      df?h('span',{class:df.cls,text:'　ずれ '+df.text+(t2==='客数'?'人':'')+(df.rate?'（'+df.rate+'）':'')}):null));
+  };
+  box.appendChild(h('ul',{class:'pfacts'},fact('売上（税込）','売上'),fact('客数','客数')));
+  if(f.kind==='logged'){
+    const at=f.madeAt||'';
+    box.appendChild(h('p',{class:'note'},h('b',{text:'この予測について　'}),
+      (at.length>=16?md(at.slice(0,10))+' '+at.slice(11,16)+' に':at?md(at.slice(0,10))+' に':'')+'この画面が出していた予測です'+
+      (f.daysBefore>0?'（'+f.daysBefore+'日前の時点）':'')+'。天気は、そのときの天気予報で計算しています。'));
+  }else{
+    box.appendChild(h('p',{class:'note'},h('b',{text:'この予測について　'}),
+      'この日は予測の控えが無いため、あとから「この日より前のデータだけ」で計算し直した予測です。天気は実際の天気を使っています（当時の天気予報ではありません）。'));
+  }
+  if(x.earlier&&x.earlier.length){
+    box.appendChild(h('p',{class:'note'},h('b',{text:'もっと前に出していた予測　'}),
+      x.earlier.map(e=>e.daysBefore+'日前：'+[e.total!=null?n0(e.total)+'個':null,e.sales!=null?yen(e.sales):null].filter(Boolean).join('・')).join('　／　')));
+  }
+  if((x.soldout||[]).length)box.appendChild(h('p',{class:'note'},h('b',{text:'売り切れに近かった商品　'}),
+    x.soldout.join('・')+'は、夜の在庫がほぼ残っていません。在庫があれば、もっと売れた可能性があります（実績が予測を下回っていても、予測の外れとは限りません）。'));
+  if(hasEst)box.appendChild(h('p',{class:'note'},h('b',{text:'実際の納品（推定）　'}),
+    '夜の在庫の増減と販売数から逆算した数です（今夜の在庫 − 前夜の在庫 ＋ 販売数）。ロスや他の売場への移動があった日は、実際より少なく出ます。'));
+  return box;
 }
 
 /* ── 4. 何が効いているか ── */
