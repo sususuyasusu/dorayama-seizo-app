@@ -28,6 +28,8 @@ TABS = {
     "expense": "14_経費内訳_どら山",
 }
 FLASH_TAB = "_flash_daily"  # クラウドが書く昨日の売上・人件費（Mac停止日の代役）
+EVENT_STAFF_DAILY_ESTIMATE = 37000  # ディースパーク日額（税抜）。management_analysis_layer.EVENT_STAFF_DAILY_RATE と同額
+_STORE_LIKE_EVENT_VENUES = ("富岡八幡宮",)  # target_settings_layer.STORE_LIKE_VENUES と同じ
 _CACHE = {"at": 0.0, "date": None, "value": None}
 _CACHE_TTL = 90.0
 _SHEET = None
@@ -35,6 +37,11 @@ LOCAL_DATA_DIR = Path(os.environ.get(
     "DORAYAMA_MANAGEMENT_DATA_DIR",
     "/Users/suzuki3/Library/CloudStorage/Dropbox-Detale/D& W/どら山/過去/dw_budget_profit_sheets_automation/data",
 ))
+
+
+def _is_store_like_event(row):
+    text = f"{row.get('催事名') or ''}{row.get('場所') or ''}"
+    return any(name in text for name in _STORE_LIKE_EVENT_VENUES)
 
 
 def _number(value):
@@ -230,11 +237,16 @@ def parse_management_values(values_by_tab, today=None):
         if parsed == today and event_sales in (None, 0):
             continue
         item = daily_row(day_iso)
+        # 販売員費が空欄の催事は、ディースパークの日額（税抜37,000円）で見積もる。
+        # 富岡八幡宮など店舗と同水準の会場は、その日のタイミー実費が店舗人件費に入っているため上乗せしない。
+        staff_cost = _number(row.get("販売員費")) or 0
+        if not staff_cost and not _is_store_like_event(row):
+            staff_cost = EVENT_STAFF_DAILY_ESTIMATE
         # 過去のAirメイト0円は欠損ではなく有効な実績として保持する。
         item["eventSales"] += event_sales or 0
         item["eventMaterial"] += _number(row.get("原材料費")) or 0
         item["eventPackaging"] += _number(row.get("包材費")) or 0
-        item["eventStaff"] += _number(row.get("販売員費")) or 0
+        item["eventStaff"] += staff_cost
         item["eventCommission"] += _number(row.get("会場手数料")) or 0
         item["delivery"] += _number(row.get("配送費")) or 0
         item["waste"] += _number(row.get("廃棄数")) or 0
@@ -246,7 +258,7 @@ def parse_management_values(values_by_tab, today=None):
             product_totals[product] = product_totals.get(product, 0) + (_number(row.get(product)) or 0)
         event_cost = (
             (_number(row.get("原材料費")) or 0) + (_number(row.get("包材費")) or 0) +
-            (_number(row.get("販売員費")) or 0) + (_number(row.get("会場手数料")) or 0) +
+            staff_cost + (_number(row.get("会場手数料")) or 0) +
             (_number(row.get("配送費")) or 0)
         )
         event_details.append({
@@ -257,7 +269,7 @@ def parse_management_values(values_by_tab, today=None):
             "customers": _number(row.get("客数")),
             "units": _number(row.get("販売個数合計")),
             "commission": _number(row.get("会場手数料")) or 0,
-            "staffCost": _number(row.get("販売員費")) or 0,
+            "staffCost": staff_cost,
             "delivery": _number(row.get("配送費")) or 0,
             "material": _number(row.get("原材料費")) or 0,
             "packaging": _number(row.get("包材費")) or 0,
