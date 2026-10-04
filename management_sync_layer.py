@@ -226,6 +226,7 @@ def parse_management_values(values_by_tab, today=None):
         })
 
     event_rows = _records(values_by_tab.get(TABS["event"], []), "日付")
+    staffed_event_keys = set()
     for row in event_rows:
         day_iso = normalize_date(row.get("日付"), today.year)
         if not day_iso:
@@ -240,8 +241,12 @@ def parse_management_values(values_by_tab, today=None):
         # 販売員費が空欄の催事は、ディースパークの日額（税抜37,000円）で見積もる。
         # 富岡八幡宮など店舗と同水準の会場は、その日のタイミー実費が店舗人件費に入っているため上乗せしない。
         staff_cost = _number(row.get("販売員費")) or 0
-        if not staff_cost and not _is_store_like_event(row):
+        # 同じ日に別の催事が増えれば、その分だけ37,000円が増える（会場ごとに1日1回）。
+        # 同じ会場の行が複数あっても二重には数えない。
+        event_key = (day_iso, str(row.get("場所") or row.get("催事名") or "").strip())
+        if not staff_cost and not _is_store_like_event(row) and event_key not in staffed_event_keys:
             staff_cost = EVENT_STAFF_DAILY_ESTIMATE
+            staffed_event_keys.add(event_key)
         # 過去のAirメイト0円は欠損ではなく有効な実績として保持する。
         item["eventSales"] += event_sales or 0
         item["eventMaterial"] += _number(row.get("原材料費")) or 0
