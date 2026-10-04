@@ -30,6 +30,11 @@ TABS = {
 FLASH_TAB = "_flash_daily"  # クラウドが書く昨日の売上・人件費（Mac停止日の代役）
 EVENT_STAFF_DAILY_ESTIMATE = 37000  # ディースパーク日額（税抜）。management_analysis_layer.EVENT_STAFF_DAILY_RATE と同額
 _STORE_LIKE_EVENT_VENUES = ("富岡八幡宮",)  # target_settings_layer.STORE_LIKE_VENUES と同じ
+FORM_SHEET_ID = "1v0w_oAmbTmw3t9oOhCFVWv87ysm2gpOnNQbGAlALpIc"  # 催事日報フォームの回答シート
+FORM_GID = 816782526
+FORM_KEY = "_form_rows"
+FORM_COL_STORE, FORM_COL_DATE, FORM_COL_DATE_MANUAL, FORM_COL_SALES_INCL = 2, 1, 19, 18
+_FORM_CACHE = {"at": 0.0, "rows": None}
 _CACHE = {"at": 0.0, "date": None, "value": None}
 _CACHE_TTL = 90.0
 _SHEET = None
@@ -226,7 +231,6 @@ def parse_management_values(values_by_tab, today=None):
         })
 
     event_rows = _records(values_by_tab.get(TABS["event"], []), "日付")
-    staffed_event_keys = set()
     for row in event_rows:
         day_iso = normalize_date(row.get("日付"), today.year)
         if not day_iso:
@@ -238,15 +242,9 @@ def parse_management_values(values_by_tab, today=None):
         if parsed == today and event_sales in (None, 0):
             continue
         item = daily_row(day_iso)
-        # 販売員費が空欄の催事は、ディースパークの日額（税抜37,000円）で見積もる。
-        # 富岡八幡宮など店舗と同水準の会場は、その日のタイミー実費が店舗人件費に入っているため上乗せしない。
+        # シートの「販売員費」に実額があればそれを使う。空欄の日は、下の後処理で
+        # ディースパークの日額（税抜37,000円）×その日の催事数で見積もる。
         staff_cost = _number(row.get("販売員費")) or 0
-        # 同じ日に別の催事が増えれば、その分だけ37,000円が増える（会場ごとに1日1回）。
-        # 同じ会場の行が複数あっても二重には数えない。
-        event_key = (day_iso, str(row.get("場所") or row.get("催事名") or "").strip())
-        if not staff_cost and not _is_store_like_event(row) and event_key not in staffed_event_keys:
-            staff_cost = EVENT_STAFF_DAILY_ESTIMATE
-            staffed_event_keys.add(event_key)
         # 過去のAirメイト0円は欠損ではなく有効な実績として保持する。
         item["eventSales"] += event_sales or 0
         item["eventMaterial"] += _number(row.get("原材料費")) or 0
@@ -319,6 +317,61 @@ def parse_management_values(values_by_tab, today=None):
             "profitBeforeFixed": event_sales,
             "status": state,
         })
+
+    # 催事日報フォームの直接取り込み：同期タスクが遅れて催事売上が0円のままの日を、
+    # フォームの回答（会場ごとの税込売上の合計）で補う。Airメイト・シートに実績がある日は触らない。
+    form_sales = _form_sales_by_day(values_by_tab.get(FORM_KEY) or [])
+    for day_iso, venues in sorted(form_sales.items()):
+        parsed = date.fromisoformat(day_iso)
+        if (parsed.year, parsed.month) != target_month or parsed > today:
+            continue
+        item = daily.get(day_iso)
+        if item and item["eventSales"] > 0:
+            continue
+        total = sum(venues.values())
+        item = daily_row(day_iso)
+        item["eventSales"] = total
+        item["eventRows"] = max(item["eventRows"], 1)
+        if "日報フォーム速報" not in item["eventReportStates"]:
+            item["eventReportStates"].append("日報フォーム速報")
+        zero_rows = [d for d in event_details if d["date"] == day_iso]
+        if zero_rows:
+            zero_rows[0].update({"sales": total, "profitBeforeFixed": total - zero_rows[0]["staffCost"], "status": "日報フォーム速報"})
+        else:
+            event_details.append({
+                "date": day_iso, "name": "催事（日報フォーム）", "venue": "、".join(sorted(venues)),
+                "sales": total, "customers": None, "units": None, "commission": 0, "staffCost": 0,
+                "delivery": 0, "material": 0, "packaging": 0, "profitBeforeFixed": total,
+                "status": "日報フォーム速報",
+            })
+
+    # 催事の販売員費：シートに実額が無い日は、ディースパークの日額（税抜37,000円）×その日の催事数で見積もる。
+    # 催事数はアプリの催事カレンダー（同日に複数あれば加算）を基準にし、カレンダーに無い日は
+    # 日報フォームの会場数、それも無ければ1とする。富岡八幡宮など店舗同水準の会場は対象外
+    # （その日のタイミー実費が店舗人件費に入っているため）。
+    import target_settings_layer
+    _, calendar_events = target_settings_layer._calendar_schedule()
+    calendar_days = {d["date"]: d for d in target_settings_layer._calendar_month(
+        today.year, today.month, calendar_events)["daily"]}
+    for day_iso, item in daily.items():
+        if not item["eventRows"] or item["eventStaff"] > 0:
+            continue
+        day_details = [d for d in event_details if d["date"] == day_iso]
+        if any(d["staffCost"] for d in day_details):
+            continue
+        cal = calendar_days.get(day_iso) or {}
+        staffed = int(cal.get("staffedEventCount") or 0)
+        if not staffed:
+            staffed = len([v for v in (form_sales.get(day_iso) or {}) if not any(n in v for n in _STORE_LIKE_EVENT_VENUES)])
+        if not staffed and not any(_is_store_like_event({"催事名": d["name"], "場所": d["venue"]}) for d in day_details):
+            staffed = 1
+        amount = EVENT_STAFF_DAILY_ESTIMATE * staffed
+        if not amount:
+            continue
+        item["eventStaff"] = amount
+        if day_details:
+            day_details[0]["staffCost"] = amount
+            day_details[0]["profitBeforeFixed"] -= amount
 
     records = []
     for day_iso in sorted(daily):
@@ -755,6 +808,48 @@ def _tab_values(title):
     raise last_error
 
 
+def _form_rows():
+    """催事日報フォームの回答を読む。同期タスクが遅れた朝でも催事売上を出すための直接取得。
+    読めない場合は空を返し、既存の動きを壊さない。"""
+    global _FORM_CACHE
+    if time.time() - _FORM_CACHE["at"] < 120 and _FORM_CACHE["rows"] is not None:
+        return _FORM_CACHE["rows"]
+    try:
+        book = data_layer._client().open_by_key(FORM_SHEET_ID)
+        ws = next((w for w in book.worksheets() if w.id == FORM_GID), book.sheet1)
+        rows = ws.get_all_values()
+    except Exception:  # noqa: BLE001 - 日報が読めなくても本体の取り込みは続ける
+        rows = []
+    _FORM_CACHE = {"at": time.time(), "rows": rows}
+    return rows
+
+
+def _form_sales_by_day(rows):
+    """フォーム回答から {日付: {会場名: 税込売上}} を作る（同会場は後勝ち、テスト入力は除外）。"""
+    out = {}
+    for r in rows[1:]:
+        if len(r) <= FORM_COL_SALES_INCL:
+            continue
+        store = (r[FORM_COL_STORE] or "").strip()
+        if any(word in store.lower() for word in ("テスト", "確認用", "test", "dummy")):
+            continue
+        day = ""
+        for col in (FORM_COL_DATE, FORM_COL_DATE_MANUAL):
+            if col < len(r) and r[col].strip():
+                day = normalize_date(r[col].strip().replace("-", "/"), 2026) or ""
+                if day:
+                    break
+        try:
+            sales_incl = int((r[FORM_COL_SALES_INCL] or "0").replace(",", "").strip())
+            customers = int((r[4] or "0").replace(",", "").strip())
+        except ValueError:
+            continue
+        if not day or sales_incl <= 0 or customers <= 0:
+            continue
+        out.setdefault(day, {})[store] = sales_incl
+    return out
+
+
 def get_management_sync(force=False, today=None):
     """既存シートを読み取る。失敗しても確定損益側へ影響させない。"""
     now = time.time()
@@ -773,6 +868,7 @@ def get_management_sync(force=False, today=None):
         values[FLASH_TAB] = _tab_values(FLASH_TAB)
     except Exception:
         values[FLASH_TAB] = []
+    values[FORM_KEY] = _form_rows()  # 催事日報フォームの回答（読めなければ空）
     parsed = parse_management_values(values, target)
     fallback = None
     if not parsed["records"] and not parsed["counts"]["expenseRows"] and errors:

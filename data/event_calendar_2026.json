@@ -1,7 +1,7 @@
 {
   "source": "Googleカレンダー「どら山 催事」",
   "calendarId": "a90e68d65c2bc050b6f3044f57afddefd13108846e4bf5a43dec05372ba2d5b6@group.calendar.google.com",
-  "verifiedAt": "2026-08-18T08:08:02+09:00",
+  "verifiedAt": "2026-10-05T07:20:02+09:00",
   "rule": "終日で登録された催事を開催初日から最終日まで1日ずつ数える。同日に複数催事が重なる場合は催事数分を加算する。",
   "events": [
     {"name":"新宿ニュウマン","start":"2025-12-18","end":"2026-03-08","venue":"新宿ニュウマン","tentative":false},
@@ -24,7 +24,8 @@
     {"name":"川越 東武","start":"2026-07-28","end":"2026-08-03","venue":"川越 東武","tentative":false},
     {"name":"立川ルミネ","start":"2026-08-20","end":"2026-09-02","venue":"立川ルミネ","tentative":false},
     {"name":"富岡八幡宮","start":"2026-09-25","end":"2026-09-27","venue":"富岡八幡宮","tentative":false},
-    {"name":"池袋東武 仮","start":"2026-10-01","end":"2026-10-07","venue":"池袋東武 仮","tentative":true},
-    {"name":"松坂屋上野","start":"2026-10-07","end":"2026-10-13","venue":"松坂屋上野","tentative":false}
+    {"name":"池袋東武 仮","start":"2026-10-01","end":"2026-10-07","venue":"池袋東武 仮","tentative":false},
+    {"name":"上野","start":"2026-10-01","end":"2026-11-30","venue":"上野","tentative":false},
+    {"name":"松坂屋上野","start":"2026-10-07","end":"2026-10-14","venue":"松坂屋上野","tentative":false}
   ]
 }
