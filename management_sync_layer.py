@@ -202,6 +202,11 @@ def parse_management_values(values_by_tab, today=None):
         note = status.split("：", 1)[1].strip() if "：" in status else ""
         # 「タイミー未登録」は毎日付く恒常的な断り書きなので文面には出さない（状態欄には残る）
         note = " / ".join(part for part in note.split(" / ") if "未登録" not in part).strip()
+        # クラウドの取得エラー（例外メッセージ）をそのまま文面に出さない。
+        # 正本（Macの集計）に人件費がある日は、クラウド側の失敗は無関係なので断り書きごと消す。
+        if "例外" in note or "Timeout" in note or "Call log" in note:
+            has_master_labor = bool(day_iso in daily and daily[day_iso].get("storeLabor"))
+            note = "" if has_master_labor else "人件費を自動取得できませんでした（実際より低く出ている恐れがあります）"
         if note and day_iso in daily:
             # 退勤の打刻漏れ・時給0など、人件費が低く出ている恐れは、正本を使う日でも文面に添える
             daily[day_iso]["flashNote"] = note
@@ -325,11 +330,14 @@ def parse_management_values(values_by_tab, today=None):
         parsed = date.fromisoformat(day_iso)
         if (parsed.year, parsed.month) != target_month or parsed > today:
             continue
+        if day_iso in daily:
+            daily[day_iso]["eventVenuesReported"] = len(venues)  # 日報が出た会場数（速報で未入力会場の注意に使う）
         item = daily.get(day_iso)
         if item and item["eventSales"] > 0:
             continue
         total = sum(venues.values())
         item = daily_row(day_iso)
+        item["eventVenuesReported"] = len(venues)
         item["eventSales"] = total
         item["eventRows"] = max(item["eventRows"], 1)
         if "日報フォーム速報" not in item["eventReportStates"]:

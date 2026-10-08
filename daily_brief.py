@@ -174,6 +174,9 @@ def build_brief(analysis, target=None):
         lines.append("※店舗の打刻未取得")
     if row.get("flashNote"):
         lines.append(f"※{row['flashNote']}")
+    reported = int(row.get("eventVenuesReported") or 0)
+    if venues and reported and reported < venues:
+        lines.append(f"※催事{venues}会場のうち{reported}会場分の日報のみ反映（残りは未入力の恐れ）")
 
     # 今月ここまで（昨日まで）：日々の判定は製造実績比だが、月間は本人指示により売上比で見る
     month_dates = sorted(d for d in rows if d.startswith(month_key) and d <= target)
