@@ -931,6 +931,18 @@ def _form_rows():
     return _FORM_CACHE["rows"]
 
 
+def _form_int(text):
+    """フォームの数値欄を整数にする。補足文字・記号・全角数字が付いていても先頭の数字を読む。空欄は0。"""
+    s = str(text or "").strip().replace(",", "").replace("，", "").replace("¥", "").replace("￥", "")
+    s = s.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+    if not s:
+        return 0
+    match = re.match(r"\d+", s)
+    if not match:
+        raise ValueError(f"数値を読み取れません: {text!r}")
+    return int(match.group())
+
+
 def _form_sales_by_day(rows):
     """フォーム回答から {日付: {会場名: 税込売上}} を作る（同会場は後勝ち、テスト入力は除外）。"""
     out = {}
@@ -947,8 +959,8 @@ def _form_sales_by_day(rows):
                 if day:
                     break
         try:
-            sales_incl = int((r[FORM_COL_SALES_INCL] or "0").replace(",", "").strip())
-            customers = int((r[4] or "0").replace(",", "").strip())
+            sales_incl = _form_int(r[FORM_COL_SALES_INCL])
+            customers = _form_int(r[4])  # 「233（全売場合計）」のような補足付きでも先頭の数字を読む
         except ValueError:
             continue
         if not day or sales_incl <= 0 or customers <= 0:
