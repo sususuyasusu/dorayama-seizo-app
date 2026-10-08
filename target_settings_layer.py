@@ -34,8 +34,39 @@ def _month_dates(year, month):
     return [date(year, month, day) for day in range(1, monthrange(year, month)[1] + 1)]
 
 
+_SHEET_CALENDAR = {"at": 0.0, "events": None}
+
+
+def _sheet_calendar_events():
+    """経営管理シートの「_event_calendar」タブ（毎朝の同期が書く最新の催事カレンダー）を読む。
+    読めない・空のときは None を返し、同梱のJSONにフォールバックする。10分キャッシュ。"""
+    import time
+    if _SHEET_CALENDAR["at"] and time.time() - _SHEET_CALENDAR["at"] < 600:
+        return _SHEET_CALENDAR["events"]  # 失敗(None)も10分は再試行しない
+    events = None
+    try:
+        import management_sync_layer
+        rows = management_sync_layer._tab_values("_event_calendar")
+        parsed = []
+        for r in rows[1:]:
+            if len(r) >= 3 and r[0].strip() and r[1].strip() and r[2].strip():
+                parsed.append({
+                    "name": r[0].strip(), "start": r[1].strip(), "end": r[2].strip(),
+                    "venue": (r[3].strip() if len(r) > 3 else "") or r[0].strip(),
+                    "tentative": (r[4].strip() if len(r) > 4 else "") != "確定",
+                })
+        events = parsed or None
+    except Exception:  # noqa: BLE001 - 読めなくても同梱JSONで動き続ける
+        events = None
+    _SHEET_CALENDAR.update({"at": time.time(), "events": events})
+    return events
+
+
 def _calendar_schedule():
     source = _load_json(CALENDAR_PATH, {"events": []})
+    sheet_events = _sheet_calendar_events()
+    if sheet_events:
+        source = {**source, "events": sheet_events, "source": "Googleカレンダー「どら山 催事」（毎朝の同期でシートに反映）"}
     events = []
     for raw in source.get("events", []):
         try:
