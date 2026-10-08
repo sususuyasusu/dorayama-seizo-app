@@ -34,7 +34,8 @@ FORM_SHEET_ID = "1v0w_oAmbTmw3t9oOhCFVWv87ysm2gpOnNQbGAlALpIc"  # 催事日報�
 FORM_GID = 816782526
 FORM_KEY = "_form_rows"
 FORM_COL_STORE, FORM_COL_DATE, FORM_COL_DATE_MANUAL, FORM_COL_SALES_INCL = 2, 1, 19, 18
-_FORM_CACHE = {"at": 0.0, "rows": None}
+_FORM_CACHE = {"at": 0.0, "rows": None, "good_at": 0.0}
+_FORM_WS = None
 _CACHE = {"at": 0.0, "date": None, "value": None}
 _CACHE_TTL = 90.0
 _SHEET = None
@@ -800,18 +801,112 @@ def _local_sync(today):
     }
 
 
-def _tab_values(title):
-    """タブの全値を読む。Sheets APIの一過性エラー(503等)は短いリトライで吸収する。"""
+# === 読み取り削減（Google Sheets APIは1分あたりの読み取り回数に上限があり、超えると429で数字が崩れる） ===
+# 以前は「タブごと＋日付ごと」にシートを読み直していた（1回の同期で十数回）。
+# 今は ①全タブを1回のまとめ読みで取得 ②日付が違っても同じ生データを使い回す ③読めなければ直前の成功値を
+# 一定時間まで使う、の3点で、通常は2分に1〜2回の読み取りで済ませる。
+CALENDAR_TAB = "_event_calendar"
+_RAW = {"at": 0.0, "values": {}, "failed": set()}
+_RAW_TTL = 120.0         # 全タブ成功時にまとめ読みの結果を使い回す秒数
+_RAW_RETRY_TTL = 20.0    # 失敗があるときは短い間隔で再試行（ただし読み取りを連打しない）
+_STALE_MAX = 1800.0      # 読めない間、直前の成功値を使ってよい最大秒数（超えたら欠損として扱う）
+_LAST_GOOD = {}          # {タブ名: (取得時刻, 値)}
+_TITLES = {"at": 0.0, "names": set()}
+_RAW_LOCK = None
+
+
+def _known_titles():
+    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB]
+
+
+def _pad_rows(rows):
+    """get_all_valuesと同じく、行の長さを揃える（末尾の空セルをAPIは省略するため）。"""
+    width = max((len(r) for r in rows), default=0)
+    return [list(r) + [""] * (width - len(r)) for r in rows]
+
+
+def _book():
     global _SHEET
+    if _SHEET is None:
+        _SHEET = data_layer._client().open_by_key(SHEET_ID)
+    return _SHEET
+
+
+def _sheet_names(book):
+    if _TITLES["names"] and time.time() - _TITLES["at"] < 600:
+        return _TITLES["names"]
+    names = {ws.title for ws in book.worksheets()}
+    _TITLES.update({"at": time.time(), "names": names})
+    return names
+
+
+def _batch_read():
+    """既知のタブをまとめて1回で読む。{タブ名: 値} を返す（存在しないタブは含めない）。"""
+    book = _book()
+    names = _sheet_names(book)
+    wanted = [t for t in _known_titles() if t in names]
+    ranges = ["'" + t.replace("'", "''") + "'" for t in wanted]
+    response = book.values_batch_get(ranges)
+    out = {}
+    for title, value_range in zip(wanted, response.get("valueRanges", [])):
+        out[title] = _pad_rows(value_range.get("values", []))
+    return out
+
+
+def _raw_tabs():
+    """全タブの生データ（キャッシュ付き）。(値の辞書, 読めなかったタブの集合) を返す。"""
+    global _SHEET, _RAW_LOCK
+    import threading
+    if _RAW_LOCK is None:
+        _RAW_LOCK = threading.Lock()
+    ttl = _RAW_RETRY_TTL if _RAW["failed"] else _RAW_TTL
+    if _RAW["values"] and time.time() - _RAW["at"] < ttl:
+        return _RAW["values"], _RAW["failed"]
+    with _RAW_LOCK:
+        ttl = _RAW_RETRY_TTL if _RAW["failed"] else _RAW_TTL
+        if _RAW["values"] and time.time() - _RAW["at"] < ttl:  # 待っている間に他のスレッドが読んだ
+            return _RAW["values"], _RAW["failed"]
+        fresh = None
+        for attempt in range(2):
+            try:
+                fresh = _batch_read()
+                break
+            except Exception:  # noqa: BLE001 - 429(読み取り上限)・503など。直前の成功値で凌ぐ
+                _SHEET = None
+                _TITLES["at"] = 0.0
+                time.sleep(3 * (attempt + 1))
+        now = time.time()
+        values, failed = {}, set()
+        for title in _known_titles():
+            if fresh is not None and title in fresh:
+                values[title] = fresh[title]
+                _LAST_GOOD[title] = (now, fresh[title])
+            elif title in _LAST_GOOD and now - _LAST_GOOD[title][0] < _STALE_MAX:
+                values[title] = _LAST_GOOD[title][1]  # 読めなかったので直前の値を使う
+                if fresh is None:
+                    failed.add("__stale__")
+            else:
+                values[title] = []
+                if title in TABS.values() or fresh is None:  # 補助タブが無いだけなら失敗扱いにしない
+                    failed.add(title)
+        failed.discard("__stale__")
+        _RAW.update({"at": now, "values": values, "failed": failed})
+        return values, failed
+
+
+def _tab_values(title):
+    """タブの全値を返す。既知のタブは全タブまとめ読みのキャッシュから（読めなければ例外）。"""
+    if title in _known_titles():
+        values, failed = _raw_tabs()
+        if title in failed:
+            raise RuntimeError(f"タブ「{title}」を読めませんでした")
+        return values.get(title, [])
     last_error = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            if _SHEET is None:
-                _SHEET = data_layer._client().open_by_key(SHEET_ID)
-            return _SHEET.worksheet(title).get_all_values()
-        except Exception as error:  # noqa: BLE001 - 呼び出し元がタブ単位で失敗を記録する
+            return _book().worksheet(title).get_all_values()
+        except Exception as error:  # noqa: BLE001
             last_error = error
-            _SHEET = None
             time.sleep(2 * (attempt + 1))
     raise last_error
 
@@ -819,17 +914,21 @@ def _tab_values(title):
 def _form_rows():
     """催事日報フォームの回答を読む。同期タスクが遅れた朝でも催事売上を出すための直接取得。
     読めない場合は空を返し、既存の動きを壊さない。"""
-    global _FORM_CACHE
-    if time.time() - _FORM_CACHE["at"] < 120 and _FORM_CACHE["rows"] is not None:
+    global _FORM_CACHE, _FORM_WS
+    ttl = 120 if _FORM_CACHE["rows"] else 20
+    if time.time() - _FORM_CACHE["at"] < ttl and _FORM_CACHE["rows"] is not None:
         return _FORM_CACHE["rows"]
     try:
-        book = data_layer._client().open_by_key(FORM_SHEET_ID)
-        ws = next((w for w in book.worksheets() if w.id == FORM_GID), book.sheet1)
-        rows = ws.get_all_values()
+        if _FORM_WS is None:  # シートの場所は最初の1回だけ調べる（毎回調べると読み取り回数が3倍になる）
+            book = data_layer._client().open_by_key(FORM_SHEET_ID)
+            _FORM_WS = next((w for w in book.worksheets() if w.id == FORM_GID), book.sheet1)
+        rows = _FORM_WS.get_all_values()
+        _FORM_CACHE = {"at": time.time(), "rows": rows, "good_at": time.time()}
     except Exception:  # noqa: BLE001 - 日報が読めなくても本体の取り込みは続ける
-        rows = []
-    _FORM_CACHE = {"at": time.time(), "rows": rows}
-    return rows
+        _FORM_WS = None
+        stale = _FORM_CACHE["rows"] if time.time() - _FORM_CACHE.get("good_at", 0) < _STALE_MAX else None
+        _FORM_CACHE = {"at": time.time(), "rows": stale or [], "good_at": _FORM_CACHE.get("good_at", 0)}
+    return _FORM_CACHE["rows"]
 
 
 def _form_sales_by_day(rows):
@@ -864,6 +963,8 @@ def get_management_sync(force=False, today=None):
     target = today or date.today()
     if not force and _CACHE["date"] == target and _CACHE["value"] is not None and now - _CACHE["at"] < _CACHE_TTL:
         return _CACHE["value"]
+    if force and _RAW["failed"]:
+        _RAW["at"] = 0.0  # 読めなかったタブがあるときだけ、再取得を促す（成功時は読み直さない）
     errors = []
     values = {}
     for title in TABS.values():
