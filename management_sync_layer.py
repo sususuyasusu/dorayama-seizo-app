@@ -326,13 +326,22 @@ def parse_management_values(values_by_tab, today=None):
 
     # 催事日報フォームの直接取り込み：同期タスクが遅れて催事売上が0円のままの日を、
     # フォームの回答（会場ごとの税込売上の合計）で補う。Airメイト・シートに実績がある日は触らない。
-    form_sales = _form_sales_by_day(values_by_tab.get(FORM_KEY) or [])
+    form_sales, form_dropped = _form_scan(values_by_tab.get(FORM_KEY) or [])
+    # 読めなかった日報行は黙って捨てず、その日の行に記録する（速報が「確定」と言い切らないための根拠）
+    for day_iso, reasons in form_dropped.items():
+        try:
+            dropped_day = date.fromisoformat(day_iso)
+        except ValueError:
+            continue
+        if (dropped_day.year, dropped_day.month) == target_month and dropped_day <= today:
+            daily_row(day_iso)["eventFormDropped"] = reasons
     for day_iso, venues in sorted(form_sales.items()):
         parsed = date.fromisoformat(day_iso)
         if (parsed.year, parsed.month) != target_month or parsed > today:
             continue
         if day_iso in daily:
             daily[day_iso]["eventVenuesReported"] = len(venues)  # 日報が出た会場数（速報で未入力会場の注意に使う）
+            daily[day_iso]["eventFormTotal"] = sum(venues.values())  # 日報フォームの合計（シートとの突合に使う）
         item = daily.get(day_iso)
         if item and item["eventSales"] > 0:
             continue
@@ -943,9 +952,11 @@ def _form_int(text):
     return int(match.group())
 
 
-def _form_sales_by_day(rows):
-    """フォーム回答から {日付: {会場名: 税込売上}} を作る（同会場は後勝ち、テスト入力は除外）。"""
-    out = {}
+def _form_scan(rows):
+    """フォーム回答を読み、({日付: {会場名: 税込売上}}, {日付: [読めなかった会場の説明]}) を返す。
+    同会場は後勝ち、テスト入力は除外。売上が読める行は客数が空でも採用する（客数は参考値）。
+    売上欄に何か書いてあるのに読めない行は、黙って捨てずに「読めなかった行」として必ず返す。"""
+    sales, dropped = {}, {}
     for r in rows[1:]:
         if len(r) <= FORM_COL_SALES_INCL:
             continue
@@ -958,15 +969,29 @@ def _form_sales_by_day(rows):
                 day = normalize_date(r[col].strip().replace("-", "/"), 2026) or ""
                 if day:
                     break
+        raw_incl = (r[FORM_COL_SALES_INCL] or "").strip()
         try:
-            sales_incl = _form_int(r[FORM_COL_SALES_INCL])
-            customers = _form_int(r[4])  # 「233（全売場合計）」のような補足付きでも先頭の数字を読む
+            sales_incl = _form_int(raw_incl)
+            excl = _form_int(r[3])  # 税抜売上。無いのに税込だけある行は入力ミスの疑い
         except ValueError:
+            if day and raw_incl:
+                dropped.setdefault(day, []).append(f"{store}（売上欄「{raw_incl[:20]}」が数字として読めません）")
             continue
-        if not day or sales_incl <= 0 or customers <= 0:
+        if not day:
+            if raw_incl and sales_incl > 0:
+                dropped.setdefault("日付不明", []).append(f"{store}（日付が読めません）")
             continue
-        out.setdefault(day, {})[store] = sales_incl
-    return out
+        if sales_incl <= 0:
+            continue  # 売上0・空欄は「その日は報告なし」として扱う
+        if excl <= 0:
+            dropped.setdefault(day, []).append(f"{store}（税抜売上が空欄・0です）")
+            continue
+        sales.setdefault(day, {})[store] = sales_incl
+    return sales, dropped
+
+
+def _form_sales_by_day(rows):
+    return _form_scan(rows)[0]
 
 
 def get_management_sync(force=False, today=None):

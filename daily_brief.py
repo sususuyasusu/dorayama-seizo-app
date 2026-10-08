@@ -177,6 +177,15 @@ def build_brief(analysis, target=None):
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
         lines.append(f"※催事{venues}会場のうち{reported}会場分の日報のみ反映（残りは未入力の恐れ）")
+    # 誤りを「確定」として出さないための突合（2026-10-08: 客数欄の補足文字で日報1件が読み飛ばされた事故の再発防止）
+    dropped = row.get("eventFormDropped") or []
+    if dropped:
+        lines.append("※読み取れなかった日報があります：" + "、".join(dropped[:3]) + "。催事売上が少なく出ている恐れ（確定額ではありません）")
+        complete = False
+    form_total = row.get("eventFormTotal")
+    if form_total and event_sales and abs(form_total - event_sales) > 1:
+        lines.append(f"※催事売上（{yen(event_sales)}）が日報フォームの合計（{yen(form_total)}）と一致しません。確認中（確定額ではありません）")
+        complete = False
 
     # 今月ここまで（昨日まで）：日々の判定は製造実績比だが、月間は本人指示により売上比で見る
     month_dates = sorted(d for d in rows if d.startswith(month_key) and d <= target)
