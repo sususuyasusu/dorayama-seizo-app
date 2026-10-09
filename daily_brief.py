@@ -76,6 +76,29 @@ def daily_targets(analysis, month_key):
     return {d: (store[i], event[i]) for i, d in enumerate(dates)}
 
 
+def _norm_venue(name):
+    """会場名の表記ゆれを揃える（仮・空白・「エキュート」・東武池袋/池袋東武）。"""
+    text = str(name or "").replace("仮", "").replace(" ", "").replace("　", "").replace("エキュート", "")
+    if "東武" in text and "池袋" in text:
+        return "池袋東武"
+    return text
+
+
+def missing_venues(calendar_names, form_names):
+    """カレンダー上の開催会場のうち、日報が出ていない会場名を返す。照合できなければ空（件数だけで注意する）。
+    長い会場名から順に、日報の会場名と部分一致で1対1に対応づける（「上野」が「松坂屋上野」を食わないように）。"""
+    form = [_norm_venue(n) for n in form_names]
+    missing = []
+    for name in sorted(calendar_names, key=lambda n: -len(_norm_venue(n))):
+        cal = _norm_venue(name)
+        hit = next((i for i, f in enumerate(form) if cal and cal in f), None)
+        if hit is None:
+            missing.append(name)
+        else:
+            form.pop(hit)
+    return missing
+
+
 def build_brief(analysis, target=None):
     """target（日付）の速報を作る。返り値: {"text": 文章, "date": 日付, "complete": 数字がそろっているか}"""
     updated = str(analysis.get("updatedAt") or "")[:10]
@@ -186,9 +209,11 @@ def build_brief(analysis, target=None):
         reasons.append(str(row["flashNote"])[:80])
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
-        lines.append(f"※催事{venues}会場のうち{reported}会場分の日報のみ反映（残りは未入力の恐れ）")
+        absent = missing_venues((goal_days.get(target) or {}).get("events") or [], row.get("eventVenueNames") or [])
+        who = f"（日報が無いのは「{'」「'.join(absent)}」）" if absent else ""
+        lines.append(f"※催事{venues}会場のうち{reported}会場分の日報のみ反映{who}（残りは未入力の恐れ）")
         complete = False  # 日報が未提出の会場がある＝催事売上が少なく出ている。数字が合っているとは言えない
-        reasons.append(f"催事{venues}会場のうち日報があるのは{reported}会場だけ")
+        reasons.append(f"催事{venues}会場のうち日報があるのは{reported}会場だけ{who}")
     # 誤りを「確定」として出さないための突合（2026-10-08: 客数欄の補足文字で日報1件が読み飛ばされた事故の再発防止）
     dropped = row.get("eventFormDropped") or []
     if dropped:

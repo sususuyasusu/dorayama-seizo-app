@@ -341,6 +341,7 @@ def parse_management_values(values_by_tab, today=None):
             continue
         if day_iso in daily:
             daily[day_iso]["eventVenuesReported"] = len(venues)  # 日報が出た会場数（速報で未入力会場の注意に使う）
+            daily[day_iso]["eventVenueNames"] = sorted(venues)  # 日報が出た会場名（未入力の会場名を特定するため）
             daily[day_iso]["eventFormTotal"] = sum(venues.values())  # 日報フォームの合計（シートとの突合に使う）
         item = daily.get(day_iso)
         if item and item["eventSales"] > 0:
@@ -348,6 +349,7 @@ def parse_management_values(values_by_tab, today=None):
         total = sum(venues.values())
         item = daily_row(day_iso)
         item["eventVenuesReported"] = len(venues)
+        item["eventVenueNames"] = sorted(venues)
         item["eventSales"] = total
         item["eventRows"] = max(item["eventRows"], 1)
         if "日報フォーム速報" not in item["eventReportStates"]:
@@ -390,6 +392,16 @@ def parse_management_values(values_by_tab, today=None):
         if day_details:
             day_details[0]["staffCost"] = amount
             day_details[0]["profitBeforeFixed"] -= amount
+
+    # クラウドがAirメイトの催事売上を取れなかった、という断り書きは、予実シート側（日報フォーム・Airメイト）に
+    # その日の催事売上がある日は無関係なので出さない（催事の突合は日報フォームで別に行っている）。
+    for item in daily.values():
+        if item.get("flashNote") and item["eventRows"]:
+            kept = " / ".join(p for p in str(item["flashNote"]).split(" / ") if "Airメイト" not in p).strip()
+            if kept:
+                item["flashNote"] = kept
+            else:
+                item.pop("flashNote", None)
 
     records = []
     for day_iso in sorted(daily):
