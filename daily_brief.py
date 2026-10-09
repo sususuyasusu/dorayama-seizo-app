@@ -96,9 +96,10 @@ def build_brief(analysis, target=None):
     head = f"【どら山 速報】{day.month}/{day.day}（{WEEKDAYS[day.weekday()]}）"
     if not row:
         return {"text": head + "\n売上データがまだ取得できていません。アプリで確認してください。\n" + APP_URL,
-                "date": target, "complete": False, "data": None}
+                "date": target, "complete": False, "reasons": ["売上データが取得できていない"], "data": None}
 
     complete = True
+    reasons = []  # 「確定と言えない理由」（見送り通知・画面表示に使う）
     lines = [head]
     store_target, event_target = targets.get(target, (0, 0))
     venues = int((goal_days.get(target) or {}).get("eventCount") or 0)
@@ -117,6 +118,7 @@ def build_brief(analysis, target=None):
     if store_suspect:
         store_part = "⏳ 店舗 反映待ち（0円のまま＝未反映の疑い、確定額ではありません）"
         complete = False
+        reasons.append("店舗売上が0円のまま（予実シートへの反映待ち）")
     else:
         store_diff = store_sales - store_target
         store_part = f"{'✅' if store_diff >= 0 else '⚠️'} 店舗 {yen(store_sales)}（{signed(store_diff)}）"
@@ -126,9 +128,11 @@ def build_brief(analysis, target=None):
     elif event_pending:
         event_part = "⏳ 催事 入力待ち"
         complete = False
+        reasons.append("催事の日報がまだ入っていない")
     elif event_suspect:
         event_part = "⏳ 催事 反映待ち（0円のまま＝未反映の疑い、確定額ではありません）"
         complete = False
+        reasons.append("催事売上が0円のまま（反映待ち）")
     else:
         event_diff = event_sales - event_target
         event_part = f"{'✅' if event_diff >= 0 else '⚠️'} 催事 {yen(event_sales)}（{signed(event_diff)}）"
@@ -147,12 +151,15 @@ def build_brief(analysis, target=None):
     labor_part = f"人件費 {yen(labor)}{breakdown}"
     if not store_labor:
         complete = False
+        reasons.append("店舗の人件費（打刻）が取れていない")
     if not analysis.get("production"):
         labor_part += "　製造実績を読めず判定なし"
         complete = False
+        reasons.append("製造実績を読み込めていない")
     elif not prod or not prod.get("value"):
         labor_part += "　製造実績待ちで判定なし"
         complete = False
+        reasons.append("製造実績が未入力")
     else:
         # 人件費は、その日の店舗人時＋翌日以降の催事仕込み分も含むため、当日の売上でなく
         # 「その日作った商品の金額（製造実績）」と比べる（＝人件費率）。
@@ -174,18 +181,25 @@ def build_brief(analysis, target=None):
         lines.append("※店舗の打刻未取得")
     if row.get("flashNote"):
         lines.append(f"※{row['flashNote']}")
+        # 時給0・打刻漏れなど、人件費が低く出る恐れの注意書きがある日は、数字が合っていると言えない
+        complete = False
+        reasons.append(str(row["flashNote"])[:80])
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
         lines.append(f"※催事{venues}会場のうち{reported}会場分の日報のみ反映（残りは未入力の恐れ）")
+        complete = False  # 日報が未提出の会場がある＝催事売上が少なく出ている。数字が合っているとは言えない
+        reasons.append(f"催事{venues}会場のうち日報があるのは{reported}会場だけ")
     # 誤りを「確定」として出さないための突合（2026-10-08: 客数欄の補足文字で日報1件が読み飛ばされた事故の再発防止）
     dropped = row.get("eventFormDropped") or []
     if dropped:
         lines.append("※読み取れなかった日報があります：" + "、".join(dropped[:3]) + "。催事売上が少なく出ている恐れ（確定額ではありません）")
         complete = False
+        reasons.append("読み取れない日報あり：" + "、".join(dropped[:3]))
     form_total = row.get("eventFormTotal")
     if form_total and event_sales and abs(form_total - event_sales) > 1:
         lines.append(f"※催事売上（{yen(event_sales)}）が日報フォームの合計（{yen(form_total)}）と一致しません。確認中（確定額ではありません）")
         complete = False
+        reasons.append("催事売上が日報フォームの合計と一致しない")
 
     # 今月ここまで（昨日まで）：日々の判定は製造実績比だが、月間は本人指示により売上比で見る
     month_dates = sorted(d for d in rows if d.startswith(month_key) and d <= target)
@@ -281,4 +295,4 @@ def build_brief(analysis, target=None):
         "month": month,
         "charts": charts,
     }
-    return {"text": "\n".join(lines), "date": target, "complete": complete, "data": data}
+    return {"text": "\n".join(lines), "date": target, "complete": complete, "reasons": reasons, "data": data}

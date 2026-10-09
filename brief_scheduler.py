@@ -32,6 +32,7 @@ import management_analysis_layer
 JST = timezone(timedelta(hours=9))
 SEND_AT = (6, 40)  # 6:30に業界ウォッチ(Mac)が合流して送る。送られていなければ、この予備送信が単独で送る
 SEND_UNTIL = (7, 0)  # この時刻を過ぎたら、その日はもう自動送信しない（日中の再デプロイでの誤送信を防ぐ）
+RETRY_UNTIL = (12, 0)  # 見送り通知を出した日だけ、この時刻まで数字がそろうのを待って確定版を送る
 LINE_API = "https://api.line.me/v2/bot/message"
 
 
@@ -76,11 +77,30 @@ def send_once(now=None):
     group_id = os.environ["BRIEF_LINE_GROUP_ID"]
     brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis())
     at_deadline = (now.hour, now.minute) >= SEND_UNTIL
-    if not brief["complete"] and not at_deadline:
-        return "未反映の疑いありのため待機（リトライ）"
-    status, message_id = push_text(token, group_id, brief["text"])
+    skipped_today = config_store.get_config("brief_skip_notice") == today
+    if not brief["complete"]:
+        # 【2026-10-09】数字が合っていないと分かっている速報は、締切でも送らない（本人指示）。
+        # 代わりに「見送り」と理由だけを1回知らせ、そろい次第、確定した数字を送り直す。
+        if not at_deadline:
+            return "数字がそろっていないため待機（リトライ）"
+        if skipped_today:
+            return "見送り通知済み・数字がそろうのを待機"
+        reasons = list(dict.fromkeys(brief.get("reasons") or []))[:4]
+        head = brief["text"].splitlines()[0]
+        notice = head + "\n数字がまだそろっていないため、速報を見送ります。\n" + "\n".join(f"・{r}" for r in reasons) \
+            + "\n反映され次第、確定した数字をお送りします。"
+        status, message_id = push_text(token, group_id, notice)
+        config_store.set_config("brief_skip_notice", today)
+        config_store.set_config("brief_last_status", f"{today} 見送り通知を送信（{brief['date']}分・理由: {' / '.join(reasons)}）")
+        if message_id:
+            config_store.set_config("brief_last_message_id", message_id)
+        return f"見送り通知 HTTP {status}"
+    text = brief["text"]
+    if skipped_today:
+        text = "（先ほど見送った分の確定版です）\n" + text
+    status, message_id = push_text(token, group_id, text)
     config_store.set_config("brief_last_sent", today)
-    config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・{'数字そろい' if brief['complete'] else '未確定のまま締切送信'}）")
+    config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・数字そろい{'・見送り後の確定版' if skipped_today else ''}）")
     if message_id:
         config_store.set_config("brief_last_message_id", message_id)
     return f"送信 HTTP {status}"
@@ -92,6 +112,10 @@ def _loop():
             now = datetime.now(JST)
             clock = (now.hour, now.minute)
             due = SEND_AT <= clock <= SEND_UNTIL
+            # 見送り通知を出した日だけ、数字がそろうまで昼まで見続ける（そろったら確定版を1回送る）
+            if not due and clock <= RETRY_UNTIL and config_store.get_config("brief_skip_notice") == now.date().isoformat() \
+                    and config_store.get_config("brief_last_sent") != now.date().isoformat():
+                due = True
             if due:
                 result = send_once(now)
                 if result != "送信済み":
