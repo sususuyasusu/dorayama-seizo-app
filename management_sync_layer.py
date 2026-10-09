@@ -1044,6 +1044,10 @@ def get_management_sync(force=False, today=None):
     except Exception:
         values[FLASH_TAB] = []
     values[FORM_KEY] = _form_rows()  # 催事日報フォームの回答（読めなければ空）
+    try:  # LINE画像などで届いた日報の手入力補完タブ（無い・読めないときは空）
+        values[MANUAL_REPORT_TAB] = _tab_values(MANUAL_REPORT_TAB)
+    except Exception:
+        values[MANUAL_REPORT_TAB] = []
     parsed = parse_management_values(values, target)
     fallback = None
     if not parsed["records"] and not parsed["counts"]["expenseRows"] and errors:
