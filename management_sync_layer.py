@@ -327,6 +327,7 @@ def parse_management_values(values_by_tab, today=None):
     # 催事日報フォームの直接取り込み：同期タスクが遅れて催事売上が0円のままの日を、
     # フォームの回答（会場ごとの税込売上の合計）で補う。Airメイト・シートに実績がある日は触らない。
     form_sales, form_dropped = _form_scan(values_by_tab.get(FORM_KEY) or [])
+    _merge_manual_reports(form_sales, values_by_tab.get(MANUAL_REPORT_TAB) or [])
     # 読めなかった日報行は黙って捨てず、その日の行に記録する（速報が「確定」と言い切らないための根拠）
     for day_iso, reasons in form_dropped.items():
         try:
@@ -827,6 +828,7 @@ def _local_sync(today):
 # 今は ①全タブを1回のまとめ読みで取得 ②日付が違っても同じ生データを使い回す ③読めなければ直前の成功値を
 # 一定時間まで使う、の3点で、通常は2分に1〜2回の読み取りで済ませる。
 CALENDAR_TAB = "_event_calendar"
+MANUAL_REPORT_TAB = "_manual_event_reports"  # LINE画像など、日報フォームに入らなかった日報の手入力欄
 _RAW = {"at": 0.0, "values": {}, "failed": set()}
 _RAW_TTL = 120.0         # 全タブ成功時にまとめ読みの結果を使い回す秒数
 _RAW_RETRY_TTL = 20.0    # 失敗があるときは短い間隔で再試行（ただし読み取りを連打しない）
@@ -837,7 +839,7 @@ _RAW_LOCK = None
 
 
 def _known_titles():
-    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB]
+    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB]
 
 
 def _pad_rows(rows):
@@ -962,6 +964,21 @@ def _form_int(text):
     if not match:
         raise ValueError(f"数値を読み取れません: {text!r}")
     return int(match.group())
+
+
+def _merge_manual_reports(sales, rows):
+    """補完タブ「_manual_event_reports」(日付｜会場｜税込売上…)の行を、日報フォームの会場別売上へ足す。
+    同じ日・同じ会場がフォームにもあれば、手入力側を優先する（紙・LINE画像の確認済み値）。"""
+    for r in rows[1:]:
+        if len(r) < 3 or not str(r[0]).strip() or not str(r[1]).strip():
+            continue
+        day = normalize_date(str(r[0]).strip().replace("-", "/"), 2026)
+        try:
+            amount = _form_int(r[2])
+        except ValueError:
+            continue
+        if day and amount > 0:
+            sales.setdefault(day, {})[str(r[1]).strip()] = amount
 
 
 def _form_scan(rows):
