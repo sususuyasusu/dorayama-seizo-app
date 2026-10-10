@@ -53,8 +53,8 @@ today = datetime.datetime.now(JST).date()
 monday = today - datetime.timedelta(days=today.weekday())
 tabs = ["%02d%02d" % ((monday + datetime.timedelta(days=7 * k)).month,
                       (monday + datetime.timedelta(days=7 * k)).day) for k in range(4)]
-sh = gspread.authorize(Credentials.from_service_account_file(
-    CRED, scopes=["https://www.googleapis.com/auth/spreadsheets"])).open_by_key(SHEET_ID)
+sh = retry(lambda: gspread.authorize(Credentials.from_service_account_file(
+    CRED, scopes=["https://www.googleapis.com/auth/spreadsheets"])).open_by_key(SHEET_ID))
 names = [w.title for w in retry(lambda: sh.worksheets())]
 kr = {}
 for t in set(tabs) | {t for t in names if re.fullmatch(r"\d{4}", t)}:
