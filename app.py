@@ -202,6 +202,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/raw_styled":
             import sheetfmt_layer
             self._send(200, json.dumps(sheetfmt_layer.get_raw_styled(tab), ensure_ascii=False))
+        elif path == "/nippo" or path == "/nippo/":
+            # 【どら山 日報】の分析画面（社員LINEの日報を自動で読み取って経過を追う）
+            self._send(200, (BASE / "templates" / "nippo.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
+        elif path == "/api/nippo":
+            import nippo_layer
+            self._send(200, json.dumps(nippo_layer.get_nippo_view(), ensure_ascii=False))
         elif path == "/forecast" or path == "/forecast/":
             # 製造数予測（上野エキュート）。読み込みはここでだけ行い、不具合が出ても他の画面を巻き込まない
             self._send(200, (BASE / "templates" / "forecast.html").read_text(encoding="utf-8"),

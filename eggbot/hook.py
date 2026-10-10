@@ -32,6 +32,20 @@ def _build():
         _gid = getattr(event.source, "group_id", None)
         if _gid:
             log.info("seen group_id=%s", _gid)
+        # 【どら山 日報】（製造担当が毎日投稿）は、卵発注とは別に読み取って「日報台帳」へ保存する
+        try:
+            import nippo_layer
+            if nippo_layer.is_nippo(text):
+                rec = nippo_layer.parse_nippo(text)
+                if rec:
+                    action = nippo_layer.save_nippo(rec)
+                    log.info("nippo saved: date=%s name=%s %s", rec["date"], rec["name"], action)
+                else:
+                    log.warning("nippo parse failed (日付が読めない)")
+                return
+        except Exception:
+            log.exception("nippo handling failed")
+            return
         if not starts_with_egg_order(text):
             return
         src = event.source

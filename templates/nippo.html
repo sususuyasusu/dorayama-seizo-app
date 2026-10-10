@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>日報分析｜どら山</title>
+<meta name="apple-mobile-web-app-title" content="日報分析">
+<style>
+:root{
+  color-scheme:dark;
+  --ink:#eee8df;--muted:#b9aea0;--faint:#a39a8e;--page:#171512;--surface:#27231e;--surface2:#312b24;
+  --line:#4b4237;--gold:#c29853;--gold-soft:#453921;--green:#78aa8e;--green-soft:#243b30;
+  --red:#e66767;--red-soft:#4b2c29;--blue:#3987e5;--blue-soft:#23353e;--shadow:0 14px 36px rgba(0,0,0,.2);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--page)}
+body{margin:0;background:var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;font-size:14px;line-height:1.6}
+.num{font-variant-numeric:tabular-nums}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:rgba(23,21,18,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:16px;font-weight:700}
+.grow{flex:1 1 auto}
+.top-status{color:var(--muted);font-size:11px}
+.btn{appearance:none;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:7px 12px;font:inherit;font-size:12px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--gold)}
+main{max-width:1120px;margin:0 auto;padding:14px 16px 56px}
+.panel{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow);min-width:0}
+.panel>h2{margin:0 0 2px;font-size:16px;font-weight:700}
+.lead{margin:0 0 12px;color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:6px}
+.kpi{background:var(--surface2);border-radius:10px;padding:10px 12px}
+.kpi .l{color:var(--muted);font-size:12px}.kpi .v{font-size:22px;font-weight:700}
+.strip{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:5px;text-align:center;font-size:11px}
+.strip div{border-radius:6px;padding:6px 0;line-height:1.35}
+.s-ok{background:var(--green-soft);color:var(--green)}.s-miss{background:var(--red-soft);color:var(--red)}.s-wait{background:var(--surface2);color:var(--muted)}
+.cards{display:grid;gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--surface2);padding:12px 14px}
+.card-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-weight:700;margin-bottom:8px}
+.card-head span{font-weight:400;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.cell{background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0}
+.cell .l{color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--gold-soft);color:#e7c98b;border-radius:999px;padding:2px 9px;font-size:12px}
+.tag-ok{background:var(--green-soft);color:var(--green);border-radius:6px;padding:2px 8px;font-size:12px}
+.tag-warn{background:var(--red-soft);color:var(--red);border-radius:6px;padding:2px 8px;font-size:12px}
+.note{color:var(--muted);font-size:12px;line-height:1.75}
+.empty{color:var(--muted);padding:14px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:400}
+.scroll{overflow-x:auto}
+svg text{font-family:inherit}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>日報分析</h1>
+  <span class="top-status" id="status">読み込み中…</span>
+  <span class="grow"></span>
+  <a class="btn" href="/store-manager">経営管理</a>
+  <a class="btn" href="/">← 製造アプリ</a>
+</div>
+<main id="main"></main>
+<script>
+const $=(t,a,...c)=>{const e=document.createElement(t);if(a)for(const k in a){if(k==='class')e.className=a[k];else e.setAttribute(k,a[k])}c.flat().forEach(x=>e.append(x==null?'':x));return e};
+const yen=n=>n==null?'—':Number(n).toLocaleString('ja-JP')+'円';
+const wd=['日','月','火','水','木','金','土'];
+const fmtDate=s=>{const d=new Date(s+'T00:00:00+09:00');return (d.getMonth()+1)+'/'+d.getDate()+'（'+wd[d.getDay()]+'）'};
+const short=s=>{const d=new Date(s+'T00:00:00+09:00');return (d.getMonth()+1)+'/'+d.getDate()};
+function panel(title,lead,...body){return $('section',{class:'panel'},$('h2',null,title),lead?$('p',{class:'lead'},lead):'',...body)}
+
+function statusPanel(d){
+  const st=d.status, ok=st.filter(x=>x.state==='submitted').length, due=st.filter(x=>x.state==='submitted'||x.state==='missing').length;
+  const miss=st.filter(x=>x.state==='missing').length;
+  const strip=$('div',{class:'strip'});
+  st.forEach(x=>{const cls=x.state==='submitted'?'s-ok':x.state==='missing'?'s-miss':'s-wait';
+    const lab=x.state==='submitted'?'提出':x.state==='missing'?'未提出':x.state==='before'?'開始前':'これから';
+    strip.append($('div',{class:cls},short(x.date),$('br'),lab))});
+  const kp=$('div',{class:'kpis'},
+    $('div',{class:'kpi'},$('div',{class:'l'},'直近14日の提出'),$('div',{class:'v num'},ok+' / '+due+' 日')),
+    $('div',{class:'kpi'},$('div',{class:'l'},'未提出'),$('div',{class:'v num',style:miss?'color:var(--red)':''},miss+' 日')),
+    $('div',{class:'kpi'},$('div',{class:'l'},'直近7日の平均回転数'),$('div',{class:'v num'},d.rotationAvg7==null?'—':d.rotationAvg7)));
+  return panel('提出状況','日報は毎日の投稿が前提です（10/10から開始）。未提出の日は赤で出ます（当日は20時まで「これから」）。',kp,strip);
+}
+
+function chartPanel(d){
+  const recs=d.records.filter(r=>r.rotations!=null).slice(0,14).reverse();
+  if(!recs.length)return panel('回転数の推移','直近14日',$('div',{class:'empty'},'回転数の入った日報がまだありません。'));
+  const W=640,H=190,pl=34,pb=34,pt=14,max=Math.max(...recs.map(r=>r.rotations),10),bw=Math.min(36,(W-pl)/recs.length*.6);
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('role','img');svg.setAttribute('aria-label','日別の回転数');svg.style.width='100%';
+  const sx=i=>pl+(i+.5)*((W-pl)/recs.length), sy=v=>pt+(H-pt-pb)*(1-v/max);
+  const mk=(n,a,t)=>{const e=document.createElementNS('http://www.w3.org/2000/svg',n);for(const k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;return e};
+  [0,.5,1].forEach(f=>{const y=sy(max*f);svg.append(mk('line',{x1:pl,x2:W,y1:y,y2:y,stroke:'#3a342c'}),mk('text',{x:pl-6,y:y+4,'text-anchor':'end',fill:'#a39a8e','font-size':11},Math.round(max*f)))});
+  recs.forEach((r,i)=>{const x=sx(i),y=sy(r.rotations);
+    svg.append(mk('rect',{x:x-bw/2,y:y,width:bw,height:H-pb-y,fill:'#3987e5',rx:3}),
+      mk('text',{x:x,y:y-4,'text-anchor':'middle',fill:'#eee8df','font-size':11},r.rotations),
+      mk('text',{x:x,y:H-pb+14,'text-anchor':'middle',fill:'#a39a8e','font-size':11},short(r.date)));
+    if(r.context&&r.context.salesPerRotation)svg.append(mk('text',{x:x,y:H-pb+27,'text-anchor':'middle',fill:'#c29853','font-size':10},(Math.round(r.context.salesPerRotation/100)/10)+'千'))});
+  return panel('回転数の推移','直近14日。下段の金の数字は「売上合計 ÷ 回転数」の目安（千円）です。',svg);
+}
+
+function productsPanel(d){
+  const recs=d.records.slice(0,7);
+  if(!recs.length)return panel('朝イチ製造数の推移','直近7日',$('div',{class:'empty'},'日報がまだありません。'));
+  const head=$('tr',null,$('th',null,'日付'),...d.products.map(p=>$('th',null,p)),$('th',null,'合計'));
+  const rows=recs.map(r=>{const vals=d.products.map(p=>r.products[p]);const sum=vals.reduce((a,b)=>a+(b||0),0);
+    return $('tr',null,$('td',null,short(r.date)),...vals.map(v=>$('td',{class:'num'},v==null?'—':v)),$('td',{class:'num'},sum))});
+  return panel('朝イチ製造数の推移','直近7日。日報②の数字をそのまま並べています（単位は日報の記入のとおり）。',$('div',{class:'scroll'},$('table',null,head,...rows)));
+}
+
+function voicePanel(d){
+  const k=d.voiceKeywords;
+  return panel('現場の声（直近14日）','日報の④「お客様・商品について」と③「品切れ」によく出る言葉を日数で数えています。',
+    k.length?$('div',{class:'chips'},k.map(x=>$('span',{class:'chip'},x.label+' ×'+x.count))):$('div',{class:'empty'},'まだ集計できる記述がありません。'));
+}
+
+function timelinePanel(d){
+  if(!d.records.length)return panel('日報タイムライン','新しい順',$('div',{class:'empty'},'日報がまだ届いていません。社員LINEに「【どら山 日報】」を投稿すると、ここに自動で並びます。'));
+  const cards=d.records.slice(0,14).map(r=>{
+    const prods=Object.entries(r.products).map(([k,v])=>$('span',{class:'chip'},k+' '+v));
+    const so=r.stockout||'';const soNone=/^(なし|無し|ありません|ない)/.test(so);
+    const ctx=r.context;
+    const prep=Object.entries(r.prep).filter(([,v])=>v!=null).map(([k,v])=>k+' '+v).join(' ／ ');
+    return $('div',{class:'card'},
+      $('div',{class:'card-head'},fmtDate(r.date)+'　'+(r.name||''),$('span',null,r.received?('受信 '+r.received.slice(5,16)):'')),
+      $('div',{class:'grid'},
+        $('div',{class:'cell'},$('div',{class:'l'},'回転数'),$('div',{class:'num',style:'font-size:20px;font-weight:700'},r.rotations==null?'—':r.rotations)),
+        $('div',{class:'cell'},$('div',{class:'l'},'朝イチ製造'),$('div',{class:'chips'},prods.length?prods:'—')),
+        $('div',{class:'cell'},$('div',{class:'l'},'品切れ'),so?$('span',{class:soNone?'tag-ok':'chip'},so):'—'),
+        $('div',{class:'cell'},$('div',{class:'l'},'お客様・商品について'),r.voice||'—'),
+        ctx?$('div',{class:'cell'},$('div',{class:'l'},'同じ日の売上（店舗＋催事）'),$('div',{class:'num'},yen((ctx.storeSales||0)+(ctx.eventSales||0))),
+            ctx.storeLabor?$('div',{class:'note'},'店舗人件費 '+yen(ctx.storeLabor)):''):''),
+      prep?$('div',{class:'note',style:'margin-top:8px'},'明日の準備: '+prep+(r.egg&&!/黄|白/.test(r.egg)?'（卵 '+r.egg+'）':'')):'');
+  });
+  return panel('日報タイムライン','新しい順（直近14日）。',$('div',{class:'cards'},cards));
+}
+
+async function load(){
+  const main=document.getElementById('main'),status=document.getElementById('status');
+  try{
+    const r=await fetch('/api/nippo');if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    main.replaceChildren(statusPanel(d),timelinePanel(d),chartPanel(d),productsPanel(d),voicePanel(d),
+      $('p',{class:'note',style:'margin-top:14px'},'これから追加予定: 朝イチ製造と販売（Airレジ）の答え合わせ／材料の持ちと発注Botの連動。'));
+    status.textContent='更新 '+d.updatedAt.slice(5,16).replace('T',' ');
+  }catch(e){
+    status.textContent='読み込めませんでした';
+    main.replaceChildren(panel('読み込めませんでした','',$('div',{class:'empty'},'少し待って、もう一度開いてください。')));
+  }
+}
+load();
+</script>
+</body>
+</html>

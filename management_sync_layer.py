@@ -842,7 +842,7 @@ _RAW_LOCK = None
 
 
 def _known_titles():
-    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB]
+    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB, "日報台帳"]
 
 
 def _pad_rows(rows):
