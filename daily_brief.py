@@ -79,8 +79,11 @@ def daily_targets(analysis, month_key):
 def _norm_venue(name):
     """会場名の表記ゆれを揃える（仮・空白・「エキュート」・東武池袋/池袋東武）。"""
     text = str(name or "").replace("仮", "").replace(" ", "").replace("　", "").replace("エキュート", "")
+    text = text.replace("松阪屋", "松坂屋")  # 「松阪屋」「上野松阪屋」など日報の表記ゆれ
     if "東武" in text and "池袋" in text:
         return "池袋東武"
+    if "松坂屋" in text and "上野" in text:
+        return "松坂屋上野"
     return text
 
 

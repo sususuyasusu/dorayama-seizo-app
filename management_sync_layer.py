@@ -345,9 +345,12 @@ def parse_management_values(values_by_tab, today=None):
             daily[day_iso]["eventVenueNames"] = sorted(venues)  # 日報が出た会場名（未入力の会場名を特定するため）
             daily[day_iso]["eventFormTotal"] = sum(venues.values())  # 日報フォームの合計（シートとの突合に使う）
         item = daily.get(day_iso)
-        if item and item["eventSales"] > 0:
-            continue
         total = sum(venues.values())
+        # シート(Airメイト転記)に催事売上があっても、日報フォーム＋補完の合計の方が大きいときは、転記が遅れている
+        # （例: 夜遅く出た会場の日報がまだシートに載っていない）ので、日報の合計を正とする。
+        # シートの方が大きい・同額のときは触らず、下の突合（不一致なら確定扱いにしない）に任せる。
+        if item and item["eventSales"] > 0 and total <= item["eventSales"]:
+            continue
         item = daily_row(day_iso)
         item["eventVenuesReported"] = len(venues)
         item["eventVenueNames"] = sorted(venues)
