@@ -32,6 +32,7 @@ import management_analysis_layer
 JST = timezone(timedelta(hours=9))
 SEND_AT = (6, 40)  # 6:30に業界ウォッチ(Mac)が合流して送る。送られていなければ、この予備送信が単独で送る
 SEND_UNTIL = (7, 0)  # この時刻を過ぎたら、その日はもう自動送信しない（日中の再デプロイでの誤送信を防ぐ）
+RECHECK_FROM, RECHECK_UNTIL = (9, 30), (14, 0)  # 送った速報を一から作り直して見直す時間帯（1日1回）
 RETRY_UNTIL = (12, 0)  # 見送り通知を出した日だけ、この時刻まで数字がそろうのを待って確定版を送る
 LINE_API = "https://api.line.me/v2/bot/message"
 
@@ -60,6 +61,58 @@ def push_text(token, group_id, text):
         except Exception:
             message_id = None
         return response.status, message_id
+
+
+def snapshot(brief):
+    """速報の主要な数字（店舗・催事・人件費）を記録用の文字列にする。"""
+    d = brief.get("data") or {}
+    return json.dumps({"date": brief.get("date"), "label": d.get("label"),
+                       "store": (d.get("store") or {}).get("sales"), "event": (d.get("event") or {}).get("sales"),
+                       "labor": round((d.get("labor") or {}).get("total") or 0)}, ensure_ascii=False)
+
+
+def recheck_once(now=None):
+    """今朝送った速報を一から作り直し、数字が変わっていれば【訂正】を1回だけ送る。"""
+    now = now or datetime.now(JST)
+    today = now.date().isoformat()
+    if config_store.get_config("brief_last_sent") != today or config_store.get_config("brief_rechecked") == today:
+        return "対象なし"
+    sent = json.loads(config_store.get_config("brief_sent_snapshot") or "{}")
+    if not sent.get("date"):
+        config_store.set_config("brief_rechecked", today)
+        return "送った数字の記録なし"
+    analysis = management_analysis_layer.get_management_analysis()
+    row = next((r for r in analysis.get("daily", []) if r.get("date") == sent["date"]), {}) or {}
+    last_chance = (now.hour, now.minute) >= (RECHECK_UNTIL[0], RECHECK_UNTIL[1] - 5)
+    if not row.get("flashStoreSales") and not last_chance:
+        return "クラウドの直接取得（Airレジ）がまだ届かない（待機）"
+    brief = daily_brief.build_brief(analysis, sent["date"])
+    if not brief["complete"]:
+        if last_chance:
+            config_store.set_config("brief_rechecked", today)
+            config_store.set_config("brief_recheck_status", f"{today} 見直しで数字がそろわず: {' / '.join(brief.get('reasons') or [])}")
+        return "作り直した速報がまだそろわない（待機）"
+    now_vals = json.loads(snapshot(brief))
+    names = {"store": "店舗", "event": "催事", "labor": "人件費"}
+    diffs = []
+    for key, name in names.items():
+        a, b = sent.get(key) or 0, now_vals.get(key) or 0
+        if abs(a - b) > (1000 if key == "labor" else 1):
+            diffs.append(f"・{name} {a:,}円 → {b:,}円")
+    config_store.set_config("brief_rechecked", today)
+    if not diffs:
+        config_store.set_config("brief_recheck_status", f"{today} 見直し済み・今朝の速報と一致")
+        return "一致"
+    token = os.environ["BRIEF_LINE_CHANNEL_ACCESS_TOKEN"]
+    group_id = os.environ["BRIEF_LINE_GROUP_ID"]
+    text = (f"【どら山 速報・訂正】{now_vals.get('label') or ''}\n今朝の速報を見直したところ、数字が違っていました。\n"
+            + "\n".join(diffs) + "\n\n正しい速報は次のとおりです。\n\n" + brief["text"])
+    status, message_id = push_text(token, group_id, text)
+    config_store.set_config("brief_sent_snapshot", snapshot(brief))
+    config_store.set_config("brief_recheck_status", f"{today} 訂正を送信: {' '.join(d.strip('・') for d in diffs)}")
+    if message_id:
+        config_store.set_config("brief_last_message_id", message_id)
+    return f"訂正送信 HTTP {status}"
 
 
 def send_once(now=None):
@@ -99,6 +152,7 @@ def send_once(now=None):
     if skipped_today:
         text = "（先ほど見送った分の確定版です）\n" + text
     status, message_id = push_text(token, group_id, text)
+    config_store.set_config("brief_sent_snapshot", snapshot(brief))
     config_store.set_config("brief_last_sent", today)
     config_store.set_config("brief_last_status", f"{today} 送信済み（{brief['date']}分・数字そろい{'・見送り後の確定版' if skipped_today else ''}）")
     if message_id:
@@ -120,6 +174,10 @@ def _loop():
                 result = send_once(now)
                 if result != "送信済み":
                     print(f"[brief] {now.isoformat(timespec='minutes')} {result}", flush=True)
+            if RECHECK_FROM <= clock <= RECHECK_UNTIL:
+                result = recheck_once(now)
+                if result not in ("対象なし",):
+                    print(f"[brief] 見直し {now.isoformat(timespec='minutes')} {result}", flush=True)
         except Exception as error:  # 通知が失敗してもアプリ本体は止めない
             print(f"[brief] エラー: {error}", flush=True)
             time.sleep(300)  # 失敗時は5分あけて再試行（6:40〜7:00の間だけ）

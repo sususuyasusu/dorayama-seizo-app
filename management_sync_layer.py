@@ -200,9 +200,15 @@ def parse_management_values(values_by_tab, today=None):
         sales = _number(row.get("Airレジ売上税込"))
         labor = _number(row.get("人件費合計"))
         status = str(row.get("状態") or "")
+        # 速報の独立検算用: クラウドがAirレジ・Airシフトから直接取った値を、正本とは別に残す
+        if sales is not None:
+            daily_row(day_iso)["flashStoreSales"] = sales
+        if labor:
+            daily_row(day_iso)["flashLabor"] = labor
         note = status.split("：", 1)[1].strip() if "：" in status else ""
         # 「タイミー未登録」は毎日付く恒常的な断り書きなので文面には出さない（状態欄には残る）
-        note = " / ".join(part for part in note.split(" / ") if "未登録" not in part).strip()
+        # 「人件費はMac集計（タイミー込み）の値…」はクラウドが正本の値を採用したという説明で、問題ではないので出さない
+        note = " / ".join(part for part in note.split(" / ") if "未登録" not in part and "Mac集計" not in part).strip()
         # クラウドの取得エラー（例外メッセージ）をそのまま文面に出さない。
         # 正本（Macの集計）に人件費がある日は、クラウド側の失敗は無関係なので断り書きごと消す。
         if "例外" in note or "Timeout" in note or "Call log" in note:
@@ -397,6 +403,13 @@ def parse_management_values(values_by_tab, today=None):
             day_details[0]["staffCost"] = amount
             day_details[0]["profitBeforeFixed"] -= amount
 
+    # テイクイーツのネット決済分を日次行に添える（店舗売上＝Airレジ＋これ、の検算用）
+    te_rows = values_by_tab.get("_takeeats_daily") or []
+    if te_rows:
+        te_map = {str(r[0]).strip(): _number(r[1]) or 0 for r in te_rows[1:] if r and len(r) > 1}
+        for day_iso, item in daily.items():
+            item["takeeatsSales"] = te_map.get(day_iso, 0)
+            item["takeeatsKnown"] = True
     # クラウドがAirメイトの催事売上を取れなかった、という断り書きは、予実シート側（日報フォーム・Airメイト）に
     # その日の催事売上がある日は無関係なので出さない（催事の突合は日報フォームで別に行っている）。
     for item in daily.values():
@@ -842,7 +855,7 @@ _RAW_LOCK = None
 
 
 def _known_titles():
-    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB, "日報台帳"]
+    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB, "日報台帳", "_takeeats_daily"]
 
 
 def _pad_rows(rows):
@@ -1047,6 +1060,10 @@ def get_management_sync(force=False, today=None):
     except Exception:
         values[FLASH_TAB] = []
     values[FORM_KEY] = _form_rows()  # 催事日報フォームの回答（読めなければ空）
+    try:  # テイクイーツのネット決済分（Airレジに載らない店舗売上）の日別。速報の独立検算に使う
+        values["_takeeats_daily"] = _tab_values("_takeeats_daily")
+    except Exception:
+        values["_takeeats_daily"] = []
     try:  # LINE画像などで届いた日報の手入力補完タブ（無い・読めないときは空）
         values[MANUAL_REPORT_TAB] = _tab_values(MANUAL_REPORT_TAB)
     except Exception:

@@ -169,7 +169,17 @@ class Handler(BaseHTTPRequestHandler):
             # 毎朝LINEへ送る「昨日の速報」の文面を確認するだけ（送信はしない）
             import daily_brief
             day = (parse_qs(u.query).get("date") or [None])[0]
-            self._send(200, json.dumps(daily_brief.build_brief(management_analysis_layer.get_management_analysis(), day), ensure_ascii=False))
+            brief = daily_brief.build_brief(management_analysis_layer.get_management_analysis(), day)
+            if brief.get("complete") and not day:
+                # Mac（業界ウォッチ）がこの文面を送る。送った数字を後で見直せるよう控える（変わったときだけ書く）
+                try:
+                    import brief_scheduler, config_store
+                    snap = brief_scheduler.snapshot(brief)
+                    if config_store.get_config("brief_served") != snap:
+                        config_store.set_config("brief_served", snap)
+                except Exception as error:  # 控えに失敗しても文面は返す
+                    print(f"[brief] 控えの保存に失敗: {error}", flush=True)
+            self._send(200, json.dumps(brief, ensure_ascii=False))
         elif path == "/api/staff-brief/sent-today":
             # 今日、速報がすでにLINEへ送信済みか（Render予備送信・手動送信を含む）。
             # 業界ウォッチ(Mac側)が二重に速報を合流させないための確認用。

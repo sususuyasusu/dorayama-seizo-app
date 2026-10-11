@@ -14,5 +14,9 @@ import config_store  # noqa: E402
 
 today = datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
 config_store.set_config("brief_last_sent", today)
+# Macが送った速報の数字（直前に経営アプリが控えたもの）を「送った数字」として記録する。昼前の見直しで使う
+served = config_store.get_config("brief_served")
+if served:
+    config_store.set_config("brief_sent_snapshot", served)
 config_store.set_config("brief_last_status", f"{today} 送信済み（業界ウォッチに合流・Macから）")
 print("marked", today)

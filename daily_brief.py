@@ -210,6 +210,27 @@ def build_brief(analysis, target=None):
         # 時給0・打刻漏れなど、人件費が低く出る恐れの注意書きがある日は、数字が合っていると言えない
         complete = False
         reasons.append(str(row["flashNote"])[:80])
+    # 独立検算（2026-10-12 本人指示「毎日まちがっている前提で作り直せ」）:
+    # クラウドがAirレジ・Airシフトから直接取った数字と突き合わせる。合わなければ確定と言わない。
+    flash_store = row.get("flashStoreSales")
+    if flash_store and store_sales:
+        # 速報の店舗売上＝Airレジ＋テイクイーツのネット決済分。テイクイーツ日別が分かる日はぴったり一致を求める
+        # （10/10は77,240円＋0円のところ91,312円と出た＝2重計上。こういう差を確定として出さない）
+        if row.get("takeeatsKnown"):
+            mismatch = abs(store_sales - (flash_store + (row.get("takeeatsSales") or 0))) > 1
+        else:
+            mismatch = store_sales < flash_store - 1 or store_sales > flash_store * 1.5 + 1000
+        if mismatch:
+            complete = False
+            reasons.append(f"店舗売上（{yen(store_sales)}）がAirレジの直接取得（{yen(flash_store)}）と合わない")
+            lines.append(f"※店舗売上がAirレジの直接取得（{yen(flash_store)}）と合いません。確認中（確定額ではありません）")
+    flash_labor = row.get("flashLabor")
+    if flash_labor and store_labor:
+        # 速報の店舗人件費＝Airシフト＋タイミー。Airシフトの直接取得より少ない＝時給の取りこぼし、2倍超＝2重計上
+        if store_labor < flash_labor - 500 or store_labor > flash_labor * 2 + 20000:
+            complete = False
+            reasons.append(f"店舗人件費（{yen(store_labor)}）がAirシフトの直接取得（{yen(flash_labor)}）と合わない")
+            lines.append(f"※店舗人件費がAirシフトの直接取得（{yen(flash_labor)}）と合いません。確認中（確定額ではありません）")
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
         absent = missing_venues((goal_days.get(target) or {}).get("events") or [], row.get("eventVenueNames") or [])
