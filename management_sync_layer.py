@@ -349,6 +349,7 @@ def parse_management_values(values_by_tab, today=None):
         if day_iso in daily:
             daily[day_iso]["eventVenuesReported"] = len(venues)  # 日報が出た会場数（速報で未入力会場の注意に使う）
             daily[day_iso]["eventVenueNames"] = sorted(venues)  # 日報が出た会場名（未入力の会場名を特定するため）
+            daily[day_iso]["eventVenueSales"] = _venue_sales_display(venues)  # 画面で会場ごとに分けて見せる
             daily[day_iso]["eventFormTotal"] = sum(venues.values())  # 日報フォームの合計（シートとの突合に使う）
         item = daily.get(day_iso)
         total = sum(venues.values())
@@ -360,6 +361,7 @@ def parse_management_values(values_by_tab, today=None):
         item = daily_row(day_iso)
         item["eventVenuesReported"] = len(venues)
         item["eventVenueNames"] = sorted(venues)
+        item["eventVenueSales"] = _venue_sales_display(venues)
         item["eventSales"] = total
         item["eventRows"] = max(item["eventRows"], 1)
         if "日報フォーム速報" not in item["eventReportStates"]:
@@ -982,6 +984,37 @@ def _form_int(text):
     return int(match.group())
 
 
+def _venue_sales_display(venues):
+    """日報の会場名の表記ゆれ（東武池袋/池袋/池袋東武、上野松阪屋/松坂屋上野 など）を画面用にそろえ、
+    [{"name": 会場, "sales": 税込}] を売上の大きい順で返す。"""
+    merged = {}
+    for name, amount in venues.items():
+        text = str(name).replace(" ", "").replace("　", "").replace("松阪屋", "松坂屋")
+        if "東武" in text or text == "池袋":
+            label = "池袋東武"
+        elif "松坂屋" in text:
+            label = "松坂屋上野"
+        elif "上野" in text:
+            label = "上野"  # 製造実績カードの会場名（色）とそろえる
+        else:
+            label = str(name)
+        merged[label] = merged.get(label, 0) + (amount or 0)
+    return [{"name": k, "sales": v} for k, v in sorted(merged.items(), key=lambda kv: -kv[1])]
+
+
+def venue_key(name):
+    """会場名の表記ゆれをそろえる（同じ会場を2重に足さないため）。東武池袋/池袋/池袋東武→池袋東武、
+    上野松阪屋/松坂屋上野→松坂屋上野、エキュート上野/上野→エキュート上野。それ以外はそのまま。"""
+    text = str(name or "").replace(" ", "").replace("　", "").replace("松阪屋", "松坂屋").replace("仮", "")
+    if "東武" in text or text == "池袋":
+        return "池袋東武"
+    if "松坂屋" in text:
+        return "松坂屋上野"
+    if "上野" in text:
+        return "エキュート上野"
+    return str(name or "").strip()
+
+
 def _merge_manual_reports(sales, rows):
     """補完タブ「_manual_event_reports」(日付｜会場｜税込売上…)の行を、日報フォームの会場別売上へ足す。
     同じ日・同じ会場がフォームにもあれば、手入力側を優先する（紙・LINE画像の確認済み値）。"""
@@ -994,7 +1027,7 @@ def _merge_manual_reports(sales, rows):
         except ValueError:
             continue
         if day and amount > 0:
-            sales.setdefault(day, {})[str(r[1]).strip()] = amount
+            sales.setdefault(day, {})[venue_key(r[1])] = amount  # 表記ゆれをそろえ、同じ会場は手入力で上書き
 
 
 def _form_scan(rows):
@@ -1031,7 +1064,7 @@ def _form_scan(rows):
         if excl <= 0:
             dropped.setdefault(day, []).append(f"{store}（税抜売上が空欄・0です）")
             continue
-        sales.setdefault(day, {})[store] = sales_incl
+        sales.setdefault(day, {})[venue_key(store)] = sales_incl  # 表記ゆれをそろえる（同じ会場は後勝ち）
     return sales, dropped
 
 

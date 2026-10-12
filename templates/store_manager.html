@@ -169,7 +169,7 @@ function todayModel(date){
   const build=(sales,target,labor)=>({sales,target,diff:target>0?sales-target:null,achieve:target>0?sales/target*100:null,labor});
   const store=build(row.storeSales||0,ref.storeTargetSales,row.storeLabor||0);
   const event=build(row.eventSales||0,ref.eventTargetSales,laborVenues*dailyRate);
-  event.venues=venues;event.laborVenues=laborVenues;event.names=day.events||[];event.reportDone=Number(row.eventRows||0)>0;
+  event.venues=venues;event.laborVenues=laborVenues;event.names=day.events||[];event.reportDone=Number(row.eventRows||0)>0;event.venueSales=row.eventVenueSales||[];
   const total=build(store.sales+event.sales,(store.target||0)+(event.target||0),store.labor+event.labor);
   const prod=d.production,prodDay=prod?(prod.daily||[]).find(item=>item.date===date):null;
   const production={available:!!prodDay,value:prodDay?prodDay.value:0,pieces:prodDay?prodDay.pieces:0,blocks:prodDay?prodDay.blocks:{},names:prod?prod.blocks:[]};
@@ -197,7 +197,7 @@ function todaySalesCard(m,title,part,isEvent){
   else if(part.diff==null)line='今日の予算は設定されていません。';
   else if(part.diff>=0)line='予算を '+yenFull(part.diff)+' 上回っています（'+pct(part.achieve)+'）。';
   else line=(m.today?'予算まであと ':'予算に ')+yenFull(-part.diff)+(m.today?'（いま '+pct(part.achieve)+'）':' 届きませんでした（'+pct(part.achieve)+'）')+'。';
-  return '<div class="today-card"><h4>'+safe(title)+'の売上</h4><div class="num">'+yenFull(part.sales)+'</div><div class="sub">'+(isEvent&&part.names.length?safe(part.names.join('・'))+'（'+part.venues+'会場）':'税込')+'</div><span class="today-verdict '+v.cls+'">'+v.text+'</span><div style="font-size:12px;line-height:1.7">'+safe(line)+'</div>'+todayBar(part,'今日の予算')+'</div>';
+  return '<div class="today-card"><h4>'+safe(title)+'の売上</h4><div class="num">'+yenFull(part.sales)+'</div><div class="sub">'+(isEvent&&part.names.length?safe(part.names.join('・'))+'（'+part.venues+'会場）':'税込')+'</div><span class="today-verdict '+v.cls+'">'+v.text+'</span><div style="font-size:12px;line-height:1.7">'+safe(line)+'</div>'+todayBar(part,'今日の予算')+(isEvent&&(part.venueSales||[]).length?(()=>{const names=((state.data.production||{}).blocks)||[];const vs=part.venueSales;return stackBar(vs.map(v=>({value:v.sales,color:blockColor(v.name,names),label:v.name})))+'<div class="today-rows">'+vs.map(v=>'<div><span>'+swatch(blockColor(v.name,names),v.name)+'</span><b>'+yenFull(v.sales)+'</b></div>').join('')+'</div>'+(vs.reduce((a,v)=>a+v.sales,0)!==part.sales?'<div style="font-size:11px;color:var(--muted);margin-top:4px">会場別は日報フォームの金額です（合計'+yenFull(vs.reduce((a,v)=>a+v.sales,0))+'）。</div>':'');})():'')+'</div>';
 }
 function prodSuspect(date,name,pieces){
   // 2026-10-12: 10/6の上野が「生どら40個」だけで他の商品が0と入っていた。直近7日の平均の4分の1未満は入力漏れを疑う
