@@ -66,10 +66,27 @@ def main():
     if fixed_code not in (0, 2):
         print("固定費明細の取得に失敗。売上速報の更新は継続します:", fixed_err)
 
+    # 1b) 商品分析・日別人件費（前月・当月）・速報の当たり具合も作り直す（2026-10-12 追加。
+    #     以前は売上と固定費だけで、商品分析は8/18、人件費分析は9/21のまま止まっていた）
+    from datetime import date as _date
+    today = _date.today()
+    prev_month = (today.replace(day=1) - __import__("datetime").timedelta(days=1)).strftime("%Y-%m")
+    for args in (["tools/build_product_history_snapshot.py"],
+                 ["tools/build_labor_daily_history_snapshot.py", "--month", prev_month],
+                 ["tools/build_labor_daily_history_snapshot.py", "--month", today.strftime("%Y-%m")],
+                 ["tools/build_flash_accuracy_snapshot.py"]):
+        c, o, e = _run([sys.executable, *args])
+        print(o[-500:] if o else "")
+        if c not in (0, 2):
+            print("作り直しに失敗（この分は前回のまま）:", " ".join(args), e[-300:])
+
     # 2) 差分があるか確認
     snapshot_paths = [
         "data/airmate_history_2026.json",
         "data/fixed_cost_details_2026.json",
+        "data/product_analysis_history_2026.json",
+        "data/labor_daily_history_2026.json",
+        "data/flash_accuracy_2026.json",
     ]
     code, out, err = _run(["git", "status", "--porcelain", "--", *snapshot_paths])
     if code != 0:
