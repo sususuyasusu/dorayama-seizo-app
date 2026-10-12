@@ -240,9 +240,8 @@ def build_brief(analysis, target=None):
             if len(history) >= 3:
                 avg = sum(history) / len(history)
                 if avg >= 100 and item["pieces"] < avg * 0.25:
-                    complete = False
-                    reasons.append(f"製造実績の入力漏れの疑い：{name} {item['pieces']}個（直近の平均{round(avg)}個）")
-                    lines.append(f"※製造実績の入力漏れの疑い：{name}が{item['pieces']}個（直近の平均{round(avg)}個）。人件費率は確定ではありません")
+                    # 在庫で回した日（10/6上野）もあるため速報は止めず、注意書きだけ添える
+                    lines.append(f"※{name}の作った数が{item['pieces']}個と少なめ（直近の平均{round(avg)}個）。在庫で回した日か、製造実績の入力漏れかを確認してください")
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
         absent = missing_venues((goal_days.get(target) or {}).get("events") or [], row.get("eventVenueNames") or [])
