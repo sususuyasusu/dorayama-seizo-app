@@ -16,8 +16,8 @@ def main():
         row for row in data["costAnalysis"]["series"] if row["key"] == "8月"
     )
     if august_cost["status"] == "確定":
-        # 2026-10-12 本人指示で8月確定。管理会計PLの会計値（給与返却561,759円控除後）をそのまま使う
-        assert august_cost["internalLabor"] == 2122778
+        # 2026-10-12 本人指示で8月確定。管理会計PLの会計値をそのまま使う
+        assert august_cost["internalLabor"] == 1842304  # 給与返却控除後、さらにデザイン(大矢)280,474円を一括振込から分けて除外（2026-10-12）
         assert august_cost["profit"] is not None
         assert "laborReconciliation" not in august_cost
     else:
