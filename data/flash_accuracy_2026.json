@@ -1,85 +1,111 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-12T10:23+09:00",
+  "generatedAt": "2026-10-13T06:40+09:00",
   "method": "月末時点の日次台帳の把握費用＋固定費（確定）＋催事販売員費（他の確定月の率で仮置き）",
   "months": [
     {
       "month": "2月",
       "comparable": false,
       "opsSales": 2054708,
-      "accountingSales": 11574556,
-      "costEstimate": 3995564,
-      "confirmedCost": 10595224,
-      "costDiff": -6599660,
+      "accountingSales": 11182957,
+      "costEstimate": 3994910,
+      "confirmedCost": 10592030,
+      "costDiff": -6597120,
       "costDiffPct": -62.3,
-      "opsProfit": -1940856,
-      "confirmedProfit": 994666,
-      "profitDiff": -2935522
+      "opsProfit": -1940202,
+      "confirmedProfit": 606261,
+      "profitDiff": -2546463
     },
     {
       "month": "3月",
       "comparable": false,
       "opsSales": 2545147,
       "accountingSales": 6978431,
-      "costEstimate": 4951188,
-      "confirmedCost": 7080632,
-      "costDiff": -2129444,
-      "costDiffPct": -30.1,
-      "opsProfit": -2406041,
-      "confirmedProfit": -101408,
-      "profitDiff": -2304633
+      "costEstimate": 4937489,
+      "confirmedCost": 7080883,
+      "costDiff": -2143394,
+      "costDiffPct": -30.3,
+      "opsProfit": -2392342,
+      "confirmedProfit": -101660,
+      "profitDiff": -2290682
     },
     {
       "month": "4月",
       "comparable": true,
       "opsSales": 8648516,
       "accountingSales": 5302928,
-      "costEstimate": 9432511,
-      "confirmedCost": 8638663,
-      "costDiff": 793848,
-      "costDiffPct": 9.2,
-      "opsProfit": -783995,
-      "confirmedProfit": -3335005,
-      "profitDiff": 2551010
+      "costEstimate": 9175785,
+      "confirmedCost": 8462015,
+      "costDiff": 713770,
+      "costDiffPct": 8.4,
+      "opsProfit": -527269,
+      "confirmedProfit": -3158357,
+      "profitDiff": 2631088
     },
     {
       "month": "5月",
       "comparable": true,
       "opsSales": 7939801,
       "accountingSales": 10494568,
-      "costEstimate": 8367364,
-      "confirmedCost": 6376447,
-      "costDiff": 1990917,
-      "costDiffPct": 31.2,
-      "opsProfit": -427563,
-      "confirmedProfit": 4122061,
-      "profitDiff": -4549624
+      "costEstimate": 7909697,
+      "confirmedCost": 6341947,
+      "costDiff": 1567750,
+      "costDiffPct": 24.7,
+      "opsProfit": 30104,
+      "confirmedProfit": 4156561,
+      "profitDiff": -4126457
     },
     {
       "month": "6月",
       "comparable": true,
       "opsSales": 6596924,
       "accountingSales": 5724722,
-      "costEstimate": 7041752,
+      "costEstimate": 6906097,
       "confirmedCost": 7087401,
-      "costDiff": -45649,
-      "costDiffPct": -0.6,
-      "opsProfit": -444828,
+      "costDiff": -181304,
+      "costDiffPct": -2.6,
+      "opsProfit": -309173,
       "confirmedProfit": -1362680,
-      "profitDiff": 917852
+      "profitDiff": 1053507
     },
     {
       "month": "7月",
       "comparable": true,
       "opsSales": 5548630,
       "accountingSales": 7227660,
-      "costEstimate": 6563537,
+      "costEstimate": 6463107,
       "confirmedCost": 5479253,
-      "costDiff": 1084284,
-      "costDiffPct": 19.8,
-      "opsProfit": -1014907,
+      "costDiff": 983854,
+      "costDiffPct": 18.0,
+      "opsProfit": -914477,
       "confirmedProfit": 1755517,
-      "profitDiff": -2770424
+      "profitDiff": -2669994
+    },
+    {
+      "month": "8月",
+      "comparable": true,
+      "opsSales": 9700924,
+      "accountingSales": 3627802,
+      "costEstimate": 10477711,
+      "confirmedCost": 7353630,
+      "costDiff": 3124081,
+      "costDiffPct": 42.5,
+      "opsProfit": -776787,
+      "confirmedProfit": -3725828,
+      "profitDiff": 2949041
+    },
+    {
+      "month": "9月",
+      "comparable": true,
+      "opsSales": 8185740,
+      "accountingSales": 8706286,
+      "costEstimate": 8254893,
+      "confirmedCost": 6853130,
+      "costDiff": 1401763,
+      "costDiffPct": 20.5,
+      "opsProfit": -69153,
+      "confirmedProfit": 1853156,
+      "profitDiff": -1922309
     }
   ],
   "summary": {
@@ -87,16 +113,18 @@
       "4月",
       "5月",
       "6月",
-      "7月"
+      "7月",
+      "8月",
+      "9月"
     ],
     "excludedMonths": [
       "2月",
       "3月"
     ],
-    "costAvgAbsPct": 15.2,
-    "costMaxAbsPct": 31.2,
-    "profitDiffMin": -4549624,
-    "profitDiffMax": 2551010,
+    "costAvgAbsPct": 19.4,
+    "costMaxAbsPct": 42.5,
+    "profitDiffMin": -4126457,
+    "profitDiffMax": 2949041,
     "note": "コスト見込は確定コストと近い一方、損益は催事売上の会計上の計上時期でずれます。催事の運営データが会計上の売上の半分に満たない月（2〜3月）は比較から除いています。"
   }
 }
