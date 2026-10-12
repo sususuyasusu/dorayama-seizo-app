@@ -294,6 +294,17 @@ def _apply_latest_management_pl(confirmed, analysis):
         return confirmed
     merged = deepcopy(confirmed)
     workbook_by_month = {row["key"]: row for row in analysis["series"]}
+    # 元の確定一覧（7月まで）に無い月でも、Excelで確定になった月は行を足す（2026-10-12 8・9月確定に対応）
+    existing = {row.get("month") for row in merged.get("months", [])}
+    for workbook_row in analysis["series"]:
+        label = workbook_row.get("key")
+        if workbook_row.get("status") != "確定" or label in existing or not str(label).endswith("月"):
+            continue
+        merged.setdefault("months", []).append({
+            "month": label,
+            "budget": airmate_targets_layer.sales_target_for(2026, int(label.rstrip("月"))),
+            "breakEven": management_layer.BREAK_EVEN_REFERENCE.get(label),
+        })
     confirmed_months = []
     cumulative_profit = 0
     for row in merged.get("months", []):
@@ -325,7 +336,7 @@ def _apply_latest_management_pl(confirmed, analysis):
         latest, management_layer.MONTH_DAYS.get(latest.get("month"), 30)
     )
     merged["period"] = f"{latest['month']}・最新Excel確定"
-    merged["statusLabel"] = "最新Excel反映・2〜7月管理会計PL"
+    merged["statusLabel"] = f"最新Excel反映・{(analysis.get('summary') or {}).get('period') or '確定月'}管理会計PL"
     merged["sourceLabel"] = "実績：最新管理会計PL Excel／売上予算：店舗Airメイト＋催事カレンダー"
     merged["sourceUpdatedAt"] = analysis.get("updatedAt")
     merged["achievement"] = round(latest["sales"] / latest["budget"] * 100, 1) if latest.get("budget") else None

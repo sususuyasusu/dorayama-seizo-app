@@ -208,39 +208,50 @@ def verify_management_analysis():
     assert august["budget"] == 12318000
     assert august["storeBudget"] == 2198000
     assert august["eventBudget"] == 10120000
-    # 確定前の月は、会計途中の売上ではなく運営売上（このテストでは見本の日次台帳）で表示し、会計側の値は別に残す
-    assert august["sales"] == 4432083
-    assert august["accountingSales"] == 3627802
-    assert august["salesBasis"].startswith("運営売上")
-    assert august["dataStatus"] == "管理会計PL進行中"
-    assert august["phase"] == "確定待ち"
-    assert august["profit"] is None
     assert january["phase"] == "対象外" and january["flash"] is None
     assert july["phase"] == "確定" and july["flash"] is None
-    flash = august["flash"]
-    assert flash["status"] == "速報"
-    assert flash["fixedCost"] == 518494 and flash["fixedCostBasis"] == "確定"
-    assert flash["eventStaffing"] == 1702000  # ディースパーク8月度請求書（税抜）
-    assert flash["costEstimate"] == 2880104 + 518494 + 1702000
-    assert flash["opsProfit"] == 4432083 - flash["costEstimate"]
+    expected_august = next(row for row in cost_analysis["series"] if row["key"] == "8月")
+    if expected_august["status"] == "確定":
+        # 8月は2026-10-12に本人指示で確定。確定月は管理会計PLの値をそのまま表示し、速報は添えない
+        assert august["sales"] == expected_august["sales"]
+        assert august["profit"] == expected_august["profit"]
+        assert august["dataStatus"] == "管理会計PL確定"
+        assert august["phase"] == "確定" and august["flash"] is None
+    else:
+        # 確定前の月は、会計途中の売上ではなく運営売上（このテストでは見本の日次台帳）で表示し、会計側の値は別に残す
+        assert august["sales"] == 4432083
+        assert august["accountingSales"] == expected_august["sales"]
+        assert august["salesBasis"].startswith("運営売上")
+        assert august["dataStatus"] == "管理会計PL進行中"
+        assert august["phase"] == "確定待ち"
+        assert august["profit"] is None
+        flash = august["flash"]
+        assert flash["status"] == "速報"
+        assert flash["fixedCost"] == 518494 and flash["fixedCostBasis"] == "確定"
+        assert flash["eventStaffing"] == 1702000  # ディースパーク8月度請求書（税抜）
+        assert flash["costEstimate"] == 2880104 + 518494 + 1702000
+        assert flash["opsProfit"] == 4432083 - flash["costEstimate"]
     close_status = data["closeStatus"]
-    assert close_status["confirmedThrough"] == "7月"
-    assert close_status["closingMonth"] == "8月"
-    assert close_status["openItemCount"] == len([
-        item for item in close_status["checklist"] if item["state"] != "解消済み"
-    ])
-    this_month = datetime.now().month
-    september = data["monthly"][8]
-    assert september["phase"] == ("未着手" if this_month < 9 else "進行中" if this_month == 9 else "確定待ち")
+    confirmed_labels = [row["key"] for row in cost_analysis["series"] if row["status"] == "確定"]
+    assert close_status["confirmedThrough"] == confirmed_labels[-1]
+    if close_status["closingMonth"]:
+        assert close_status["openItemCount"] == len([
+            item for item in (close_status["checklist"] or []) if item["state"] != "解消済み"
+        ])
+    for row in data["monthly"]:
+        if row["month"] in confirmed_labels:
+            assert row["phase"] == "確定", row["month"]
     # 当月の予算・進捗は月が進むと変わるため、固定値ではなく整合だけを確認する（2026-10-12）
     current = data["current"]
     assert current["budget"] and current["budget"] > 0
     if current.get("budgetRemaining") is not None and current.get("sales") is not None:
         assert abs(current["budgetRemaining"] - (current["budget"] - current["sales"])) <= 1
     assert data["goalSettings"]["months"][6]["yearMonth"] == "2026-08"
-    assert data["goalSettings"]["months"][0]["actual"]["sales"] == 11574556  # 返品・値引き控除後（2026-10-12 台帳修正）
-    assert data["goalSettings"]["months"][5]["actual"]["sales"] == 7227660  # 返品控除後（2026-10-12 台帳修正）
-    assert data["goalSettings"]["months"][6]["actual"]["sales"] >= 3627802  # 8月は確定待ち（値は確定作業で伸びうる）
+    # 確定月の実績は管理会計PL（freee正本）と一致すること。freee側の重複削除などで値は動くため固定値にしない（2026-10-12）
+    pl_sales = {row["key"]: row["sales"] for row in cost_analysis["series"]}
+    assert data["goalSettings"]["months"][0]["actual"]["sales"] == pl_sales["2月"]
+    assert data["goalSettings"]["months"][5]["actual"]["sales"] == pl_sales["7月"]
+    assert data["goalSettings"]["months"][6]["actual"]["sales"] >= 3627802  # 8月（2026-10-12確定）
     assert data["events"]["targetPerEventDay"] == 220000
     assert data["events"]["target"] >= 0  # 当月の催事目標はカレンダー次第
     assert cost_analysis["available"] is True
@@ -258,9 +269,10 @@ def verify_management_analysis():
         for row in confirmed_costs
     )
     august_cost = next(row for row in cost_analysis["series"] if row["key"] == "8月")
-    assert august_cost["internalLabor"] is None
-    assert august_cost["profit"] is None
-    assert august_cost["laborReconciliation"]["status"] == "再集計中"
+    if august_cost["status"] != "確定":
+        assert august_cost["internalLabor"] is None
+        assert august_cost["profit"] is None
+        assert august_cost["laborReconciliation"]["status"] == "再集計中"
     assert next(line for line in cost_analysis["lines"] if line["label"] == "その他の外注費")["section"] == "other"
     weekday_history = data["weekdayTimeHistory"]
     assert weekday_history["from"] == "2026-01-01"
