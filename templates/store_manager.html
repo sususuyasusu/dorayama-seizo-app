@@ -54,7 +54,7 @@
 .audit-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);font-size:11px;align-items:center}
 .audit-row strong{text-align:right}
 @media(max-width:760px){.impact-daily{grid-template-columns:repeat(2,1fr)}}
-</style>
+.segment-pl-table tr.segment-total td{background:rgba(255,255,255,.04);font-weight:800}.segment-pl-table th small{display:block;font-weight:400;color:var(--gold)}.footer-note ul{margin:6px 0 0;padding-left:18px}</style>
 </head>
 <body>
 <div class="shell">
@@ -373,6 +373,15 @@ function channelAnnualTable(channel,rows){
   const label=channel==='store'?'店舗':'催事',body=rows.map(row=>'<tr><td>'+safe(row.shortLabel)+'<span class="source-note">'+safe(row.status)+'</span></td><td>'+yenAbs(row.target)+'</td><td class="'+(row.actual==null?'muted':'')+'">'+(row.actual==null?'—':yenAbs(row.actual))+'</td><td class="'+(row.difference==null?'muted':row.difference>=0?'positive':'negative')+'">'+(row.difference==null?'—':yen(row.difference))+'</td><td class="'+(row.achievement==null?'muted':row.achievement>=100?'positive':'negative')+'">'+pct(row.achievement)+'</td></tr>').join('');
   return '<div class="table-wrap"><table class="data-table channel-annual-table"><thead><tr><th>月・状態</th><th>'+label+'目標</th><th>'+label+'実績</th><th>目標差</th><th>達成率</th></tr></thead><tbody>'+body+'</tbody></table></div>';
 }
+function segmentPlPanel(side){
+  const seg=state.data.segmentPl;if(!seg||!seg[side])return '<section class="panel section-gap"><div class="panel-head"><h3>月次PL</h3></div><div class="empty">準備中です</div></section>';
+  const label=side==='store'?'店舗':'催事',months=seg.months||[],strong={sales:1,'cost-total':1,gross:1,'labor-total':1,'sga-total':1,op:1,ordinary:1};
+  const head='<tr><th class="left">科目</th>'+months.map(m=>'<th>'+safe(m.label)+(m.status&&m.status!=='確定'?'<small>'+safe(m.status)+'</small>':'')+'</th>').join('')+'<th>'+safe(seg.confirmedLabel||'確定 計')+'</th></tr>';
+  const cell=(v,kind)=>{const n=Number(v||0),neg=n<0,cls=(kind==='op'||kind==='ordinary'||kind==='gross')?(neg?'negative':'positive'):'';return '<td class="'+cls+'">'+(n===0?'<span class="muted">0</span>':(neg?'▲':'')+'¥'+number(Math.abs(n)))+'</td>'};
+  const body=(seg[side]||[]).map(row=>'<tr class="'+(strong[row.kind]?'segment-total':'')+'"><td class="left">'+(strong[row.kind]?'<b>'+safe(row.label)+'</b>':safe(row.label))+'</td>'+months.map(m=>cell((row.values||{})[m.key],row.kind)).join('')+cell(row.total,row.kind)+'</tr>').join('');
+  const rules=(seg.rules||[]).map(r=>'<li>'+safe(r)+'</li>').join('');
+  return '<section class="panel section-gap"><div class="panel-head"><div><h3>'+label+'の月次PL（原本の科目どおり）</h3><small>管理会計PL基準・'+safe(seg.confirmedThrough||'')+'まで確定・更新 '+safe(String(seg.generatedAt||'').replace('T',' '))+'</small></div></div><div class="table-wrap"><table class="data-table segment-pl-table"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div><div class="footer-note"><b>店舗と催事の分け方</b><ul>'+rules+'</ul></div></section>';
+}
 function renderStore(){
   const rows=channelMonthlyRows('store'),selected=rows.find(row=>row.key===state.storeMonth)||rows.find(row=>row.key==='2026-08')||rows[0];state.storeMonth=selected.key;
   const daily=channelDailyRows('store',selected.key),dailySales=daily.reduce((sum,row)=>sum+row.sales,0),customers=daily.reduce((sum,row)=>sum+(row.customers||0),0),units=daily.reduce((sum,row)=>sum+(row.units||0),0),hasUnits=daily.some(row=>row.units!=null),body=daily.map(row=>'<tr><td>'+dateLabel(row.date)+'</td><td>'+safe(row.store)+'</td><td>'+yenAbs(row.sales)+'</td><td>'+yenAbs(row.target)+'</td><td class="'+(row.target==null?'muted':row.sales-row.target>=0?'positive':'negative')+'">'+(row.target==null?'—':yen(row.sales-row.target))+'</td><td>'+number(row.customers)+'</td><td>'+(row.unitPrice==null?'—':'¥'+number(Math.round(row.unitPrice)))+'</td><td>'+number(row.units)+'</td><td>'+(row.labor==null?'—':yenAbs(row.labor))+'</td><td>'+(row.material==null?'—':yenAbs(row.material))+'</td></tr>').join(''),historicalPaceRows=(state.data.weekdayTimeHistory?.daily||[]).filter(row=>String(row.date||'').startsWith(selected.key)),livePaceRows=(state.data.daily||[]).filter(row=>String(row.date||'').startsWith(selected.key)),paceRows=historicalPaceRows.length?historicalPaceRows:livePaceRows,pace=salesPaceChart(paceRows,goalDailyReferences(goalForMonth(selected.key)),{latestDate:paceRows.at(-1)?.date||selected.key+'-01',storeBudget:selected.target},'store');
@@ -381,6 +390,7 @@ function renderStore(){
     +'<div class="kpis">'+kpi(selected.shortLabel+' 店舗売上',yenAbs(selected.actual),selected.salesSourceNote?safe(selected.salesSourceNote):safe(selected.status)+'・税込')+kpi('店舗売上目標',yenAbs(selected.target),'目標設定から反映')+kpi('店舗目標差',yen(selected.difference),'達成 '+pct(selected.achievement),selected.difference!=null&&selected.difference<0?'bad':'good')+kpi('客単価',customers?'¥'+number(Math.round(dailySales/customers)):'未取得',number(customers)+'人／'+(hasUnits?number(units)+'個':'個数未取得'))+'</div>'
     +pace
     +'<section class="panel section-gap"><div class="panel-head"><div><h3>年間の店舗売上</h3><small>2026年2月〜2027年1月・設定目標と管理会計PL実績</small></div><div class="legend"><span><i style="background:#48bfe8"></i>実績</span><span><i class="budget"></i>目標</span></div></div>'+channelAnnualChart('store',rows)+channelAnnualTable('store',rows)+'</section>'
+    +segmentPlPanel('store')
     +'<section class="panel section-gap"><div class="panel-head"><h3>'+safe(selected.label)+' 店舗日次</h3><small>'+daily.length+'日分</small></div><div class="table-wrap"><table class="data-table channel-daily-table"><thead><tr><th>日付</th><th>店舗</th><th>売上</th><th>日別目標</th><th>目標差</th><th>客数</th><th>客単価</th><th>個数</th><th>人件費</th><th>材料・包材</th></tr></thead><tbody>'+body+'</tbody></table></div><div class="footer-note">過去月の日別人件費・材料・個数は同じ粒度で保存されていないため「—」表示です。0円として補完しません。</div></section>';
   document.getElementById('channel-store-month').onchange=event=>setChannelMonth('store',event.target.value);
 }
@@ -396,6 +406,7 @@ function renderEvents(){
     +'<div class="kpis">'+kpi(selected.shortLabel+' 催事売上',yenAbs(selected.actual),selected.salesSourceNote?safe(selected.salesSourceNote):safe(selected.status)+'・管理会計PL')+kpi('月間催事目標',yenAbs(selected.target),'目標設定から反映')+kpi('月間目標差',yen(selected.difference),'達成 '+pct(selected.achievement),selected.difference!=null&&selected.difference<0?'bad':'good')+kpi('開催予定',number(goal?.eventDays)+'催事日',number(goal?.calendarDays)+'暦日／重複 '+number(goal?.overlapDays)+'日')+'</div>'
     +currentDetail
     +'<section class="panel section-gap"><div class="panel-head"><div><h3>年間の催事売上</h3><small>2026年2月〜2027年1月・設定目標と管理会計PL実績</small></div><div class="legend"><span><i style="background:var(--gold)"></i>実績</span><span><i></i>目標</span></div></div>'+channelAnnualChart('event',rows)+channelAnnualTable('event',rows)+'</section>'
+    +segmentPlPanel('event')
     +'<section class="panel section-gap"><div class="panel-head"><h3>'+safe(selected.label)+' 催事日次</h3><small>'+daily.length+'日分</small></div><div class="table-wrap"><table class="data-table channel-daily-table"><thead><tr><th>日付</th><th>催事数</th><th>日別目標</th><th>売上</th><th>目標差</th><th>客数</th><th>客単価</th></tr></thead><tbody>'+dailyBody+'</tbody></table></div><div class="footer-note">催事のない日は目標0円。空欄を売上0円・客数0人として推測補完しません。</div></section>'
     +eventDetailTable;
   document.getElementById('channel-event-month').onchange=event=>setChannelMonth('event',event.target.value);

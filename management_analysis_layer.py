@@ -62,6 +62,7 @@ EVENT_STAFF_DAILY_RATE = {
 }
 
 FLASH_ACCURACY_PATH = BASE / "data" / "flash_accuracy_2026.json"
+SEGMENT_PL_PATH = BASE / "data" / "segment_pl_2026.json"   # 店舗／催事の月次PL（build_kanri_kaikei_pl.pyが作成）
 FLASH_STAFFING_RATE_MONTHS = 3
 
 # 月次確定に必要な資料の状態。state: 解消済み／先方待ち／社内対応／本人・税理士判断
@@ -679,6 +680,14 @@ def _staffing_rate(monthly_rows, daily_totals_by_month):
     return rate, f"直近{len(picked)}か月の確定実績（販売員費÷催事の運営売上＝{rate * 100:.1f}%）で仮置き"
 
 
+def _segment_pl():
+    """店舗分析・催事分析に出す月次PL。無ければ空（画面は「準備中」）。"""
+    try:
+        return json.loads(SEGMENT_PL_PATH.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, ValueError):
+        return None
+
+
 def _flash_accuracy():
     try:
         return json.loads(FLASH_ACCURACY_PATH.read_text(encoding="utf-8"))
@@ -918,6 +927,7 @@ def get_management_analysis():
         "productHistory": product_history,
         "laborDailyHistory": labor_daily_history,
         "airmateAnalysis": airmate_analysis,
+        "segmentPl": _segment_pl(),
         "weekdayTimeHistory": {
             "source": "保存済みAirメイト日次CSV（読み取り専用）",
             "updatedAt": airmate_analysis.get("updatedAt"),
