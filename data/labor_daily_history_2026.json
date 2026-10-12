@@ -2831,6 +2831,18 @@
           "combinedSales": 99954,
           "laborRate": 35.7,
           "eventSalesStatus": "未取得"
+        },
+        {
+          "day": 13,
+          "date": "2026-10-13",
+          "labor": 0,
+          "workHours": 0.0,
+          "headcount": 2,
+          "storeSales": 0,
+          "eventSales": 0,
+          "combinedSales": 0,
+          "laborRate": null,
+          "eventSalesStatus": "未取得"
         }
       ],
       "eventSalesTotal": 3793094,
@@ -2839,7 +2851,8 @@
       "greenDays": 10,
       "redDays": 2,
       "eventSalesPendingDates": [
-        "2026-10-12"
+        "2026-10-12",
+        "2026-10-13"
       ],
       "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
     }

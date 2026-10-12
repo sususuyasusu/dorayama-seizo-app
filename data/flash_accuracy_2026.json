@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-13T06:40+09:00",
+  "generatedAt": "2026-10-13T08:05+09:00",
   "method": "月末時点の日次台帳の把握費用＋固定費（確定）＋催事販売員費（他の確定月の率で仮置き）",
   "months": [
     {
@@ -100,12 +100,12 @@
       "opsSales": 8185740,
       "accountingSales": 8706286,
       "costEstimate": 8254893,
-      "confirmedCost": 6853130,
-      "costDiff": 1401763,
-      "costDiffPct": 20.5,
+      "confirmedCost": 6857387,
+      "costDiff": 1397506,
+      "costDiffPct": 20.4,
       "opsProfit": -69153,
-      "confirmedProfit": 1853156,
-      "profitDiff": -1922309
+      "confirmedProfit": 1848899,
+      "profitDiff": -1918052
     }
   ],
   "summary": {
