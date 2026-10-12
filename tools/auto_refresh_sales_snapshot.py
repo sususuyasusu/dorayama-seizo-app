@@ -74,7 +74,8 @@ def main():
     for args in (["tools/build_product_history_snapshot.py"],
                  ["tools/build_labor_daily_history_snapshot.py", "--month", prev_month],
                  ["tools/build_labor_daily_history_snapshot.py", "--month", today.strftime("%Y-%m")],
-                 ["tools/build_flash_accuracy_snapshot.py"]):
+                 ["tools/build_flash_accuracy_snapshot.py"],
+                 ["tools/build_management_pl_snapshot.py"]):
         c, o, e = _run([sys.executable, *args])
         print(o[-500:] if o else "")
         if c not in (0, 2):
@@ -87,6 +88,7 @@ def main():
         "data/product_analysis_history_2026.json",
         "data/labor_daily_history_2026.json",
         "data/flash_accuracy_2026.json",
+        "data/management_pl_workbook_snapshot.json",
     ]
     code, out, err = _run(["git", "status", "--porcelain", "--", *snapshot_paths])
     if code != 0:

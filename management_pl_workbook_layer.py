@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 
 import openpyxl
+import openpyxl.utils
 
 
 # 原本は2026-08-16以降、iCloud Downloadsから運用資料/予算実績表へ移動済み。
@@ -40,9 +41,6 @@ SECTIONS = [
     {"id": "other", "label": "その他コスト", "rows": range(25, 45)},
     {"id": "profit", "label": "利益", "rows": range(45, 50)},
 ]
-RATE_ROWS = {14, 16, 24, 46}
-TOTAL_ROWS = {7, 13, 15, 23, 44, 45, 48}
-PROFIT_ROWS = {15, 45, 48}
 _CACHE = {"key": None, "value": None}
 
 
@@ -69,18 +67,34 @@ def _cell_value(sheet, cell, is_rate=False):
     return _rate(value) if is_rate else _amount(value)
 
 
-def _line_kind(row):
-    if row in RATE_ROWS:
+RATE_LABELS = {"按分に使った本店売上シェア", "粗利益率", "労働分配率（人件費÷粗利益）", "営業利益÷粗利益"}
+PROFIT_LABELS = {"売上総利益（粗利益）", "営業利益", "経常利益"}
+TOTAL_LABELS = {"売上合計", "材料・包材原価 計", "人件費 合計", "販売管理費 計"} | PROFIT_LABELS
+# この科目の行を過ぎたら次の区分へ進む（売上→原価・粗利益→人件費→その他コスト→利益）
+SECTION_BREAKS = ["売上合計", "粗利益率", "労働分配率（人件費÷粗利益）", "販売管理費 計"]
+HEADER_ROW = 4
+FIRST_ROW, LAST_ROW = 5, 120
+
+
+def _line_kind(label):
+    if label in RATE_LABELS:
         return "rate"
-    if row in PROFIT_ROWS:
+    if label in PROFIT_LABELS:
         return "profit"
-    if row in TOTAL_ROWS:
+    if label in TOTAL_LABELS:
         return "total"
     return "detail"
 
 
-def _section_for(row):
-    return next(section for section in SECTIONS if row in section["rows"])
+def _month_status(header, has_values, default):
+    text = str(header or "")
+    if "暫定" in text:
+        return "暫定"
+    if "まで" in text or "進行中" in text:
+        return "進行中"
+    if header in (None, ""):
+        return default
+    return "確定" if has_values else "未入力"
 
 
 def read_workbook(path):
@@ -89,62 +103,81 @@ def read_workbook(path):
     if SHEET_NAME not in book.sheetnames:
         raise ValueError(f"必要なシートがありません: {SHEET_NAME}")
     sheet = book[SHEET_NAME]
-    months = [
-        {"column": column, "key": key, "label": label, "status": status}
-        for column, key, label, status in MONTH_COLUMNS
-    ]
+    grid = {}
+    for r_index, row_cells in enumerate(sheet.iter_rows(min_row=1, max_row=LAST_ROW, max_col=15), start=1):
+        for c_index, cell in enumerate(row_cells, start=1):
+            if cell.value not in (None, ""):
+                grid[(r_index, c_index)] = cell.value
+
+    def cell(column, row):
+        return grid.get((row, openpyxl.utils.column_index_from_string(column)))
+
     lines = []
-    for row in range(5, 50):
-        label = sheet[f"A{row}"].value
-        if label in (None, ""):
+    section_index = 0
+    for row in range(FIRST_ROW, LAST_ROW + 1):
+        raw = cell("A", row)
+        if raw in (None, ""):
             continue
-        section = _section_for(row)
-        is_rate = row in RATE_ROWS
+        label = str(raw).strip()
+        section = SECTIONS[min(section_index, len(SECTIONS) - 1)]
+        is_rate = label in RATE_LABELS
         lines.append({
             "row": row,
-            "label": str(label).strip(),
+            "label": label,
             "section": section["id"],
             "sectionLabel": section["label"],
-            "kind": _line_kind(row),
+            "kind": _line_kind(label),
             "format": "rate" if is_rate else "amount",
             "values": {
-                key: _cell_value(sheet, f"{column}{row}", is_rate)
+                key: (_rate if is_rate else _amount)(cell(column, row))
                 for column, key, _label, _status in MONTH_COLUMNS
             },
-            "confirmedTotal": _cell_value(sheet, f"N{row}", is_rate),
-            "previousPeriod": _cell_value(sheet, f"O{row}", is_rate),
+            "confirmedTotal": (_rate if is_rate else _amount)(cell("N", row)),
+            "previousPeriod": (_rate if is_rate else _amount)(cell("O", row)),
         })
-    by_row = {line["row"]: line for line in lines}
+        if section_index < len(SECTION_BREAKS) and label == SECTION_BREAKS[section_index]:
+            section_index += 1
+    by_label = {}
+    for line in lines:
+        by_label.setdefault(line["label"], line)
 
-    def value(row, month):
-        return by_row.get(row, {}).get("values", {}).get(month)
+    def value(label, month):
+        return by_label.get(label, {}).get("values", {}).get(month)
+
+    months = []
+    for column, key, label, status in MONTH_COLUMNS:
+        has_values = value("売上合計", key) is not None
+        months.append({
+            "column": column, "key": key, "label": label,
+            "status": _month_status(cell(column, HEADER_ROW), has_values, status),
+        })
 
     series = []
     for month in months:
         key = month["key"]
-        sales = value(7, key)
+        sales = value("売上合計", key)
         if sales is None:
             continue
-        total_labor = value(23, key)
-        event_staffing = value(21, key)
-        other_cost = value(44, key)
+        total_labor = value("人件費 合計", key)
+        event_staffing = value("マネキン費（催事販売員の派遣）", key)
+        other_cost = value("販売管理費 計", key)
         series.append({
             **month,
             "sales": sales,
-            "storeSales": value(5, key),
-            "eventSales": value(6, key),
+            "storeSales": value("店舗売上（本店）", key),
+            "eventSales": value("催事売上", key),
             "internalLabor": total_labor - event_staffing
             if total_labor is not None and event_staffing is not None else None,
             "eventStaffing": event_staffing,
             "labor": total_labor,
-            "rent": value(31, key),
-            "material": value(13, key),
+            "rent": value("地代家賃", key),
+            "material": value("材料・包材原価 計", key),
             "other": other_cost,
             "sellingExpenses": total_labor + other_cost
             if other_cost is not None and total_labor is not None else None,
-            "operatingProfit": value(45, key),
-            "nonOperating": value(47, key),
-            "profit": value(48, key),
+            "operatingProfit": value("営業利益", key),
+            "nonOperating": value("雑収入ほか（営業外）", key),
+            "profit": value("経常利益", key),
         })
     confirmed = [row for row in series if row["status"] == "確定"]
 
@@ -152,6 +185,10 @@ def read_workbook(path):
         values = [row[field] for row in confirmed if row.get(field) is not None]
         return sum(values) if values else None
 
+    period = (
+        f"{confirmed[0]['key']}〜{confirmed[-1]['key']}確定".replace("月〜", "〜")
+        if confirmed else "確定月なし"
+    )
     stat = path.stat()
     return {
         "available": True,
@@ -164,7 +201,7 @@ def read_workbook(path):
         "lines": lines,
         "series": series,
         "summary": {
-            "period": "2〜7月確定",
+            "period": period,
             "sales": total("sales"),
             "internalLabor": total("internalLabor"),
             "eventStaffing": total("eventStaffing"),

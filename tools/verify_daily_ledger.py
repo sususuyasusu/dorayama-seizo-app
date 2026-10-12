@@ -238,8 +238,8 @@ def verify_management_analysis():
     if current.get("budgetRemaining") is not None and current.get("sales") is not None:
         assert abs(current["budgetRemaining"] - (current["budget"] - current["sales"])) <= 1
     assert data["goalSettings"]["months"][6]["yearMonth"] == "2026-08"
-    assert data["goalSettings"]["months"][0]["actual"]["sales"] == 11575876
-    assert data["goalSettings"]["months"][5]["actual"]["sales"] == 7229287
+    assert data["goalSettings"]["months"][0]["actual"]["sales"] == 11574556  # 返品・値引き控除後（2026-10-12 台帳修正）
+    assert data["goalSettings"]["months"][5]["actual"]["sales"] == 7227660  # 返品控除後（2026-10-12 台帳修正）
     assert data["goalSettings"]["months"][6]["actual"]["sales"] >= 3627802  # 8月は確定待ち（値は確定作業で伸びうる）
     assert data["events"]["targetPerEventDay"] == 220000
     assert data["events"]["target"] >= 0  # 当月の催事目標はカレンダー次第
@@ -252,7 +252,7 @@ def verify_management_analysis():
     assert cost_analysis["summary"]["totalCost"] == cost_analysis["summary"]["material"] + cost_analysis["summary"]["sellingExpenses"]
     assert cost_analysis["summary"]["other"] >= 0
     assert data["confirmed"]["cumulative"]["profit"] == cost_analysis["summary"]["profit"]
-    labor_total_line = next(line for line in cost_analysis["lines"] if line["row"] == 23)
+    labor_total_line = next(line for line in cost_analysis["lines"] if line["label"] == "人件費 合計")
     assert all(
         row["internalLabor"] == labor_total_line["values"][row["key"]] - row["eventStaffing"]
         for row in confirmed_costs
@@ -261,7 +261,7 @@ def verify_management_analysis():
     assert august_cost["internalLabor"] is None
     assert august_cost["profit"] is None
     assert august_cost["laborReconciliation"]["status"] == "再集計中"
-    assert next(line for line in cost_analysis["lines"] if line["row"] == 25)["label"] == "その他の外注費"
+    assert next(line for line in cost_analysis["lines"] if line["label"] == "その他の外注費")["section"] == "other"
     weekday_history = data["weekdayTimeHistory"]
     assert weekday_history["from"] == "2026-01-01"
     # to/daily件数/合計は保存済みAirメイトCSVの最新日に追従して毎日伸びる
