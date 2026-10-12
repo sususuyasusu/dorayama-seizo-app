@@ -231,6 +231,18 @@ def build_brief(analysis, target=None):
             complete = False
             reasons.append(f"店舗人件費（{yen(store_labor)}）がAirシフトの直接取得（{yen(flash_labor)}）と合わない")
             lines.append(f"※店舗人件費がAirシフトの直接取得（{yen(flash_labor)}）と合いません。確認中（確定額ではありません）")
+    # 製造実績の入力漏れの疑い（2026-10-12: 10/6の上野が「生どら40個」だけで他の商品が0と入っていた）。
+    # 会場ごとの作った数が、その会場の直近7日の平均の4分の1未満なら、入力漏れを疑って確定と言わない。
+    if prod and prod.get("blocks"):
+        prior = [prod_by_date[d] for d in sorted(prod_by_date) if d < target][-7:]
+        for name, item in prod["blocks"].items():
+            history = [p["blocks"][name]["pieces"] for p in prior if name in (p.get("blocks") or {}) and p["blocks"][name]["pieces"] > 0]
+            if len(history) >= 3:
+                avg = sum(history) / len(history)
+                if avg >= 100 and item["pieces"] < avg * 0.25:
+                    complete = False
+                    reasons.append(f"製造実績の入力漏れの疑い：{name} {item['pieces']}個（直近の平均{round(avg)}個）")
+                    lines.append(f"※製造実績の入力漏れの疑い：{name}が{item['pieces']}個（直近の平均{round(avg)}個）。人件費率は確定ではありません")
     reported = int(row.get("eventVenuesReported") or 0)
     if venues and reported and reported < venues:
         absent = missing_venues((goal_days.get(target) or {}).get("events") or [], row.get("eventVenueNames") or [])
