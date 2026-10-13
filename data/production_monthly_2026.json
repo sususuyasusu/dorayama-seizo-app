@@ -1,0 +1,265 @@
+{
+ "generatedAt": "2026-10-13",
+ "source": "製造表の週タブ「実績」列（作った数）× 商品ごとの平均売価（Airメイト商品別実績・税込）",
+ "months": [
+  {
+   "month": "2026-02",
+   "total": 1909110,
+   "store": 459310,
+   "event": 1449800,
+   "storeShare": 0.2406,
+   "blocks": {
+    "ニュウマン新宿催事用": {
+     "value": 636530,
+     "pieces": 1715
+    },
+    "店舗用": {
+     "value": 459310,
+     "pieces": 1215
+    },
+    "ながの東急催事用": {
+     "value": 813270,
+     "pieces": 2254
+    }
+   },
+   "days": 13,
+   "missingWeeks": [
+    "2026-01-26",
+    "2026-02-02",
+    "2026-02-09"
+   ]
+  },
+  {
+   "month": "2026-03",
+   "total": 6760425,
+   "store": 2294135,
+   "event": 4466290,
+   "storeShare": 0.3393,
+   "blocks": {
+    "ニュウマン新宿催事用": {
+     "value": 895260,
+     "pieces": 2410
+    },
+    "ながの東急催事用": {
+     "value": 873690,
+     "pieces": 2360
+    },
+    "店舗用": {
+     "value": 2294135,
+     "pieces": 6077
+    },
+    "富岡八幡宮": {
+     "value": 139210,
+     "pieces": 380
+    },
+    "阪急百貨店": {
+     "value": 1710570,
+     "pieces": 4775
+    },
+    "エキュート上野": {
+     "value": 490670,
+     "pieces": 1395
+    },
+    "西武池袋": {
+     "value": 356890,
+     "pieces": 1005
+    }
+   },
+   "days": 31,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-04",
+   "total": 9320783,
+   "store": 2044399,
+   "event": 7276384,
+   "storeShare": 0.2193,
+   "blocks": {
+    "エキュート上野": {
+     "value": 2066935,
+     "pieces": 5745
+    },
+    "西武池袋": {
+     "value": 724755,
+     "pieces": 2045
+    },
+    "店舗用": {
+     "value": 2044399,
+     "pieces": 5439
+    },
+    "大丸梅田": {
+     "value": 1142088,
+     "pieces": 3142
+    },
+    "ルミネ大宮": {
+     "value": 3342606,
+     "pieces": 9279
+    }
+   },
+   "days": 30,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-05",
+   "total": 6778314,
+   "store": 2451622,
+   "event": 4326692,
+   "storeShare": 0.3617,
+   "blocks": {
+    "ルミネ大宮": {
+     "value": 1846788,
+     "pieces": 5102
+    },
+    "店舗用": {
+     "value": 2451622,
+     "pieces": 6641
+    },
+    "日本橋高島屋": {
+     "value": 2479904,
+     "pieces": 6913
+    }
+   },
+   "days": 31,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-06",
+   "total": 7751736,
+   "store": 1943926,
+   "event": 5807810,
+   "storeShare": 0.2508,
+   "blocks": {
+    "店舗用": {
+     "value": 1943926,
+     "pieces": 5267
+    },
+    "大丸東京": {
+     "value": 3480875,
+     "pieces": 9219
+    },
+    "日本橋三越": {
+     "value": 1212410,
+     "pieces": 3346
+    },
+    "JR秋葉原": {
+     "value": 1114525,
+     "pieces": 2938
+    }
+   },
+   "days": 30,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-07",
+   "total": 6337723,
+   "store": 1750931,
+   "event": 4586792,
+   "storeShare": 0.2763,
+   "blocks": {
+    "JR秋葉原": {
+     "value": 1779445,
+     "pieces": 4640
+    },
+    "店舗用": {
+     "value": 1750931,
+     "pieces": 4650
+    },
+    "上野": {
+     "value": 2011437,
+     "pieces": 5298
+    },
+    "川越　東武": {
+     "value": 795910,
+     "pieces": 2166
+    }
+   },
+   "days": 31,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-08",
+   "total": 9644840,
+   "store": 1785614,
+   "event": 7859226,
+   "storeShare": 0.1851,
+   "blocks": {
+    "川越　東武": {
+     "value": 129500,
+     "pieces": 352
+    },
+    "上野": {
+     "value": 5656416,
+     "pieces": 14898
+    },
+    "店舗用": {
+     "value": 1785614,
+     "pieces": 4887
+    },
+    "立川ルミネ": {
+     "value": 2073310,
+     "pieces": 5780
+    }
+   },
+   "days": 31,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-09",
+   "total": 8320407,
+   "store": 1788165,
+   "event": 6532242,
+   "storeShare": 0.2149,
+   "blocks": {
+    "上野": {
+     "value": 5850017,
+     "pieces": 14998
+    },
+    "立川ルミネ": {
+     "value": 218370,
+     "pieces": 590
+    },
+    "店舗用": {
+     "value": 1788165,
+     "pieces": 4712
+    },
+    "富岡八幡宮": {
+     "value": 220605,
+     "pieces": 585
+    },
+    "池袋東武": {
+     "value": 243250,
+     "pieces": 670
+    }
+   },
+   "days": 30,
+   "missingWeeks": []
+  },
+  {
+   "month": "2026-10",
+   "total": 5189039,
+   "store": 944438,
+   "event": 4244601,
+   "storeShare": 0.182,
+   "blocks": {
+    "上野": {
+     "value": 1961083,
+     "pieces": 4974
+    },
+    "池袋東武": {
+     "value": 1254224,
+     "pieces": 3412
+    },
+    "店舗用": {
+     "value": 944438,
+     "pieces": 2474
+    },
+    "松坂屋上野": {
+     "value": 1029294,
+     "pieces": 2690
+    }
+   },
+   "days": 13,
+   "missingWeeks": []
+  }
+ ]
+}

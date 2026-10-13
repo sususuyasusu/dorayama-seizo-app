@@ -90,6 +90,7 @@ def main():
         "data/flash_accuracy_2026.json",
         "data/management_pl_workbook_snapshot.json",
         "data/segment_pl_2026.json",
+        "data/production_monthly_2026.json",
     ]
     code, out, err = _run(["git", "status", "--porcelain", "--", *snapshot_paths])
     if code != 0:

@@ -19,5 +19,6 @@ data/*
 !data/fixed_cost_details_2026.json
 !data/flash_accuracy_2026.json
 !data/segment_pl_2026.json
+!data/production_monthly_2026.json
 .env
 nohup.out
