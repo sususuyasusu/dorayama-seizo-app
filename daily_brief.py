@@ -3,7 +3,7 @@
 
 画面の「今日の速報」と同じ考え方の抜粋版。
 - 売上：店舗・催事それぞれの、その日の予算との差
-- 人件費：2つの物差しで見る（2026-10-13本人決定・どちらも目標25%）。①全体の人件費（店舗の打刻＋催事の販売員）÷総売上（店舗＋催事）②店舗の人件費÷製造実績（作った数×売価）
+- 人件費：上限（目安）を4つのものさしの足し算で出す（2026-10-13本人決定・人では分けない）。店舗の打刻人件費≦製造額×11%＋店舗売上×14%／催事販売員費≦催事売上×13%（18%超は赤字）／全体≦総売上×25%
 - 今月ここまで：売上の目標累積との差、人件費率
 数字がそろっていない項目は、0円や「収まっている」と見せず「入力待ち／取得待ち」と書く。
 """
@@ -172,39 +172,62 @@ def build_brief(analysis, target=None):
     event_labor = staffed_venues * staff_daily
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
+    caps = board.get("laborCaps") or {"production": 11.0, "storeSales": 14.0, "eventSales": 13.0, "eventSalesLoss": 18.0, "total": rate}
     breakdown = f"（店舗{yen(store_labor)}＋催事{yen(event_labor)}）" if event_labor else ""
     labor_head = f"人件費 {yen(labor)}{breakdown}"
     diffs = []
     if not store_labor:
         complete = False
         reasons.append("店舗の人件費（打刻）が取れていない")
-    # ① 全体の人件費 ÷ 総売上（店舗＋催事）
+    # ① 店舗の打刻人件費 ≦ 製造額（店舗用＋催事向け）×11% ＋ 店舗売上×14%
+    prod_ok = bool(analysis.get("production")) and bool(prod) and bool(prod.get("value"))
+    store_cap = (prod["value"] * caps["production"] / 100 + store_sales * caps["storeSales"] / 100) if prod_ok else None
+    if not analysis.get("production"):
+        line_store = "店舗の人件費　製造実績を読めず判定なし"
+        complete = False
+        reasons.append("製造実績を読み込めていない")
+    elif not prod or not prod.get("value"):
+        line_store = "店舗の人件費　製造実績待ちで判定なし"
+        complete = False
+        reasons.append("製造実績が未入力")
+    else:
+        gap = store_cap - store_labor
+        over_pt = (store_labor / store_cap * 100 - 100) / 4 if store_cap else 0   # 上限の2割超過≒目標5ポイント超過と同じ重さ
+        emoji, tier = _labor_tier(over_pt)
+        diffs.append(over_pt)
+        state = "収まり" if gap >= 0 else f"オーバー{yen(-gap)}"
+        line_store = f"店舗 {yen(store_labor)}／上限 {yen(store_cap)}　{emoji}{state}（製造×{caps['production']:.0f}%＋店舗売上×{caps['storeSales']:.0f}%）"
+    # ② 催事販売員費 ≦ 催事売上×13%（18%超は赤字）
+    if venues == 0:
+        line_event = "催事販売員　催事なし"
+    elif event_pending or event_suspect:
+        line_event = "催事販売員　催事売上待ちで判定なし"
+    elif not event_labor:
+        line_event = "催事販売員 0円（派遣なし）"
+    else:
+        ev_rate = event_labor / event_sales * 100
+        ev_cap = event_sales * caps["eventSales"] / 100
+        if ev_rate <= caps["eventSales"]:
+            emoji, label = "😊", "収まり"
+        elif ev_rate <= caps["eventSalesLoss"]:
+            emoji, label = "🙂", "注意"
+        else:
+            emoji, label = "😥", "赤字"
+        diffs.append(ev_rate - caps["eventSales"])
+        line_event = (f"催事販売員 {yen(event_labor)}／上限 {yen(ev_cap)}　{emoji}{label}"
+                      f"（{ev_rate:.1f}%／目標{caps['eventSales']:.0f}%・{caps['eventSalesLoss']:.0f}%超は赤字）")
+    # ③ 全体 ≦ 総売上×25%
     total_sales = store_sales + event_sales
     sales_ready = not (event_pending or store_suspect or event_suspect) and total_sales > 0
     if sales_ready:
         ratio_total = labor / total_sales * 100
-        emoji, tier = _labor_tier(ratio_total - rate)
-        diffs.append(ratio_total - rate)
-        line_total = f"①全体÷売上 {yen(total_sales)}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio_total:.1f}%／目標{rate:.0f}%）"
+        emoji, tier = _labor_tier(ratio_total - caps["total"])
+        diffs.append(ratio_total - caps["total"])
+        line_total = f"全体÷売上 {yen(total_sales)}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio_total:.1f}%／目標{caps['total']:.0f}%）"
     else:
-        ratio_total = None
-        line_total = "①全体÷売上　売上待ちで判定なし"
-    # ② 店舗の人件費 ÷ 製造実績（店舗の人件費には翌日以降の催事用の商品をつくる人員も含まれるため、売上でなく製造実績と比べる）
-    if not analysis.get("production"):
-        line_store = "②店舗÷製造　製造実績を読めず判定なし"
-        complete = False
-        reasons.append("製造実績を読み込めていない")
-    elif not prod or not prod.get("value"):
-        line_store = "②店舗÷製造　製造実績待ちで判定なし"
-        complete = False
-        reasons.append("製造実績が未入力")
-    else:
-        ratio_store = store_labor / prod["value"] * 100
-        emoji, tier = _labor_tier(ratio_store - rate)
-        diffs.append(ratio_store - rate)
-        line_store = f"②店舗÷製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio_store:.1f}%／目標{rate:.0f}%）"
+        line_total = "全体÷売上　売上待ちで判定なし"
     labor_diff_pt = max(diffs) if diffs else None
-    labor_part = labor_head + "\n" + line_total + "\n" + line_store
+    labor_part = "\n".join([labor_head, line_store, line_event, line_total])
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
@@ -309,12 +332,13 @@ def build_brief(analysis, target=None):
         total_value = sum(item["value"] for item in prod.get("blocks", {}).values()) or prod["value"]
         blocks = [{"name": name, "value": item["value"], "share": item["value"] / total_value * 100}
                   for name, item in sorted(prod.get("blocks", {}).items(), key=lambda kv: -kv[1]["value"])]
-    # ② 店舗の人件費 ÷ 製造実績（rate）と ① 全体の人件費 ÷ 総売上（rateTotal）
-    rate_value = store_labor / prod["value"] * 100 if prod_state == "ok" else None
-    allowed_value = prod["value"] * rate / 100 if prod_state == "ok" else None
+    # 上限（目安）: 店舗＝製造額×11%＋店舗売上×14%／催事販売員＝催事売上×13%／全体＝総売上×25%
+    allowed_value = (prod["value"] * caps["production"] / 100 + store_sales * caps["storeSales"] / 100) if prod_state == "ok" else None
+    rate_value = store_labor / allowed_value * 100 if allowed_value else None   # 上限に対する割合（100%＝上限ちょうど）
     total_ready = event_state == "ok" or venues == 0
     total_ready = total_ready and not store_suspect and (store_sales + event_sales) > 0
-    total_allowed = (store_sales + event_sales) * rate / 100 if total_ready else None
+    total_allowed = (store_sales + event_sales) * caps["total"] / 100 if total_ready else None
+    event_staff_rate = event_labor / event_sales * 100 if (event_state == "ok" and event_sales > 0 and event_labor) else None
     month = None
     if month_dates:
         month = {
@@ -342,11 +366,14 @@ def build_brief(analysis, target=None):
         key = f"{month_key}-{d:02d}"
         value = (prod_by_date.get(key) or {}).get("value", 0)
         if value:  # 製造実績が入っている日だけ数える（入力待ちの日で率が跳ねないように）
-            store_day = (rows.get(key) or {}).get("storeLabor") or 0
+            r_day = rows.get(key) or {}
+            store_day = r_day.get("storeLabor") or 0
             event_day = int((goal_days.get(key) or {}).get("eventCount") or 0) * staff_daily
             store_run += store_day
             total_run += store_day + event_day
-            allowed_run += value * rate / 100
+            # 上限の目安＝製造額×11%＋店舗売上×14%＋催事売上×13%（4つのものさしの足し算）
+            allowed_run += (value * caps["production"] / 100 + (r_day.get("storeSales") or 0) * caps["storeSales"] / 100
+                            + (r_day.get("eventSales") or 0) * caps["eventSales"] / 100)
         labor_store.append(store_run)
         labor_total.append(total_run)
         labor_allowed.append(allowed_run)
@@ -365,10 +392,19 @@ def build_brief(analysis, target=None):
         "labor": {"total": labor, "store": store_labor, "event": event_labor, "storeMissing": not store_labor},
         "production": {"state": prod_state, "value": prod["value"] if prod_state == "ok" else 0,
                        "pieces": prod.get("pieces", 0) if prod_state == "ok" else 0, "blocks": blocks},
-        "rate": {"value": rate_value, "target": rate, "allowed": allowed_value,
+        "caps": caps,
+        "rate": {"value": rate_value, "target": 100, "allowed": allowed_value,
+                 "productionPart": prod["value"] * caps["production"] / 100 if prod_state == "ok" else None,
+                 "salesPart": store_sales * caps["storeSales"] / 100,
                  "gap": allowed_value - store_labor if prod_state == "ok" else None,
                  "verdict": "unknown" if prod_state != "ok" else ("ok" if store_labor <= allowed_value else "over")},
-        "rateTotal": {"value": labor / (store_sales + event_sales) * 100 if total_ready else None, "target": rate,
+        "eventStaff": {"value": event_staff_rate, "target": caps["eventSales"], "loss": caps["eventSalesLoss"],
+                       "sales": event_sales, "allowed": event_sales * caps["eventSales"] / 100 if event_state == "ok" else None,
+                       "venues": venues,
+                       "verdict": ("none" if venues == 0 else "unknown" if event_staff_rate is None else
+                                   "ok" if event_staff_rate <= caps["eventSales"] else
+                                   "warn" if event_staff_rate <= caps["eventSalesLoss"] else "over")},
+        "rateTotal": {"value": labor / (store_sales + event_sales) * 100 if total_ready else None, "target": caps["total"],
                       "sales": store_sales + event_sales, "allowed": total_allowed,
                       "gap": total_allowed - labor if total_ready else None,
                       "verdict": "unknown" if not total_ready else ("ok" if labor <= total_allowed else "over")},

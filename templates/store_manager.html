@@ -173,9 +173,12 @@ function todayModel(date){
   const total=build(store.sales+event.sales,(store.target||0)+(event.target||0),store.labor+event.labor);
   const prod=d.production,prodDay=prod?(prod.daily||[]).find(item=>item.date===date):null;
   const production={available:!!prodDay,value:prodDay?prodDay.value:0,pieces:prodDay?prodDay.pieces:0,blocks:prodDay?prodDay.blocks:{},names:prod?prod.blocks:[]};
-  const laborTotal=store.labor+event.labor,allowed=production.value*rate/100;
-  const combined={labor:laborTotal,production:production.value,rate:production.value>0?laborTotal/production.value*100:null,allowed,gap:allowed-laborTotal};
-  return {date,today,rate,dailyRate,store,event,total,production,combined,has:!!row.date}
+  // 2026-10-13 本人決定: 上限＝製造額×11%＋店舗売上×14%（店舗の打刻人件費）／催事売上×13%（販売員費）／総売上×25%（全体）
+  const caps=board.laborCaps||{production:11,storeSales:14,eventSales:13,eventSalesLoss:18,total:25};
+  const laborTotal=store.labor+event.labor,salesTotal=store.sales+event.sales;
+  const storeCap=production.value*caps.production/100+store.sales*caps.storeSales/100,eventCap=event.sales*caps.eventSales/100,allowed=storeCap+eventCap;
+  const combined={labor:laborTotal,production:production.value,sales:salesTotal,rate:salesTotal>0?laborTotal/salesTotal*100:null,allowed,gap:allowed-laborTotal,storeCap,eventCap,caps};
+  return {date,today,rate,dailyRate,store,event,total,production,combined,caps,has:!!row.date}
 }
 function todayVerdict(m,part,isEvent){
   const wait=m.today;
@@ -200,8 +203,7 @@ function todaySalesCard(m,title,part,isEvent){
   return '<div class="today-card"><h4>'+safe(title)+'の売上</h4><div class="num">'+yenFull(part.sales)+'</div><div class="sub">'+(isEvent&&part.names.length?safe(part.names.join('・'))+'（'+part.venues+'会場）':'税込')+'</div><span class="today-verdict '+v.cls+'">'+v.text+'</span><div style="font-size:12px;line-height:1.7">'+safe(line)+'</div>'+todayBar(part,'今日の予算')+(isEvent&&(part.venueSales||[]).length?(()=>{const names=((state.data.production||{}).blocks)||[];const vs=part.venueSales;return stackBar(vs.map(v=>({value:v.sales,color:blockColor(v.name,names),label:v.name})))+'<div class="today-rows">'+vs.map(v=>{const rate1=Number((state.data.todayBoard||{}).eventStaffDailyRate||37000),j=isStaffedVenue(v.name)?staffJudge(rate1,v.sales):null;return '<div><span>'+swatch(blockColor(v.name,names),v.name)+(j?'<small class="'+j.cls+'" style="margin-left:6px" title="販売員費 '+yenFull(rate1)+' ÷ 売上。13%以下＝目標内、18%超＝赤字">販売員 '+pct(j.rate)+'・'+j.text+'</small>':'')+'</span><b>'+yenFull(v.sales)+'</b></div>'}).join('')+'</div>'+(vs.reduce((a,v)=>a+v.sales,0)!==part.sales?'<div style="font-size:11px;color:var(--muted);margin-top:4px">会場別は日報フォームの金額です（合計'+yenFull(vs.reduce((a,v)=>a+v.sales,0))+'）。</div>':'');})():'')+'</div>';
 }
 // 2026-10-13 本人決定: 催事の販売員費 ÷ 会場で売れた額。13%以下＝目標内／18%以下＝注意／18%超＝赤字（会場の取り分18%・材料・包材・配送・工房人件費を引いた残りから算出）
-const STAFF_TARGET=13,STAFF_LOSS=18;
-function staffJudge(cost,sales){if(!(sales>0)||!(cost>0))return null;const r=cost/sales*100;return {rate:r,cls:r<=STAFF_TARGET?'positive':r<=STAFF_LOSS?'staff-warn':'negative',text:r<=STAFF_TARGET?'目標内':r<=STAFF_LOSS?'注意':'赤字'}}
+function staffJudge(cost,sales){if(!(sales>0)||!(cost>0))return null;const cp=(state.data.todayBoard||{}).laborCaps||{},STAFF_TARGET=Number(cp.eventSales||13),STAFF_LOSS=Number(cp.eventSalesLoss||18),r=cost/sales*100;return {rate:r,cls:r<=STAFF_TARGET?'positive':r<=STAFF_LOSS?'staff-warn':'negative',text:r<=STAFF_TARGET?'目標内':r<=STAFF_LOSS?'注意':'赤字'}}
 function staffCell(cost,sales){const j=staffJudge(cost,sales);return j?'<td class="'+j.cls+'">'+pct(j.rate)+'<small> '+j.text+'</small></td>':'<td class="muted">—</td>'}
 function isStaffedVenue(name){return !/富岡/.test(String(name||''))}
 function prodSuspect(date,name,pieces){
@@ -217,57 +219,74 @@ function todayLaborCards(m){
   const laborCard='<div class="today-card"><h4>人件費（店舗＋催事の販売員）</h4><div class="num">'+yenFull(c.labor)+'</div><div class="sub">店舗は打刻した勤務、催事は日割り</div>'+stackBar([{value:m.store.labor,color:LABOR_COLORS.store,label:'店舗の人件費'},{value:m.event.labor,color:LABOR_COLORS.event,label:'催事の販売員'}])+rows([[swatch(LABOR_COLORS.store,'店舗（打刻・Airシフト）'),yenFull(m.store.labor)],[swatch(LABOR_COLORS.event,'催事の販売員（ディースパーク日割り'+(m.event.laborVenues?'：'+yenFull(m.dailyRate)+'×'+m.event.laborVenues+'会場':'')+'）'),yenFull(m.event.labor)]])+'</div>';
   const prodCard=!p.available?'<div class="today-card"><h4>製造実績</h4><div class="num">—</div><div class="sub">製造表を読み取れませんでした</div><div style="font-size:12px;line-height:1.7">時間をおいて開き直してください。</div></div>'
     :'<div class="today-card"><h4>製造実績（作った数×売価）</h4><div class="num">'+yenFull(p.value)+'</div><div class="sub">'+p.pieces.toLocaleString('ja-JP')+'個'+(m.today?'（今日は入力途中）':'')+'</div>'+stackBar(Object.entries(p.blocks).map(([name,item])=>({value:item.value,color:blockColor(name,p.names),label:name})))+(Object.keys(p.blocks).length?rows(Object.entries(p.blocks).map(([name,item])=>{const sus=prodSuspect(m.date,name,item.pieces);return [swatch(blockColor(name,p.names),name)+(sus?' <span style="color:var(--gold)" title="直近の平均'+sus.toLocaleString('ja-JP')+'個。在庫で回した日か、製造実績の入力漏れ">少なめ</span>':''),yenFull(item.value)+'（'+item.pieces.toLocaleString('ja-JP')+'個）']})):'<div style="font-size:12px;color:var(--muted);margin-top:8px">まだ製造実績が入っていません。</div>')+'</div>';
-  // 2026-10-13 本人決定: 人件費は2つの物差しで見る。①全体の人件費÷総売上（店舗＋催事）②店舗の人件費÷製造実績。どちらも目標25%
-  const pv=Number(p.value||0),sl=Number(m.store.labor||0),el=Number(m.event.labor||0),tl=sl+el,ts=Number(m.store.sales||0)+Number(m.event.sales||0),target=Number(m.rate||25);
-  const judge=(labor,base,baseName,waitText)=>{
-    if(!(base>0))return {rate:null,cls:'v-wait',text:waitText,line:baseName+'が入ると計算されます。',allowed:null,gap:null};
-    const rate=labor/base*100,allowed=Math.round(base*target/100),gap=allowed-labor;
-    if(gap>=0)return {rate,cls:'v-good',text:'目安に収まっています',line:'上限の目安より '+yenFull(gap)+' 少なく収まっています。',allowed,gap};
-    if(m.today)return {rate,cls:'v-wait',text:'営業中（途中経過）',line:'いまの時点では上限を '+yenFull(-gap)+' 超えています。',allowed,gap};
-    return {rate,cls:'v-bad',text:'目安をオーバーしました',line:'上限の目安を '+yenFull(-gap)+' 超えています。',allowed,gap};
-  };
-  const a=judge(tl,ts,'売上','売上の入力待ち'),b=!p.available?{rate:null,cls:'v-none',text:'製造実績が取得できません',line:'製造実績が分かるまで判定できません。',allowed:null,gap:null}:judge(sl,pv,'製造実績','製造実績の入力待ち');
-  const block=(title,j,laborName,labor,baseName,base)=>'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-size:12px;font-weight:800">'+title+'</div><div class="num" style="font-size:30px">'+(j.rate==null?'—':pct(j.rate))+'</div><div class="sub">目標 '+pct(target)+'</div><span class="today-verdict '+j.cls+'">'+j.text+'</span><div style="font-size:12px;line-height:1.7">'+safe(j.line)+'</div>'+rows([[laborName,yenFull(labor)],[baseName,yenFull(base)],['上限の目安（'+baseName.replace(/（.*）/,'')+'×'+pct(target)+'）',j.allowed==null?'—':yenFull(j.allowed)],['差（＋は収まり／▲はオーバー）',j.gap==null?'—':(j.gap>=0?'＋':'▲')+yenFull(Math.abs(j.gap))]])+'</div>';
-  const rateCard='<div class="today-card"><h4>人件費率（2つの物差し）</h4>'
-    +block('① 全体の人件費 ÷ 総売上（店舗＋催事）',a,'全体の人件費（店舗＋催事の販売員）',tl,'総売上（店舗＋催事）',ts)
-    +block('② 店舗の人件費 ÷ 製造実績',b,'店舗の人件費（打刻・Airシフト）',sl,'製造実績（作った数×売価）',pv)
-    +'<div class="today-note">①は会社全体で売上に対して人件費が見合っているか。②は工房の人件費が、作った量に見合っているか（店舗の人件費には翌日以降の催事用の商品をつくる人員も含まれるため、売上ではなく製造実績と比べます）。</div></div>';
+  // 2026-10-13 本人決定: 人件費の上限は4つのものさしの足し算（人では分けない）。店舗・催事販売員・全体の3つで判定
+  const caps=m.caps,pv=Number(p.value||0),sl=Number(m.store.labor||0),el=Number(m.event.labor||0),tl=sl+el,ss=Number(m.store.sales||0),es=Number(m.event.sales||0),ts=ss+es;
+  const prodPart=pv*caps.production/100,salesPart=ss*caps.storeSales/100,storeCap=prodPart+salesPart,storeGap=storeCap-sl;
+  let sj;
+  if(!p.available)sj={cls:'v-none',text:'製造実績が取得できません',line:'製造実績が分かるまで判定できません。'};
+  else if(!(pv>0))sj={cls:'v-wait',text:'製造実績の入力待ち',line:'製造実績が入ると、上限が計算されます。'};
+  else if(storeGap>=0)sj={cls:'v-good',text:'上限に収まっています',line:'店舗の人件費は、上限の目安より '+yenFull(storeGap)+' 少なく収まっています。'};
+  else if(m.today)sj={cls:'v-wait',text:'営業中（途中経過）',line:'いまの時点では上限を '+yenFull(-storeGap)+' 超えています。製造実績と売上が入ると上限は上がります。'};
+  else sj={cls:'v-bad',text:'上限をオーバーしました',line:'店舗の人件費が、上限の目安を '+yenFull(-storeGap)+' 超えています。'};
+  const er=es>0?el/es*100:null,eventCap=es*caps.eventSales/100;
+  let ej;
+  if(m.event.venues===0)ej={cls:'v-none',text:'今日は催事なし',line:''};
+  else if(!(es>0))ej={cls:'v-wait',text:'催事売上の入力待ち',line:'催事の売上が入ると判定されます。'};
+  else if(el===0)ej={cls:'v-good',text:'販売員の派遣なし',line:'この日は販売員費がかかっていません。'};
+  else if(er<=caps.eventSales)ej={cls:'v-good',text:'目標内（'+pct(er)+'）',line:'販売員費は催事売上の '+pct(er)+' で、目標 '+pct(caps.eventSales)+' に収まっています。'};
+  else if(er<=caps.eventSalesLoss)ej={cls:'v-wait',text:'注意（'+pct(er)+'）',line:'販売員費は催事売上の '+pct(er)+'。目標 '+pct(caps.eventSales)+' は超えていますが、赤字の線（'+pct(caps.eventSalesLoss)+'）の手前です。'};
+  else ej={cls:'v-bad',text:'赤字（'+pct(er)+'）',line:'販売員費が催事売上の '+pct(er)+'。'+pct(caps.eventSalesLoss)+' を超えると、会場の取り分・材料・配送を払った後に残りません。'};
+  const tr=ts>0?tl/ts*100:null;
+  let tj;
+  if(!(ts>0))tj={cls:'v-wait',text:'売上の入力待ち',line:'売上が入ると計算されます。'};
+  else if(tr<=caps.total)tj={cls:'v-good',text:'目標内（'+pct(tr)+'）',line:'全体の人件費は総売上の '+pct(tr)+' で、目標 '+pct(caps.total)+' に収まっています。'};
+  else if(m.today)tj={cls:'v-wait',text:'営業中（'+pct(tr)+'）',line:'いまの時点では総売上の '+pct(tr)+'。売上が入ると下がります。'};
+  else tj={cls:'v-bad',text:'目標超過（'+pct(tr)+'）',line:'全体の人件費が総売上の '+pct(tr)+' で、目標 '+pct(caps.total)+' を超えました。'};
+  const block=(title,j,big,sub,items)=>'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-size:12px;font-weight:800">'+title+'</div><div class="num" style="font-size:26px">'+big+'</div><div class="sub">'+sub+'</div><span class="today-verdict '+j.cls+'">'+j.text+'</span>'+(j.line?'<div style="font-size:12px;line-height:1.7">'+safe(j.line)+'</div>':'')+rows(items)+'</div>';
+  const rateCard='<div class="today-card"><h4>人件費の上限（目安）と判定</h4>'
+    +block('① 店舗の人件費（打刻）',sj,yenFull(sl),'上限 '+(pv>0?yenFull(Math.round(storeCap)):'—'),[['製造額（店舗用＋催事向け）'+yenFull(pv)+' × '+pct(caps.production),yenFull(Math.round(prodPart))],['店舗売上 '+yenFull(ss)+' × '+pct(caps.storeSales),yenFull(Math.round(salesPart))],['差（＋は収まり／▲はオーバー）',pv>0?(storeGap>=0?'＋':'▲')+yenFull(Math.abs(Math.round(storeGap))):'—']])
+    +block('② 催事の販売員費',ej,yenFull(el),'上限 '+(es>0?yenFull(Math.round(eventCap)):'—')+'（催事売上 '+yenFull(es)+' × '+pct(caps.eventSales)+'）',[['販売員費 ÷ 催事売上',er==null?'—':pct(er)],['目標／赤字の線',pct(caps.eventSales)+'／'+pct(caps.eventSalesLoss)],['差（＋は収まり／▲はオーバー）',es>0?((eventCap-el>=0?'＋':'▲')+yenFull(Math.abs(Math.round(eventCap-el)))):'—']])
+    +block('③ 全体（店舗＋催事の販売員）',tj,yenFull(tl),'総売上 '+yenFull(ts)+' × '+pct(caps.total)+' ＝ 上限 '+(ts>0?yenFull(Math.round(ts*caps.total/100)):'—'),[['全体の人件費 ÷ 総売上',tr==null?'—':pct(tr)],['月の合計は '+pct(caps.total)+' 以内に収める','']])
+    +'<div class="today-note">上限は4つのものさしの足し算です：店舗用の製造額×'+pct(caps.production)+'、催事向けの製造額×'+pct(caps.production)+'、店舗売上×'+pct(caps.storeSales)+'、催事売上×'+pct(caps.eventSales)+'。工房では催事向けの商品も作るため、製造分はすべて店舗の人件費の上限に入れています。人ごとには分けていません。</div></div>';
   return '<div class="today-grid">'+laborCard+prodCard+rateCard+'</div>';
 }
 function todayOneLiners(m){
   const lines=[],s=m.store,e=m.event,c=m.combined,p=m.production;
   const sales=(name,part,isEvent)=>{if(isEvent&&part.venues===0)return name+'：今日は催事はありません。';if(isEvent&&m.today&&!part.reportDone)return name+'の売上は、日報の入力を待っています（今日の予算 '+yenFull(part.target)+'）。';if(part.diff==null)return name+'：予算は設定されていません。';return name+'の売上は '+yenFull(part.sales)+'、予算より '+(part.diff>=0?yenFull(part.diff)+' 上回り':yenFull(-part.diff)+' 下回り')+(m.today&&part.diff<0?'（営業中）':'')+'。'};
   lines.push(sales('店舗',s,false),sales('催事',e,true));
-  if(!p.available)lines.push('人件費は合計 '+yenFull(c.labor)+'（製造実績を取得できないため、率は未計算）。');
-  else if(!(p.value>0))lines.push('人件費は合計 '+yenFull(c.labor)+'（店舗 '+yenFull(s.labor)+'＋催事の販売員 '+yenFull(e.labor)+'）。製造実績の入力待ちのため、率は未計算です。');
-  else lines.push('人件費は合計 '+yenFull(c.labor)+'（店舗 '+yenFull(s.labor)+'＋催事の販売員 '+yenFull(e.labor)+'）。製造実績 '+yenFull(p.value)+' に対する人件費率は '+pct(c.rate)+'で、目標 '+pct(m.rate)+' より '+(c.gap>=0?yenFull(c.gap)+' 収まっています':yenFull(-c.gap)+' オーバーしています'+(m.today?'（営業中のため、製造実績が入ると下がります）':''))+'。');
+  const capsN=m.caps,storeCapN=p.value*capsN.production/100+s.sales*capsN.storeSales/100;
+  if(!p.available)lines.push('人件費は合計 '+yenFull(c.labor)+'（製造実績を取得できないため、店舗の上限は未計算）。');
+  else if(!(p.value>0))lines.push('人件費は合計 '+yenFull(c.labor)+'（店舗 '+yenFull(s.labor)+'＋催事の販売員 '+yenFull(e.labor)+'）。製造実績の入力待ちのため、店舗の上限は未計算です。');
+  else lines.push('店舗の人件費 '+yenFull(s.labor)+' は、上限の目安 '+yenFull(Math.round(storeCapN))+'（製造額×'+pct(capsN.production)+'＋店舗売上×'+pct(capsN.storeSales)+'）より '+(storeCapN-s.labor>=0?yenFull(storeCapN-s.labor)+' 少なく収まっています。':yenFull(s.labor-storeCapN)+' 多く、オーバーです。'));
+  if(e.venues>0&&e.sales>0&&e.labor>0)lines.push('催事の販売員費 '+yenFull(e.labor)+' は催事売上の '+pct(e.labor/e.sales*100)+'（目標 '+pct(capsN.eventSales)+'、'+pct(capsN.eventSalesLoss)+' を超えると赤字）。');
+  if(c.sales>0)lines.push('全体の人件費 '+yenFull(c.labor)+' は総売上の '+pct(c.rate)+'（目標 '+pct(capsN.total)+'）。');
   return lines.map(line=>'<li>'+safe(line)+'</li>').join('');
 }
 function monthChartFrame(latest){const parts=latest.split('-').map(Number);const year=parts[0],month=parts[1],days=new Date(year,month,0).getDate();const w=900,h=280,left=54,right=18,top=18,bottom=48,plotW=w-left-right,baseY=h-bottom;const x=day=>left+(day-1)*plotW/Math.max(days-1,1);const weekdays=['日','月','火','水','木','金','土'];let labels='';for(let day=1;day<=days;day++){labels+='<text class="chart-label" text-anchor="middle" x="'+x(day)+'" y="'+(baseY+17)+'">'+day+'</text><text class="chart-label" text-anchor="middle" x="'+x(day)+'" y="'+(baseY+31)+'">'+weekdays[new Date(year,month-1,day).getDay()]+'</text>'}return {year,month,days,w,h,left,right,top,bottom,plotW,baseY,x,labels}}
 function monthGrid(f,max){let grid='';for(let i=0;i<4;i++){const gy=f.top+i*(f.baseY-f.top)/3;grid+='<line class="chart-grid" x1="'+f.left+'" y1="'+gy+'" x2="'+(f.w-f.right)+'" y2="'+gy+'"/><text class="chart-label" text-anchor="end" x="'+(f.left-7)+'" y="'+(gy+3)+'">'+Math.round(max*(3-i)/3/10000)+'万</text>'}return grid}
 function laborProductionChart(){
-  const d=state.data,rows=d.daily||[],prod=d.production,board=d.todayBoard||{},rate=Number(board.laborRateTarget??25),dailyRate=Number(board.eventStaffDailyRate||0);
+  const d=state.data,rows=d.daily||[],prod=d.production,board=d.todayBoard||{},rate=Number(board.laborRateTarget??25),dailyRate=Number(board.eventStaffDailyRate||0),caps=board.laborCaps||{production:11,storeSales:14,eventSales:13,total:25};
   const latest=String((rows.at(-1)||{}).date||'');if(!latest)return '';
   if(!prod)return '<section class="panel section-gap"><div class="empty">製造表を読み取れなかったため、人件費と製造実績のグラフを表示できません</div></section>';
   const f=monthChartFrame(latest),{goal}=todayRefsCache(latest),goalByDate=Object.fromEntries(((goal&&goal.daily)||[]).map(item=>[item.date,item]));
   const today=String(d.updatedAt||'').slice(0,10)===latest,prodByDate=Object.fromEntries((prod.daily||[]).map(item=>[item.date,item])),byDate=Object.fromEntries(rows.map(row=>[row.date,row]));
   // 今日の製造実績がまだ入っていないときは、今日を除く（人件費だけ数えて率が跳ね上がるのを防ぐ）
   const lastDay=Number(latest.slice(8))-(today&&!((prodByDate[latest]||{}).value>0)?1:0);
-  const storeCum=[],totalCum=[],allowed=[];let store=0,event=0,production=0;
+  const storeCum=[],totalCum=[],allowed=[];let store=0,event=0,production=0,storeSales=0,eventSales=0;
   for(let day=1;day<=Math.min(lastDay,f.days);day++){
     const date=latest.slice(0,8)+String(day).padStart(2,'0');
     const gd=goalByDate[date]||{};
-    store+=Number((byDate[date]||{}).storeLabor)||0;event+=Number(gd.staffedEventCount??gd.eventCount??0)*dailyRate;production+=Number((prodByDate[date]||{}).value)||0;
-    storeCum.push({day,value:store});totalCum.push({day,value:store+event});allowed.push({day,value:production*rate/100});
+    store+=Number((byDate[date]||{}).storeLabor)||0;event+=Number(gd.staffedEventCount??gd.eventCount??0)*dailyRate;production+=Number((prodByDate[date]||{}).value)||0;storeSales+=Number((byDate[date]||{}).storeSales)||0;eventSales+=Number((byDate[date]||{}).eventSales)||0;
+    storeCum.push({day,value:store});totalCum.push({day,value:store+event});allowed.push({day,value:production*caps.production/100+storeSales*caps.storeSales/100+eventSales*caps.eventSales/100});
   }
   if(!totalCum.length)return '';
   const max=Math.max(...totalCum.map(point=>point.value),...allowed.map(point=>point.value),1)*1.08,y=value=>f.baseY-value/max*(f.baseY-f.top);
   const line=points=>points.map(point=>f.x(point.day)+','+y(point.value)).join(' ');
   const band=(upper,lower)=>'M '+upper.map(point=>f.x(point.day)+' '+y(point.value)).join(' L ')+' L '+lower.slice().reverse().map(point=>f.x(point.day)+' '+y(point.value)).join(' L ')+' Z';
   const floor=storeCum.map(point=>({day:point.day,value:0}));
-  const gap=allowed.at(-1).value-totalCum.at(-1).value,ratio=production>0?(store+event)/production*100:null;
+  const gap=allowed.at(-1).value-totalCum.at(-1).value,ratio=(storeSales+eventSales)>0?(store+event)/(storeSales+eventSales)*100:null;
   const marker='<circle class="pace-latest" cx="'+f.x(totalCum.at(-1).day)+'" cy="'+y(totalCum.at(-1).value)+'" r="5"><title>'+totalCum.at(-1).day+'日 累積人件費 '+yenFull(store+event)+'</title></circle>';
-  return '<section class="panel section-gap"><div class="panel-head"><h3>'+f.month+'月 人件費の進み具合（店舗＋催事の販売員を合算・製造実績と比較）</h3><div class="legend pace-legend"><span>'+swatch(LABOR_COLORS.store,'店舗の人件費（打刻）')+'</span><span>'+swatch(LABOR_COLORS.event,'催事の販売員（日割り）')+'</span><span><i class="target"></i>上限の目安（累積の製造実績×'+pct(rate)+'）</span></div></div><div class="pace-metrics"><div class="pace-metric"><span>人件費の合計</span><strong>'+yenAbs(store+event)+'</strong></div><div class="pace-metric"><span>製造実績（作った数×売価）</span><strong>'+yenAbs(production)+'</strong></div><div class="pace-metric"><span>人件費率（目標 '+pct(rate)+'）</span><strong class="'+(ratio!=null&&ratio<=rate?'positive':'negative')+'">'+pct(ratio)+'</strong></div><div class="pace-metric"><span>上限の目安との差</span><strong class="'+(gap>=0?'positive':'negative')+'">'+(gap>=0?'収まり ':'オーバー ')+yenAbs(Math.abs(gap))+'</strong></div></div><svg class="pace-chart" viewBox="0 0 '+f.w+' '+f.h+'" role="img" aria-label="'+f.month+'月の累積人件費の内訳と、製造実績から見た上限の目安">'+monthGrid(f,max)+'<path d="'+band(storeCum,floor)+'" fill="'+LABOR_COLORS.store+'" fill-opacity=".55"/><path d="'+band(totalCum,storeCum)+'" fill="'+LABOR_COLORS.event+'" fill-opacity=".6"/><polyline class="pace-target-line" points="'+line(allowed)+'"/><polyline class="pace-actual-line" points="'+line(totalCum)+'"/>'+marker+f.labels+'</svg><div class="pace-foot">青い面が店舗の人件費、その上の金色が催事の販売員の人件費です。全体の高さ（人件費の合計）が点線（上限の目安）より下なら、目標の人件費率に収まっています。店舗の人件費には翌日以降の催事用商品をつくる人員が含まれるため、売上ではなく製造実績と比べています。'+(lastDay<Number(latest.slice(8))?'今日は製造実績の入力待ちのため、前日までの表示です。':'')+'</div></section>';
+  return '<section class="panel section-gap"><div class="panel-head"><h3>'+f.month+'月 人件費の進み具合（店舗＋催事の販売員を合算・上限の目安と比較）</h3><div class="legend pace-legend"><span>'+swatch(LABOR_COLORS.store,'店舗の人件費（打刻）')+'</span><span>'+swatch(LABOR_COLORS.event,'催事の販売員（日割り）')+'</span><span><i class="target"></i>上限の目安（製造額×'+pct(caps.production)+'＋店舗売上×'+pct(caps.storeSales)+'＋催事売上×'+pct(caps.eventSales)+'）</span></div></div><div class="pace-metrics"><div class="pace-metric"><span>人件費の合計</span><strong>'+yenAbs(store+event)+'</strong></div><div class="pace-metric"><span>製造実績（作った数×売価）</span><strong>'+yenAbs(production)+'</strong></div><div class="pace-metric"><span>全体の人件費 ÷ 総売上（目標 '+pct(caps.total)+'）</span><strong class="'+(ratio!=null&&ratio<=caps.total?'positive':'negative')+'">'+pct(ratio)+'</strong></div><div class="pace-metric"><span>上限の目安との差</span><strong class="'+(gap>=0?'positive':'negative')+'">'+(gap>=0?'収まり ':'オーバー ')+yenAbs(Math.abs(gap))+'</strong></div></div><svg class="pace-chart" viewBox="0 0 '+f.w+' '+f.h+'" role="img" aria-label="'+f.month+'月の累積人件費の内訳と、製造実績から見た上限の目安">'+monthGrid(f,max)+'<path d="'+band(storeCum,floor)+'" fill="'+LABOR_COLORS.store+'" fill-opacity=".55"/><path d="'+band(totalCum,storeCum)+'" fill="'+LABOR_COLORS.event+'" fill-opacity=".6"/><polyline class="pace-target-line" points="'+line(allowed)+'"/><polyline class="pace-actual-line" points="'+line(totalCum)+'"/>'+marker+f.labels+'</svg><div class="pace-foot">青い面が店舗の人件費、その上の金色が催事の販売員の人件費です。全体の高さ（人件費の合計）が点線（上限の目安＝製造額×'+pct(caps.production)+'＋店舗売上×'+pct(caps.storeSales)+'＋催事売上×'+pct(caps.eventSales)+'）より下なら収まっています。工房では催事向けの商品も作るため、製造分は売上ではなく製造額で見ています。'+(lastDay<Number(latest.slice(8))?'今日は製造実績の入力待ちのため、前日までの表示です。':'')+'</div></section>';
 }
 function productionBreakdownChart(){
   const d=state.data,prod=d.production,rows=d.daily||[],latest=String((rows.at(-1)||{}).date||'');if(!prod||!latest)return '';

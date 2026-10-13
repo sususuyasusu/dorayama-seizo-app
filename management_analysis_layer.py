@@ -61,6 +61,12 @@ EVENT_STAFF_DAILY_RATE = {
     "sourceLabel": "ディースパーク8月度請求書（川越3日111,000円・立川12日444,000円・上野31日1,147,000円＝各会場とも1日37,000円・税抜）",
 }
 
+# 人件費の上限（目安）の出し方（2026-10-13 本人決定・人では分けない）:
+#   店舗の打刻人件費 ≦ 製造額（店舗用＋催事向け）×11% ＋ 店舗売上×14%
+#   催事販売員費   ≦ 催事売上（会場で売れた額）×13%（18%超は赤字）
+#   全体           ≦ 総売上（店舗＋催事）×25%
+# 4つの上限を足すと、4〜9月の売上と製造額ではちょうど総売上の25%になる率。
+LABOR_CAPS = {"production": 11.0, "storeSales": 14.0, "eventSales": 13.0, "eventSalesLoss": 18.0, "total": 25.0}
 FLASH_ACCURACY_PATH = BASE / "data" / "flash_accuracy_2026.json"
 SEGMENT_PL_PATH = BASE / "data" / "segment_pl_2026.json"   # 店舗／催事の月次PL（build_kanri_kaikei_pl.pyが作成）
 FLASH_STAFFING_RATE_MONTHS = 3
@@ -905,6 +911,7 @@ def get_management_analysis():
             "eventStaffDailyRate": EVENT_STAFF_DAILY_RATE["amountExTax"],
             "eventStaffRateSource": EVENT_STAFF_DAILY_RATE["sourceLabel"],
             "laborRateTarget": goal_settings["rates"]["labor"],
+            "laborCaps": LABOR_CAPS,
             "storeLaborSource": "Airシフト給与計算表（打刻実績）＋タイミー",
         },
         "pnlLines": lines,

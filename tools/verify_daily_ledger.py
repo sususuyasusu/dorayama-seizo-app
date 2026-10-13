@@ -348,12 +348,13 @@ def verify_management_analysis():
     assert brief["date"] == "2026-09-20" and brief["complete"] is True
     # LINEの文面は短く：数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉のみ（率だけの「目標内」判定は撤去）
     # 人件費は当日売上でなく、その日の製造実績（作った数×売価）と比べる。文面にも比較先の金額を出す
-    # 人件費は2つの物差し（2026-10-13本人決定・どちらも目標25%）：①全体÷総売上 ②店舗÷製造実績
+    # 人件費の上限は4つのものさしの足し算（2026-10-13本人決定）：店舗≦製造×11%＋店舗売上×14%／販売員≦催事売上×13%／全体≦総売上×25%
     assert "人件費 57,000円（店舗20,000円＋催事37,000円）" in brief["text"]
-    assert "①全体÷売上 150,200円　😥かなり多め（37.9%／目標25%）" in brief["text"]
-    assert "②店舗÷製造 400,000円　😊ちょうどよい（5.0%／目標25%）" in brief["text"] and "目標内" not in brief["text"]
+    assert "店舗 20,000円／上限 44,028円　😊収まり（製造×11%＋店舗売上×14%）" in brief["text"]
+    assert "催事販売員 37,000円／上限 19,500円　😥赤字（24.7%／目標13%・18%超は赤字）" in brief["text"]
+    assert "全体÷売上 150,200円　😥かなり多め（37.9%／目標25%）" in brief["text"] and "目標内" not in brief["text"]
     assert "✅ 店舗 200円（＋100円）" in brief["text"]
-    # 一日全体の一言まとめ（headline）：①全体÷売上が目標を10ポイント超 → 踏ん張りどころ
+    # 一日全体の一言まとめ（headline）：販売員費が目標13%を10ポイント超 → 踏ん張りどころ
     assert "😥 踏ん張りどころ" in brief["text"]
     # 月間の人件費率は本人指示(2026-09-22)により売上比で見る（日々の判定は製造実績比のまま）
     assert "9月ここまで 売上150,200円（▲69,900円）　😥人件費かなり多め（37.9%）" in brief["text"]
@@ -367,11 +368,12 @@ def verify_management_analysis():
     import brief_html
     block = brief_html.render_block(brief["data"])
     assert "昨日の速報" in block and "200円" in block and "57,000円" in block
-    assert "①全体の人件費 ÷ 総売上" in block and "37.9%" in block and "目標超過" in block
-    assert "②店舗の人件費 ÷ 製造実績" in block and "5.0%" in block and "目標内" in block
+    assert "① 店舗の人件費 ÷ 上限" in block and "44,028円" in block and "収まり" in block
+    assert "② 催事の販売員費 ÷ 催事売上" in block and "24.7%" in block and "赤字" in block
+    assert "③ 全体の人件費 ÷ 総売上" in block and "37.9%" in block and "目標超過" in block
     assert block.count("<svg") == 2 and "売上の進み" in block and "人件費の進み" in block
     assert brief["data"]["charts"]["sales"]["actual"][-1] == 150200  # 9/20までの売上累積（店舗200＋催事150,000）は月初からの合計
-    assert brief["data"]["charts"]["labor"]["allowed"][-1] == 100000  # 製造実績400,000×25%
+    assert brief["data"]["charts"]["labor"]["allowed"][-1] == 63528  # 製造400,000×11%＋店舗売上200×14%＋催事売上150,000×13%
     fake["production"] = None  # 製造表を読み取れなかった場合は「入力待ち」ではなく、読めなかった旨を書く（別の言葉で区別）
     unreadable = daily_brief.build_brief(fake)
     assert "製造実績を読めず判定なし" in unreadable["text"] and "製造実績待ちで判定なし" not in unreadable["text"]
