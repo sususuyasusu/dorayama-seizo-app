@@ -212,25 +212,21 @@ function todayLaborCards(m){
   const laborCard='<div class="today-card"><h4>人件費（店舗＋催事の販売員）</h4><div class="num">'+yenFull(c.labor)+'</div><div class="sub">店舗は打刻した勤務、催事は日割り</div>'+stackBar([{value:m.store.labor,color:LABOR_COLORS.store,label:'店舗の人件費'},{value:m.event.labor,color:LABOR_COLORS.event,label:'催事の販売員'}])+rows([[swatch(LABOR_COLORS.store,'店舗（打刻・Airシフト）'),yenFull(m.store.labor)],[swatch(LABOR_COLORS.event,'催事の販売員（ディースパーク日割り'+(m.event.laborVenues?'：'+yenFull(m.dailyRate)+'×'+m.event.laborVenues+'会場':'')+'）'),yenFull(m.event.labor)]])+'</div>';
   const prodCard=!p.available?'<div class="today-card"><h4>製造実績</h4><div class="num">—</div><div class="sub">製造表を読み取れませんでした</div><div style="font-size:12px;line-height:1.7">時間をおいて開き直してください。</div></div>'
     :'<div class="today-card"><h4>製造実績（作った数×売価）</h4><div class="num">'+yenFull(p.value)+'</div><div class="sub">'+p.pieces.toLocaleString('ja-JP')+'個'+(m.today?'（今日は入力途中）':'')+'</div>'+stackBar(Object.entries(p.blocks).map(([name,item])=>({value:item.value,color:blockColor(name,p.names),label:name})))+(Object.keys(p.blocks).length?rows(Object.entries(p.blocks).map(([name,item])=>{const sus=prodSuspect(m.date,name,item.pieces);return [swatch(blockColor(name,p.names),name)+(sus?' <span style="color:var(--gold)" title="直近の平均'+sus.toLocaleString('ja-JP')+'個。在庫で回した日か、製造実績の入力漏れ">少なめ</span>':''),yenFull(item.value)+'（'+item.pieces.toLocaleString('ja-JP')+'個）']})):'<div style="font-size:12px;color:var(--muted);margin-top:8px">まだ製造実績が入っていません。</div>')+'</div>';
-  // 2026-10-13 本人ルール: 店舗の人件費は製造実績、催事の人件費は催事ごとの売上で見る。全体は製造実績と総売上の両方で見る
-  const pv=Number(p.value||0),sl=Number(m.store.labor||0),el=Number(m.event.labor||0),tl=sl+el,ss=Number(m.store.sales||0),es=Number(m.event.sales||0),ts=ss+es;
-  const ratio=(a,b)=>b>0?a/b*100:null,storeRate=ratio(sl,pv),allowed=Math.round(pv*Number(m.rate||0)/100),gap=allowed-sl;
-  let cls,text,line;
-  if(!p.available){cls='v-none';text='製造実績が取得できません';line='製造実績が分かるまで判定できません。'}
-  else if(!(pv>0)){cls='v-wait';text='製造実績の入力待ち';line='製造実績が入ると、人件費率が計算されます。'}
-  else if(gap>=0){cls='v-good';text='目安に収まっています';line='店舗の人件費は、製造実績から見た上限より '+yenFull(gap)+' 少なく収まっています。'}
-  else if(m.today){cls='v-wait';text='営業中（途中経過）';line='いまの時点では上限を '+yenFull(-gap)+' 超えています。製造実績が入ると率は下がります。'}
-  else{cls='v-bad';text='目安をオーバーしました';line='店舗の人件費が、製造実績から見た上限を '+yenFull(-gap)+' 超えています。'}
-  const venues=((m.event.venueSales)||[]).filter(v=>v.sales>0),rate1=Number(m.dailyRate||0);
-  const venueRows=venues.map(v=>['　'+safe(v.name)+'（販売員 '+yenFull(rate1)+'）',pct(ratio(rate1,v.sales))+'<small style="color:var(--muted);font-weight:400"> ／売上 '+yenFull(v.sales)+'</small>']);
-  const sub=(label,a,b)=>[label,(ratio(a,b)==null?'—':pct(ratio(a,b)))+'<small style="color:var(--muted);font-weight:400"> ／'+yenFull(a)+'÷'+yenFull(b)+'</small>'];
-  const rateCard='<div class="today-card"><h4>人件費率（店舗は製造実績・催事は催事売上と比べる）</h4><div class="num">'+(storeRate==null?'—':pct(storeRate))+'</div><div class="sub">店舗の人件費 ÷ 製造実績　目標 '+pct(m.rate)+'</div><span class="today-verdict '+cls+'">'+text+'</span><div style="font-size:12px;line-height:1.7">'+safe(line)+'</div>'
-    +rows([['製造実績から見た店舗人件費の上限（目安）',yenFull(allowed)],['店舗の人件費（打刻・Airシフト）',yenFull(sl)],['差（＋は収まり／▲はオーバー）',(gap>=0?'＋':'▲')+yenFull(Math.abs(gap))]])
-    +'<div style="margin-top:10px;font-size:11px;font-weight:800;color:var(--muted)">催事の人件費 ÷ 催事の売上</div>'
-    +rows([sub('催事の販売員 ÷ 催事売上',el,es)].concat(venueRows))
-    +'<div style="margin-top:10px;font-size:11px;font-weight:800;color:var(--muted)">全体（店舗＋催事の人件費 '+yenFull(tl)+'）</div>'
-    +rows([sub('全体の人件費 ÷ 製造実績',tl,pv),sub('全体の人件費 ÷ 総売上（店舗＋催事）',tl,ts)])
-    +'<div class="today-note">店舗の人件費には、翌日以降の催事用の商品をつくる人員が含まれるため、その日の売上ではなく製造実績と比べます。催事の販売員は製造に関わらないので、その催事の売上と比べます。催事販売員の目安率は未設定です。</div></div>';
+  // 2026-10-13 本人決定: 人件費は2つの物差しで見る。①全体の人件費÷総売上（店舗＋催事）②店舗の人件費÷製造実績。どちらも目標25%
+  const pv=Number(p.value||0),sl=Number(m.store.labor||0),el=Number(m.event.labor||0),tl=sl+el,ts=Number(m.store.sales||0)+Number(m.event.sales||0),target=Number(m.rate||25);
+  const judge=(labor,base,baseName,waitText)=>{
+    if(!(base>0))return {rate:null,cls:'v-wait',text:waitText,line:baseName+'が入ると計算されます。',allowed:null,gap:null};
+    const rate=labor/base*100,allowed=Math.round(base*target/100),gap=allowed-labor;
+    if(gap>=0)return {rate,cls:'v-good',text:'目安に収まっています',line:'上限の目安より '+yenFull(gap)+' 少なく収まっています。',allowed,gap};
+    if(m.today)return {rate,cls:'v-wait',text:'営業中（途中経過）',line:'いまの時点では上限を '+yenFull(-gap)+' 超えています。',allowed,gap};
+    return {rate,cls:'v-bad',text:'目安をオーバーしました',line:'上限の目安を '+yenFull(-gap)+' 超えています。',allowed,gap};
+  };
+  const a=judge(tl,ts,'売上','売上の入力待ち'),b=!p.available?{rate:null,cls:'v-none',text:'製造実績が取得できません',line:'製造実績が分かるまで判定できません。',allowed:null,gap:null}:judge(sl,pv,'製造実績','製造実績の入力待ち');
+  const block=(title,j,laborName,labor,baseName,base)=>'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-size:12px;font-weight:800">'+title+'</div><div class="num" style="font-size:30px">'+(j.rate==null?'—':pct(j.rate))+'</div><div class="sub">目標 '+pct(target)+'</div><span class="today-verdict '+j.cls+'">'+j.text+'</span><div style="font-size:12px;line-height:1.7">'+safe(j.line)+'</div>'+rows([[laborName,yenFull(labor)],[baseName,yenFull(base)],['上限の目安（'+baseName.replace(/（.*）/,'')+'×'+pct(target)+'）',j.allowed==null?'—':yenFull(j.allowed)],['差（＋は収まり／▲はオーバー）',j.gap==null?'—':(j.gap>=0?'＋':'▲')+yenFull(Math.abs(j.gap))]])+'</div>';
+  const rateCard='<div class="today-card"><h4>人件費率（2つの物差し）</h4>'
+    +block('① 全体の人件費 ÷ 総売上（店舗＋催事）',a,'全体の人件費（店舗＋催事の販売員）',tl,'総売上（店舗＋催事）',ts)
+    +block('② 店舗の人件費 ÷ 製造実績',b,'店舗の人件費（打刻・Airシフト）',sl,'製造実績（作った数×売価）',pv)
+    +'<div class="today-note">①は会社全体で売上に対して人件費が見合っているか。②は工房の人件費が、作った量に見合っているか（店舗の人件費には翌日以降の催事用の商品をつくる人員も含まれるため、売上ではなく製造実績と比べます）。</div></div>';
   return '<div class="today-grid">'+laborCard+prodCard+rateCard+'</div>';
 }
 function todayOneLiners(m){

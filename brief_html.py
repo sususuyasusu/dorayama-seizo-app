@@ -115,7 +115,7 @@ def _mini_charts(data):
     legend_labor = (f'<div class="legend"><span><b style="background:{GREEN}"></b>人件費（合算）</span>'
                     f'<span><b style="background:#7aa88b"></b>うち店舗</span><span><b style="background:{RED}"></b>上限の目安</span></div>')
     return ('<div class="row r2 charts"><div class="card"><div class="lab">売上の進み（月初〜昨日）</div>' + sales_svg + legend_sales + "</div>"
-            '<div class="card"><div class="lab">人件費の進み（製造実績×目標率が上限）</div>' + labor_svg + legend_labor + "</div></div>")
+            '<div class="card"><div class="lab">店舗の人件費の進み（製造実績×目標率が上限）</div>' + labor_svg + legend_labor + "</div></div>")
 
 
 def render_block(data):
@@ -129,22 +129,27 @@ def render_block(data):
     labor_sub = f'店舗 {round(labor["store"]):,} + 催事 {round(labor["event"]):,}'
     if labor["storeMissing"]:
         labor_sub += "（店舗の打刻は取得待ち）"
+    # 2026-10-13 本人決定: ①全体の人件費÷総売上 ②店舗の人件費÷製造実績（どちらも目標25%）
+    rt = data.get("rateTotal") or {}
+    if rt.get("verdict") in ("ok", "over"):
+        cls = "ok" if rt["verdict"] == "ok" else "over"
+        total_card = (f'<div class="card"><div class="lab">①全体の人件費 ÷ 総売上</div><div class="num sm {cls}">{rt["value"]:.1f}%</div>'
+                      f'<div class="sub">目標 {rt["target"]:.0f}% / {"目標内" if cls == "ok" else "目標超過"}（総売上 {_yen(rt["sales"])}・上限の目安より {_signed(rt["gap"])}）</div></div>')
+    else:
+        total_card = (f'<div class="card"><div class="lab">①全体の人件費 ÷ 総売上</div><div class="num sm mute">未計算</div>'
+                      f'<div class="sub">目標 {rate["target"]:.0f}%（売上がそろうと計算します）</div></div>')
     if prod["state"] == "ok":
-        prod_card = (f'<div class="card"><div class="lab">製造実績</div><div class="num sm">{_yen(prod["value"])}</div>'
-                     f'<div class="sub">作った数 × 売価（{prod["pieces"]:,}個）</div></div>')
         cls = "ok" if rate["verdict"] == "ok" else "over"
         verdict = "目標内" if rate["verdict"] == "ok" else "目標超過"
-        rate_card = (f'<div class="card"><div class="lab">人件費率</div><div class="num sm {cls}">{rate["value"]:.1f}%</div>'
-                     f'<div class="sub">目標 {rate["target"]:.0f}% / {verdict}（上限の目安より {_signed(rate["gap"])}）</div></div>')
+        rate_card = (f'<div class="card"><div class="lab">②店舗の人件費 ÷ 製造実績</div><div class="num sm {cls}">{rate["value"]:.1f}%</div>'
+                     f'<div class="sub">目標 {rate["target"]:.0f}% / {verdict}（製造実績 {_yen(prod["value"])}・{prod["pieces"]:,}個・上限の目安より {_signed(rate["gap"])}）</div></div>')
     else:
-        wording = "製造表を読み取れませんでした" if prod["state"] == "unreadable" else "入力待ち"
-        prod_card = (f'<div class="card"><div class="lab">製造実績</div><div class="num sm mute">{wording}</div>'
-                     f'<div class="sub">作った数 × 売価</div></div>')
-        rate_card = (f'<div class="card"><div class="lab">人件費率</div><div class="num sm mute">未計算</div>'
-                     f'<div class="sub">目標 {rate["target"]:.0f}%（製造実績が入ると計算します）</div></div>')
+        wording = "製造表を読み取れませんでした" if prod["state"] == "unreadable" else "製造実績の入力待ち"
+        rate_card = (f'<div class="card"><div class="lab">②店舗の人件費 ÷ 製造実績</div><div class="num sm mute">未計算</div>'
+                     f'<div class="sub">目標 {rate["target"]:.0f}%（{wording}）</div></div>')
     parts.append('<div class="row r3">'
                  f'<div class="card"><div class="lab">人件費</div><div class="num sm">{_yen(labor["total"])}</div><div class="sub">{labor_sub}</div></div>'
-                 + prod_card + rate_card + "</div>")
+                 + total_card + rate_card + "</div>")
 
     if month:
         diff_class = "ok" if month["diff"] is not None and month["diff"] >= 0 else "over"

@@ -3,7 +3,7 @@
 
 画面の「今日の速報」と同じ考え方の抜粋版。
 - 売上：店舗・催事それぞれの、その日の予算との差
-- 人件費：店舗の打刻人件費＋催事の販売員（ディースパーク日割り）を合算し、その日の製造実績（作った数×売価）と比べる
+- 人件費：2つの物差しで見る（2026-10-13本人決定・どちらも目標25%）。①全体の人件費（店舗の打刻＋催事の販売員）÷総売上（店舗＋催事）②店舗の人件費÷製造実績（作った数×売価）
 - 今月ここまで：売上の目標累積との差、人件費率
 数字がそろっていない項目は、0円や「収まっている」と見せず「入力待ち／取得待ち」と書く。
 """
@@ -172,27 +172,39 @@ def build_brief(analysis, target=None):
     event_labor = staffed_venues * staff_daily
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
-    labor_diff_pt = None
     breakdown = f"（店舗{yen(store_labor)}＋催事{yen(event_labor)}）" if event_labor else ""
-    labor_part = f"人件費 {yen(labor)}{breakdown}"
+    labor_head = f"人件費 {yen(labor)}{breakdown}"
+    diffs = []
     if not store_labor:
         complete = False
         reasons.append("店舗の人件費（打刻）が取れていない")
+    # ① 全体の人件費 ÷ 総売上（店舗＋催事）
+    total_sales = store_sales + event_sales
+    sales_ready = not (event_pending or store_suspect or event_suspect) and total_sales > 0
+    if sales_ready:
+        ratio_total = labor / total_sales * 100
+        emoji, tier = _labor_tier(ratio_total - rate)
+        diffs.append(ratio_total - rate)
+        line_total = f"①全体÷売上 {yen(total_sales)}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio_total:.1f}%／目標{rate:.0f}%）"
+    else:
+        ratio_total = None
+        line_total = "①全体÷売上　売上待ちで判定なし"
+    # ② 店舗の人件費 ÷ 製造実績（店舗の人件費には翌日以降の催事用の商品をつくる人員も含まれるため、売上でなく製造実績と比べる）
     if not analysis.get("production"):
-        labor_part += "　製造実績を読めず判定なし"
+        line_store = "②店舗÷製造　製造実績を読めず判定なし"
         complete = False
         reasons.append("製造実績を読み込めていない")
     elif not prod or not prod.get("value"):
-        labor_part += "　製造実績待ちで判定なし"
+        line_store = "②店舗÷製造　製造実績待ちで判定なし"
         complete = False
         reasons.append("製造実績が未入力")
     else:
-        # 人件費は、その日の店舗人時＋翌日以降の催事仕込み分も含むため、当日の売上でなく
-        # 「その日作った商品の金額（製造実績）」と比べる（＝人件費率）。
-        ratio = labor / prod["value"] * 100
-        labor_diff_pt = ratio - rate
-        emoji, tier = _labor_tier(labor_diff_pt)
-        labor_part = f"人件費 {yen(labor)}{breakdown}／製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio:.1f}%／目標{rate:.0f}%）"
+        ratio_store = store_labor / prod["value"] * 100
+        emoji, tier = _labor_tier(ratio_store - rate)
+        diffs.append(ratio_store - rate)
+        line_store = f"②店舗÷製造 {yen(prod['value'])}　{emoji}{_LABOR_TIER_LABEL[tier]}（{ratio_store:.1f}%／目標{rate:.0f}%）"
+    labor_diff_pt = max(diffs) if diffs else None
+    labor_part = labor_head + "\n" + line_total + "\n" + line_store
 
     day_target_total = store_target + event_target
     day_actual_total = store_sales + event_sales
@@ -297,8 +309,12 @@ def build_brief(analysis, target=None):
         total_value = sum(item["value"] for item in prod.get("blocks", {}).values()) or prod["value"]
         blocks = [{"name": name, "value": item["value"], "share": item["value"] / total_value * 100}
                   for name, item in sorted(prod.get("blocks", {}).items(), key=lambda kv: -kv[1]["value"])]
-    rate_value = labor / prod["value"] * 100 if prod_state == "ok" else None
+    # ② 店舗の人件費 ÷ 製造実績（rate）と ① 全体の人件費 ÷ 総売上（rateTotal）
+    rate_value = store_labor / prod["value"] * 100 if prod_state == "ok" else None
     allowed_value = prod["value"] * rate / 100 if prod_state == "ok" else None
+    total_ready = event_state == "ok" or venues == 0
+    total_ready = total_ready and not store_suspect and (store_sales + event_sales) > 0
+    total_allowed = (store_sales + event_sales) * rate / 100 if total_ready else None
     month = None
     if month_dates:
         month = {
@@ -350,8 +366,12 @@ def build_brief(analysis, target=None):
         "production": {"state": prod_state, "value": prod["value"] if prod_state == "ok" else 0,
                        "pieces": prod.get("pieces", 0) if prod_state == "ok" else 0, "blocks": blocks},
         "rate": {"value": rate_value, "target": rate, "allowed": allowed_value,
-                 "gap": allowed_value - labor if prod_state == "ok" else None,
-                 "verdict": "unknown" if prod_state != "ok" else ("ok" if labor <= allowed_value else "over")},
+                 "gap": allowed_value - store_labor if prod_state == "ok" else None,
+                 "verdict": "unknown" if prod_state != "ok" else ("ok" if store_labor <= allowed_value else "over")},
+        "rateTotal": {"value": labor / (store_sales + event_sales) * 100 if total_ready else None, "target": rate,
+                      "sales": store_sales + event_sales, "allowed": total_allowed,
+                      "gap": total_allowed - labor if total_ready else None,
+                      "verdict": "unknown" if not total_ready else ("ok" if labor <= total_allowed else "over")},
         "month": month,
         "charts": charts,
     }

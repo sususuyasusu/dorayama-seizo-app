@@ -348,11 +348,13 @@ def verify_management_analysis():
     assert brief["date"] == "2026-09-20" and brief["complete"] is True
     # LINEの文面は短く：数字を普段扱わないスタッフにも伝わるよう、判定は絵文字＋短い言葉のみ（率だけの「目標内」判定は撤去）
     # 人件費は当日売上でなく、その日の製造実績（作った数×売価）と比べる。文面にも比較先の金額を出す
-    assert "人件費 57,000円（店舗20,000円＋催事37,000円）／製造 400,000円" in brief["text"]
-    assert "14.2%" in brief["text"] and "ちょうどよい" in brief["text"] and "目標内" not in brief["text"]
+    # 人件費は2つの物差し（2026-10-13本人決定・どちらも目標25%）：①全体÷総売上 ②店舗÷製造実績
+    assert "人件費 57,000円（店舗20,000円＋催事37,000円）" in brief["text"]
+    assert "①全体÷売上 150,200円　😥かなり多め（37.9%／目標25%）" in brief["text"]
+    assert "②店舗÷製造 400,000円　😊ちょうどよい（5.0%／目標25%）" in brief["text"] and "目標内" not in brief["text"]
     assert "✅ 店舗 200円（＋100円）" in brief["text"]
-    # 一日全体の一言まとめ（headline）：この日は売上未達・人件費は良好 → 中間判定
-    assert "🙂 まずまず" in brief["text"]
+    # 一日全体の一言まとめ（headline）：①全体÷売上が目標を10ポイント超 → 踏ん張りどころ
+    assert "😥 踏ん張りどころ" in brief["text"]
     # 月間の人件費率は本人指示(2026-09-22)により売上比で見る（日々の判定は製造実績比のまま）
     assert "9月ここまで 売上150,200円（▲69,900円）　😥人件費かなり多め（37.9%）" in brief["text"]
     fake["daily"][0]["eventRows"] = 0
@@ -365,7 +367,8 @@ def verify_management_analysis():
     import brief_html
     block = brief_html.render_block(brief["data"])
     assert "昨日の速報" in block and "200円" in block and "57,000円" in block
-    assert "人件費率" in block and "14.2%" in block and "目標内" in block
+    assert "①全体の人件費 ÷ 総売上" in block and "37.9%" in block and "目標超過" in block
+    assert "②店舗の人件費 ÷ 製造実績" in block and "5.0%" in block and "目標内" in block
     assert block.count("<svg") == 2 and "売上の進み" in block and "人件費の進み" in block
     assert brief["data"]["charts"]["sales"]["actual"][-1] == 150200  # 9/20までの売上累積（店舗200＋催事150,000）は月初からの合計
     assert brief["data"]["charts"]["labor"]["allowed"][-1] == 100000  # 製造実績400,000×25%
