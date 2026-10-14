@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-13",
+ "generatedAt": "2026-10-15",
  "source": "製造表の週タブ「実績」列（作った数）× 商品ごとの平均売価（Airメイト商品別実績・税込）",
  "months": [
   {
@@ -236,29 +236,29 @@
   },
   {
    "month": "2026-10",
-   "total": 5189039,
-   "store": 944438,
-   "event": 4244601,
-   "storeShare": 0.182,
+   "total": 5667498,
+   "store": 1062710,
+   "event": 4604788,
+   "storeShare": 0.1875,
    "blocks": {
     "上野": {
-     "value": 1961083,
-     "pieces": 4974
+     "value": 2321270,
+     "pieces": 5903
     },
     "池袋東武": {
      "value": 1254224,
      "pieces": 3412
     },
     "店舗用": {
-     "value": 944438,
-     "pieces": 2474
+     "value": 1062710,
+     "pieces": 2778
     },
     "松坂屋上野": {
      "value": 1029294,
      "pieces": 2690
     }
    },
-   "days": 13,
+   "days": 15,
    "missingWeeks": []
   }
  ]
