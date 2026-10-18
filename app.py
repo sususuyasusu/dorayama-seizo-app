@@ -352,6 +352,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(manual_layer.add_entry(data), ensure_ascii=False))
         elif path == "/api/manual/announce":
             self._send(200, json.dumps(manual_layer.announce(data), ensure_ascii=False))
+        elif path == "/api/send_sms":
+            self._send(200, json.dumps(
+                sms_layer.send_sms(data.get("body", ""), data.get("batch", "")),
+                ensure_ascii=False,
+            ))
         else:
             self._send(404, "{}")
 

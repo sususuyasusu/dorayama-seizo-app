@@ -851,6 +851,28 @@ function refreshBulkEggSms(root){
   btn.dataset.body=body;
   prev.textContent=body;
 }
+// ===== アマダ東京へのSMS自動送信（「発注済みにする」タップが引き金。Twilio未設定なら何もしない） =====
+function buildAutoSmsBody(box){
+  if(box.closest('.bulkorder'))return null; // 翌週まとめの行は「3便まとめて」ボタン側で1通にまとめて送る
+  if(box.dataset.kind2==='change'){
+    const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);
+    if(y===numOnly(box.dataset.origY)&&w===numOnly(box.dataset.origW))return null; // 変更なしは送らない
+  }
+  refreshEggSms(box);
+  const b=box.querySelector('.smsbtn');
+  return (b&&b.dataset.body)||null;
+}
+async function autoSmsSend(body,batch){
+  if(!body)return;
+  try{
+    const r=await fetch('/api/send_sms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:body,batch:batch})});
+    const j=await r.json();
+    if(j.disabled)return; // Twilio未設定のうちは従来どおり（手動SMS）
+    if(j.sent)eggSay('✅ アマダ東京へSMSを自動送信しました（'+batch+'）');
+    else if(j.duplicate)eggSay('同じ内容は送信済みのため再送していません（'+batch+'）');
+    else eggSay('⚠️ SMSの自動送信に失敗しました。「変更SMS」から手動で送ってください',true);
+  }catch(e){eggSay('⚠️ SMSの自動送信に失敗しました。「変更SMS」から手動で送ってください',true);}
+}
 function bindEggSms(root){
   root.querySelectorAll('.eggorder').forEach(box=>{
     box.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{saveEggEdit(box.dataset.batch,i.dataset.kind,i.value);refreshEggSms(box);}));
@@ -860,10 +882,12 @@ function bindEggSms(root){
     if(ob)ob.onclick=async()=>{
       const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);
       ob.disabled=true;ob.textContent='記録中…';
+      const smsBody=buildAutoSmsBody(box);
       try{const j=await postOrdered(box.dataset.batch,y,w);
         if(!j.ok)throw new Error(j.msg||'記録できませんでした');
         eggSay('発注済にしました：'+j.msg+'（他のスタッフの画面にも反映されます）');
-        J('/api/eggs').then(renderEgg);
+        await J('/api/eggs').then(renderEgg);
+        await autoSmsSend(smsBody,box.dataset.batch||'');
       }catch(e){ob.disabled=false;ob.textContent='発注済みにする';eggSay(e.message,true);}};
     const ou=box.querySelector('.ordundo');
     if(ou)ou.onclick=async(e)=>{e.preventDefault();
@@ -882,6 +906,9 @@ function bindBulkEggSms(root){
   if(bo)bo.onclick=async()=>{
     bo.disabled=true;bo.textContent='記録中…';
     const boxes=[...root.querySelectorAll('.bulkorder .eggorder')];
+    refreshBulkEggSms(root);
+    const _bs=root.querySelector('.bulkSms');
+    const bulkBody=(_bs&&_bs.dataset.body)||'';
     try{
       for(const box of boxes){
         const y=numOnly(box.querySelector('[data-kind="y"]').value),w=numOnly(box.querySelector('[data-kind="w"]').value);
@@ -889,7 +916,8 @@ function bindBulkEggSms(root){
         if(!j.ok)throw new Error(box.dataset.batch+'：'+(j.msg||'記録できませんでした'));
       }
       eggSay('3便とも発注済にしました（他のスタッフの画面にも反映されます）');
-      J('/api/eggs').then(renderEgg);
+      await J('/api/eggs').then(renderEgg);
+      await autoSmsSend(bulkBody,'翌週一括');
     }catch(e){bo.disabled=false;bo.textContent='3便まとめて発注済みにする';eggSay(e.message,true);}};
   const bu=root.querySelector('.bulkUnorder');
   if(bu)bu.onclick=async(e)=>{e.preventDefault();
