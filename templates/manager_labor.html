@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>店長用 人件費の枠｜どら山</title>
+<meta name="apple-mobile-web-app-title" content="人件費の枠">
+<style>
+:root{color-scheme:dark;--ink:#eee8df;--muted:#b9aea0;--page:#171512;--surface:#27231e;--surface2:#312b24;--line:#4b4237;--gold:#c29853;--green:#78aa8e;--red:#e66767;--blue:#48bfe8;--shadow:0 14px 36px rgba(0,0,0,.2)}
+*{box-sizing:border-box}html{background:var(--page)}
+body{margin:0;background:var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:rgba(23,21,18,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:16px;font-weight:700}.grow{flex:1 1 auto}.top-status{color:var(--muted);font-size:11px}
+main{max-width:1040px;margin:0 auto;padding:14px 16px 56px}
+.panel{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow)}
+.panel>h2{margin:0 0 2px;font-size:16px;font-weight:700}.lead{margin:0 0 12px;color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--surface2);border-radius:10px;padding:12px 14px}.kpi span{display:block;color:var(--muted);font-size:11px}
+.kpi strong{display:block;margin-top:4px;font-size:22px}.kpi small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.kpi.good strong{color:var(--green)}.kpi.bad strong{color:var(--red)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{position:sticky;top:0;padding:9px 10px;background:#211e1a;color:var(--muted);text-align:right;font-size:11px;white-space:nowrap}
+td{padding:9px 10px;border-top:1px solid var(--line);text-align:right;font-size:13px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr.today td{background:rgba(194,152,83,.08)}
+.good{color:var(--green)}.bad{color:var(--red)}.muted{color:var(--muted)}
+.verdict{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+.verdict.good{background:#243b30;color:var(--green)}.verdict.bad{background:#4b2c29;color:var(--red)}.verdict.wait{background:#453921;color:var(--gold)}
+.bar{height:10px;border-radius:99px;background:#181512;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;border-radius:99px;background:var(--green)}.bar i.over{background:var(--red)}
+.notes{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:12px}
+.formula{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
+.formula div{background:var(--surface2);border-radius:8px;padding:10px 12px;font-size:12px}.formula b{display:block;font-size:15px;margin-top:2px}
+</style>
+</head>
+<body>
+<header class="top"><h1>店長用 人件費の枠</h1><span class="grow"></span><span class="top-status" id="status">読み込み中…</span></header>
+<main id="main"><section class="panel"><p class="lead">データを読み込んでいます…</p></section></main>
+<script>
+const yen=v=>v==null?'—':(v<0?'▲':'')+Math.abs(Math.round(v)).toLocaleString('ja-JP')+'円';
+const signed=v=>v==null?'—':(v>=0?'＋':'▲')+Math.abs(Math.round(v)).toLocaleString('ja-JP')+'円';
+const hrs=v=>v==null?'—':v.toFixed(1)+'時間';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){
+  const d=await (await fetch('/api/manager-labor')).json();
+  const f=d.monthFrame,m=d.monthToDate,r=d.rule,today=d.daily.find(x=>x.isToday),last=[...d.daily].reverse().find(x=>!x.isToday&&x.cap!=null);
+  document.getElementById('status').textContent='最新 '+String(d.updatedAt||'').replace('T',' ').slice(0,16);
+  const used=f.storeShiftBudget>0?Math.min(m.storeLabor/f.storeShiftBudget*100,100):0;
+  const todayCard=today?'<section class="panel"><h2>今日（'+esc(today.label)+'）の枠</h2><p class="lead">営業中の途中経過。製造実績と店舗売上が入るほど枠は増えます</p><div class="kpis">'
+    +'<div class="kpi"><span>今日の枠（いまの時点）</span><strong>'+yen(today.cap)+'</strong><small>'+hrs(today.capHours)+'ぶん</small></div>'
+    +'<div class="kpi"><span>いまの店舗人件費（打刻）</span><strong>'+yen(today.storeLabor)+'</strong><small>店舗スタッフの合計</small></div>'
+    +'<div class="kpi"><span>製造額（店舗用＋催事向け）</span><strong>'+yen(today.productionValue)+'</strong><small>'+today.productionPieces.toLocaleString('ja-JP')+'個</small></div>'
+    +'<div class="kpi"><span>店舗売上</span><strong>'+yen(today.storeSales)+'</strong><small>Airレジ＋テイクイーツ</small></div></div></section>':'';
+  const rows=d.daily.map(x=>{const cls=x.verdict==='収まり'?'good':x.verdict==='オーバー'?'bad':'wait';return '<tr class="'+(x.isToday?'today':'')+'"><td>'+esc(x.label)+(x.isToday?'・今日':'')+'</td><td>'+yen(x.productionValue)+'<small class="muted"> ('+yen(x.productionStore)+'＋'+yen(x.productionEvent)+')</small></td><td>'+yen(x.storeSales)+'</td><td><b>'+yen(x.cap)+'</b></td><td>'+hrs(x.capHours)+'</td><td>'+yen(x.storeLabor)+'</td><td class="'+(x.gap==null?'muted':x.gap>=0?'good':'bad')+'">'+signed(x.gap)+'</td><td><span class="verdict '+cls+'">'+esc(x.verdict)+'</span></td></tr>'}).join('');
+  document.getElementById('main').innerHTML=
+    '<section class="panel"><h2>'+esc(d.month.label)+'の店舗シフトに使える枠</h2><p class="lead">目標どおりに売れた月は、会社全体の人件費が売上の'+r.total+'%に収まる金額です</p><div class="kpis">'
+    +'<div class="kpi"><span>今月の枠</span><strong>'+yen(f.storeShiftBudget)+'</strong><small>月 約'+f.monthHours.toLocaleString('ja-JP')+'時間（1日 '+yen(f.perDay)+'＝'+hrs(f.perDayHours)+'）</small></div>'
+    +'<div class="kpi '+(m.gap>=0?'good':'bad')+'"><span>ここまでの店舗人件費（'+m.days+'日分）</span><strong>'+yen(m.storeLabor)+'</strong><small>同じ日数の枠 '+yen(m.cap)+'（'+signed(m.gap)+'）</small></div>'
+    +'<div class="kpi '+(m.remainingBudget>=0?'':'bad')+'"><span>残りの枠（あと'+m.remainingDays+'日）</span><strong>'+yen(m.remainingBudget)+'</strong><small>1日あたり '+yen(m.remainingPerDay)+'＝'+hrs(m.remainingPerDayHours)+'</small></div></div>'
+    +'<div class="bar"><i class="'+(used>=100?'over':'')+'" style="width:'+used.toFixed(1)+'%"></i></div><div class="lead" style="margin-top:4px">今月の枠のうち '+used.toFixed(0)+'% を使いました</div>'
+    +'<div class="formula"><div>店舗目標＋催事目標<b>'+yen(f.storeTarget+f.eventTarget)+'</b></div><div>× '+r.total+'% ＝ 人件費の枠<b>'+yen(f.budgetTotal)+'</b></div><div>− 催事販売員（'+f.staffedEventDays+'会場日×'+yen(r.eventStaffDaily)+'）<b>'+yen(f.eventStaffBudget)+'</b></div><div>＝ 店舗シフトの枠<b>'+yen(f.storeShiftBudget)+'</b></div></div></section>'
+    +todayCard
+    +'<section class="panel"><h2>'+esc(d.month.label)+'の日別</h2><p class="lead">枠 ＝ 製造額×'+r.production+'%＋店舗売上×'+r.storeSales+'%。製造の多い日は枠が大きく、少ない日は小さくなります'+(last?'。直近（'+esc(last.label)+'）は'+(last.gap>=0?'枠に収まりました':'枠を '+yen(-last.gap)+' 超えました'):'')+'</p>'
+    +'<div class="table-wrap"><table><thead><tr><th>日</th><th>製造額（店舗用＋催事向け）</th><th>店舗売上</th><th>枠</th><th>時間に直すと</th><th>店舗人件費（打刻）</th><th>差</th><th>判定</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<ul class="notes">'+d.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></section>';
+}
+load().catch(e=>{document.getElementById('main').innerHTML='<section class="panel"><p class="lead">読み込めませんでした。時間をおいて開き直してください。</p></section>';document.getElementById('status').textContent='読み込み失敗'});
+</script>
+</body>
+</html>

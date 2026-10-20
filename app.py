@@ -212,6 +212,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/raw_styled":
             import sheetfmt_layer
             self._send(200, json.dumps(sheetfmt_layer.get_raw_styled(tab), ensure_ascii=False))
+        elif path == "/manager-labor" or path == "/manager-labor/":
+            # 店長向け：店舗人件費の合計と枠だけ（個人の給与・氏名は含めない）
+            self._send(200, (BASE / "templates" / "manager_labor.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
+        elif path == "/api/manager-labor":
+            import manager_labor_layer
+            self._send(200, json.dumps(manager_labor_layer.get_manager_labor(), ensure_ascii=False))
         elif path == "/nippo" or path == "/nippo/":
             # 【どら山 日報】の分析画面（社員LINEの日報を自動で読み取って経過を追う）
             self._send(200, (BASE / "templates" / "nippo.html").read_text(encoding="utf-8"),
