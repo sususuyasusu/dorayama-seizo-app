@@ -216,6 +216,10 @@ class Handler(BaseHTTPRequestHandler):
             # 店長向け：店舗人件費の合計と枠だけ（個人の給与・氏名は含めない）
             self._send(200, (BASE / "templates" / "manager_labor.html").read_text(encoding="utf-8"),
                        "text/html; charset=utf-8")
+        elif path == "/manager-labor-hr" or path == "/manager-labor-hr/":
+            # 店長（人事権あり）向け：人別の勤務時間・総支給。データは合言葉付きのPOSTでしか返さない
+            self._send(200, (BASE / "templates" / "manager_labor_hr.html").read_text(encoding="utf-8"),
+                       "text/html; charset=utf-8")
         elif path == "/api/manager-labor":
             import manager_labor_layer
             self._send(200, json.dumps(manager_labor_layer.get_manager_labor(), ensure_ascii=False))
@@ -296,6 +300,14 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/management/targets":
             result = target_settings_layer.save_target_settings(data)
             self._send(200, json.dumps(result, ensure_ascii=False))
+        elif path == "/api/manager-labor-hr":
+            # 人別の給与が出るので、店長用の合言葉（非公開シート 設定!B2）が合わないと返さない
+            import manager_hr_layer
+            ok, msg, code = manager_hr_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            self._send(200, json.dumps(manager_hr_layer.get_data(data.get("month")), ensure_ascii=False))
         elif path == "/api/seibun/analyze":
             # 合言葉が通らなければ画像認識に進まない（URLを知っているだけの人に費用を使わせない）
             ok, msg, code = seibun_layer.check_access(data.get("accessCode"))

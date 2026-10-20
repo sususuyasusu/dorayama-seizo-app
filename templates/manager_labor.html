@@ -34,7 +34,7 @@ tr.today td{background:rgba(194,152,83,.08)}
 </style>
 </head>
 <body>
-<header class="top"><h1>店長用 人件費の枠</h1><span class="grow"></span><span class="top-status" id="status">読み込み中…</span></header>
+<header class="top"><h1>店長用 人件費の枠</h1><span class="grow"></span><a href="/manager-labor-hr" style="color:var(--muted);font-size:12px;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:2px 10px">人事権あり版（合言葉）</a><span class="top-status" id="status">読み込み中…</span></header>
 <main id="main"><section class="panel"><p class="lead">データを読み込んでいます…</p></section></main>
 <script>
 const yen=v=>v==null?'—':(v<0?'▲':'')+Math.abs(Math.round(v)).toLocaleString('ja-JP')+'円';

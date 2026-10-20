@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>店長用 人件費（人事権あり版）｜どら山</title>
+<meta name="apple-mobile-web-app-title" content="人件費 人別">
+<style>
+:root{color-scheme:dark;--ink:#eee8df;--muted:#b9aea0;--page:#171512;--surface:#27231e;--surface2:#312b24;--line:#4b4237;--gold:#c29853;--green:#78aa8e;--red:#e66767;--blue:#48bfe8;--shadow:0 14px 36px rgba(0,0,0,.2)}
+*{box-sizing:border-box}html{background:var(--page)}
+body{margin:0;background:var(--page);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:rgba(23,21,18,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:16px;font-weight:700}.grow{flex:1 1 auto}.top-status{color:var(--muted);font-size:11px}
+.top a{color:var(--muted);font-size:12px;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:2px 10px}
+main{max-width:1080px;margin:0 auto;padding:14px 16px 56px}
+.panel{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow)}
+.panel>h2{margin:0 0 2px;font-size:16px;font-weight:700}.lead{margin:0 0 12px;color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--surface2);border-radius:10px;padding:12px 14px}.kpi span{display:block;color:var(--muted);font-size:11px}
+.kpi strong{display:block;margin-top:4px;font-size:22px}.kpi small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.kpi.good strong{color:var(--green)}.kpi.bad strong{color:var(--red)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th{position:sticky;top:0;padding:9px 10px;background:#211e1a;color:var(--muted);text-align:right;font-size:11px;white-space:nowrap}
+td{padding:9px 10px;border-top:1px solid var(--line);text-align:right;font-size:13px;white-space:nowrap}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+tr.staff{cursor:pointer}tr.staff:hover td{background:rgba(194,152,83,.07)}
+tr.detail td{background:#1d1a16;padding:6px 10px 10px}tr.detail table{min-width:0}tr.detail td table td{font-size:12px;padding:4px 10px;border-top:1px solid #2c2721}
+tr.total td{font-weight:700;border-top:2px solid var(--gold)}
+.good{color:var(--green)}.bad{color:var(--red)}.muted{color:var(--muted)}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#3a3128;color:var(--gold)}
+.tag.社員{background:#243b30;color:var(--green)}.tag.タイミー{background:#223844;color:var(--blue)}
+.bar{height:10px;border-radius:99px;background:#181512;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;border-radius:99px;background:var(--green)}.bar i.over{background:var(--red)}
+.stack{display:flex;height:22px;border-radius:8px;overflow:hidden;margin-top:8px;background:#181512}.stack i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px;font-size:12px;color:var(--muted)}.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.share{display:inline-block;width:70px;height:8px;background:#181512;border-radius:99px;vertical-align:middle;margin-left:6px;overflow:hidden}.share i{display:block;height:100%;background:var(--gold)}
+.months{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}.months button{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:99px;padding:4px 12px;font-size:12px;cursor:pointer}.months button.on{background:var(--gold);color:#1a1712;border-color:var(--gold);font-weight:700}
+.notes{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:12px}
+.gate{max-width:420px;margin:60px auto}.gate input{width:100%;font-size:18px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);margin-top:10px}
+.gate button{margin-top:12px;width:100%;padding:12px;border-radius:10px;border:0;background:var(--gold);color:#1a1712;font-weight:700;font-size:15px;cursor:pointer}
+.err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<header class="top"><h1>店長用 人件費（人事権あり版）</h1><span class="grow"></span><a href="/manager-labor">枠だけの画面へ</a><span class="top-status" id="status"></span></header>
+<main id="main"></main>
+<script>
+const KEY='dorayama_hr_code';
+const yen=v=>v==null?'—':(v<0?'▲':'')+Math.abs(Math.round(v)).toLocaleString('ja-JP')+'円';
+const signed=v=>v==null?'—':(v>=0?'＋':'▲')+Math.abs(Math.round(v)).toLocaleString('ja-JP')+'円';
+const hrs=v=>v==null?'—':Number(v).toLocaleString('ja-JP',{maximumFractionDigits:1})+'時間';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ROLE_COLOR={'社員':'#78aa8e','アルバイト':'#c29853','アルバイト（区分未確定）':'#a8865a','タイミー':'#48bfe8'};
+let CUR=null;
+function gate(msg){
+  document.getElementById('main').innerHTML='<section class="panel gate"><h2>合言葉</h2><p class="lead">この画面にはスタッフごとの勤務時間と総支給が出ます。店長用の合言葉を入れてください。</p><input id="code" type="password" autocomplete="off" placeholder="合言葉"><button id="go">開く</button><div class="err">'+esc(msg||'')+'</div></section>';
+  const go=()=>{const c=document.getElementById('code').value.trim();if(!c)return;localStorage.setItem(KEY,c);load()};
+  document.getElementById('go').onclick=go;document.getElementById('code').onkeydown=e=>{if(e.key==='Enter')go()};
+  document.getElementById('code').focus();
+}
+async function load(month){
+  const code=localStorage.getItem(KEY);
+  if(!code){gate('');return}
+  document.getElementById('status').textContent='読み込み中…';
+  let res;
+  try{res=await fetch('/api/manager-labor-hr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessCode:code,month:month||''})});}
+  catch(e){document.getElementById('status').textContent='読み込み失敗';return}
+  if(res.status===401){localStorage.removeItem(KEY);gate('合言葉が違います。もう一度お試しください。');document.getElementById('status').textContent='';return}
+  const d=await res.json();
+  if(d.error){document.getElementById('main').innerHTML='<section class="panel"><p class="lead">'+esc(d.error)+'</p></section>';document.getElementById('status').textContent='';return}
+  CUR=d;render(d);
+}
+function render(d){
+  const t=d.totals,f=d.frame;
+  document.getElementById('status').textContent='最終更新 '+esc(d.updatedAt||'—');
+  const months='<div class="months">'+d.months.map(m=>'<button class="'+(m===d.month.key?'on':'')+'" data-m="'+esc(m)+'">'+parseInt(m.slice(5))+'月</button>').join('')+'</div>';
+  let frameCard='',frameBar='';
+  if(f){const gap=f.storeShiftBudget-t.pay;const used=f.storeShiftBudget>0?Math.min(t.pay/f.storeShiftBudget*100,100):0;
+    frameCard='<div class="kpi '+(gap>=0?'good':'bad')+'"><span>今月の枠（店舗シフト）</span><strong>'+yen(f.storeShiftBudget)+'</strong><small>残り '+signed(gap)+'（1日あたり '+yen(f.perDay)+'）</small></div>';
+    frameBar='<div class="bar"><i class="'+(used>=100?'over':'')+'" style="width:'+used.toFixed(1)+'%"></i></div><div class="lead" style="margin-top:4px">今月の枠のうち '+used.toFixed(0)+'% を使いました（枠の出し方は「枠だけの画面」と同じ）</div>';}
+  const stack='<div class="stack">'+d.roles.map(g=>'<i style="width:'+g.share+'%;background:'+(ROLE_COLOR[g.role]||'#999')+'" title="'+esc(g.role)+' '+yen(g.pay)+'"></i>').join('')+'</div><div class="legend">'+d.roles.map(g=>'<span><b style="background:'+(ROLE_COLOR[g.role]||'#999')+'"></b>'+esc(g.role)+' '+g.people+'人 '+yen(g.pay)+'（'+g.share+'%・'+hrs(g.hours)+'）</span>').join('')+'</div>';
+  const rows=d.staff.map((s,i)=>{const det=(d.detail[s.name]||[]);
+    const detRows=det.length?'<table><thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th>労働時間</th><th>支給</th></tr></thead><tbody>'+det.map(x=>'<tr><td>'+esc(x.date.slice(5).replace('-','/'))+'</td><td>'+esc(x.start||'—')+'</td><td>'+esc(x.end||'—')+'</td><td>'+hrs(x.hours)+'</td><td>'+yen(x.pay)+'</td></tr>').join('')+'</tbody></table>':'<span class="muted">日別の明細はありません（タイミーは束のみ）</span>';
+    return '<tr class="staff" data-i="'+i+'"><td>'+(i+1)+'</td><td>'+esc(s.name)+'</td><td><span class="tag '+esc(s.role.split('（')[0])+'">'+esc(s.role)+'</span></td><td>'+s.days+'日</td><td>'+hrs(s.hours)+'<small class="muted"> (1日'+(s.hoursPerDay??'—')+'h)</small></td><td>'+(s.overtime?hrs(s.overtime):'<span class="muted">—</span>')+'</td><td><b>'+yen(s.pay)+'</b><span class="share"><i style="width:'+s.share+'%"></i></span></td><td>'+yen(s.commute)+'</td><td>'+(s.rate?yen(s.rate):'—')+'</td><td>'+(s.payPerDay?yen(s.payPerDay):'—')+'</td><td class="muted">'+esc(s.lastDate.slice(5).replace('-','/'))+'</td></tr>'
+      +'<tr class="detail" id="det'+i+'" style="display:none"><td colspan="11">'+detRows+'</td></tr>'}).join('');
+  const total='<tr class="total"><td></td><td>合計 '+t.people+'人</td><td></td><td></td><td>'+hrs(t.hours)+'</td><td></td><td>'+yen(t.pay)+'</td><td></td><td>'+(t.rate?yen(t.rate):'—')+'</td><td></td><td></td></tr>';
+  document.getElementById('main').innerHTML=
+    '<section class="panel"><h2>'+esc(d.month.label)+'の店舗人件費（人別）'+(d.month.isCurrent?' <span class="muted" style="font-size:12px">前日まで</span>':'')+'</h2><p class="lead">総支給（控除前）で見ています。手取りや控除は出ません</p>'+months
+    +'<div class="kpis" style="margin-top:12px"><div class="kpi"><span>総支給の合計</span><strong>'+yen(t.pay)+'</strong><small>'+t.people+'人（タイミーは1行）</small></div><div class="kpi"><span>労働時間の合計</span><strong>'+hrs(t.hours)+'</strong><small>時給換算 '+(t.rate?yen(t.rate):'—')+'</small></div>'+frameCard+'</div>'+frameBar
+    +'<h2 style="font-size:14px;margin-top:16px">区分ごとの内訳</h2>'+stack+'</section>'
+    +'<section class="panel"><h2>スタッフごと</h2><p class="lead">総支給の多い順。行を押すと日別の出退勤と支給が開きます</p>'
+    +'<div class="table-wrap"><table><thead><tr><th>#</th><th>氏名</th><th>区分</th><th>勤務日数</th><th>労働時間</th><th>うち残業</th><th>総支給</th><th>うち通勤</th><th>時給換算</th><th>1日あたり</th><th>最終勤務</th></tr></thead><tbody>'+rows+total+'</tbody></table></div>'
+    +'<ul class="notes">'+d.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></section>';
+  document.querySelectorAll('.months button').forEach(b=>b.onclick=()=>load(b.dataset.m));
+  document.querySelectorAll('tr.staff').forEach(tr=>tr.onclick=()=>{const e=document.getElementById('det'+tr.dataset.i);e.style.display=e.style.display==='none'?'':'none'});
+}
+load();
+</script>
+</body>
+</html>
