@@ -101,7 +101,11 @@ def get_data(month=None):
     for r in daily[1:]:
         if len(r) < 7 or not r[0].startswith(month):
             continue
-        detail.setdefault(r[1], []).append({"date": r[0], "start": r[3], "end": r[4], "hours": round(_f(r[5]), 2), "pay": _i(r[6])})
+        start, end, hours, pay = r[3].strip(), r[4].strip(), round(_f(r[5]), 2), _i(r[6])
+        if not start and not end and hours == 0 and pay == 0:
+            continue  # シフト表に行だけあって勤務の無い日（休み）は出さない
+        flag = "打刻漏れ？" if (start and not end) or (end and not start) else ""
+        detail.setdefault(r[1], []).append({"date": r[0], "start": start, "end": end, "hours": hours, "pay": pay, "flag": flag})
     for rows in detail.values():
         rows.sort(key=lambda x: x["date"])
 
