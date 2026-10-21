@@ -362,6 +362,8 @@ def _apply_latest_management_pl(confirmed, analysis):
     gross_profit = sales - material if sales is not None and material is not None else None
     rent_line = next((line for line in analysis.get("lines", []) if line.get("label") == "地代家賃"), {})
     rent = rent_line.get("confirmedTotal")
+    # 累計は確定月すべてで作り直すので、期間表記も保存値（2〜7月）ではなく確定月の範囲に合わせる
+    merged["cumulativePeriod"] = f"2026年{confirmed_months[0]['month']}〜{latest['month']}"
     merged["cumulative"] = {
         **merged.get("cumulative", {}),
         "sales": sales,

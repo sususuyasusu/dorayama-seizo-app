@@ -120,9 +120,10 @@ def verify_target_settings():
     assert data["rates"] == {"material": 25.0, "labor": 25.0, "ordinaryProfit": 20.0}
     assert data["annual"]["store"] == 26869074
     # 2026-10-12更新: 富岡八幡宮の店舗並み予算(9月)と、催事カレンダー自動反映(10月以降の上野・松坂屋上野)を反映した値
-    assert data["annual"]["eventDays"] == 356
-    assert data["annual"]["event"] == 77472095
-    assert data["annual"]["total"] == 104341169
+    # 2026-10-21更新: 催事カレンダーに11〜1月の会場日が増え356→418（期待値はカレンダー連動なので増減は正常）
+    assert data["annual"]["eventDays"] == 418
+    assert data["annual"]["event"] == 91112095  # 11〜1月の会場日62日×220,000円ぶん増加
+    assert data["annual"]["total"] == 117981169
     assert august["storeTarget"] == 2198000
     assert august["eventDays"] == 46
     assert august["overlapDays"] == 15
