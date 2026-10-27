@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-15T07:57+09:00",
+  "generatedAt": "2026-10-28T06:42+09:00",
   "method": "月末時点の日次台帳の把握費用＋固定費（確定）＋催事販売員費（他の確定月の率で仮置き）",
   "months": [
     {
       "month": "2月",
       "comparable": false,
       "opsSales": 2054708,
-      "accountingSales": 11182957,
-      "costEstimate": 3994910,
-      "confirmedCost": 10592030,
-      "costDiff": -6597120,
+      "accountingSales": 11181148,
+      "costEstimate": 3995172,
+      "confirmedCost": 10593310,
+      "costDiff": -6598138,
       "costDiffPct": -62.3,
-      "opsProfit": -1940202,
-      "confirmedProfit": 606261,
-      "profitDiff": -2546463
+      "opsProfit": -1940464,
+      "confirmedProfit": 630174,
+      "profitDiff": -2570638
     },
     {
       "month": "3月",
@@ -87,25 +87,25 @@
       "opsSales": 9700924,
       "accountingSales": 3627802,
       "costEstimate": 10477711,
-      "confirmedCost": 7353630,
-      "costDiff": 3124081,
-      "costDiffPct": 42.5,
+      "confirmedCost": 7483755,
+      "costDiff": 2993956,
+      "costDiffPct": 40.0,
       "opsProfit": -776787,
-      "confirmedProfit": -3725828,
-      "profitDiff": 2949041
+      "confirmedProfit": -3855953,
+      "profitDiff": 3079166
     },
     {
       "month": "9月",
       "comparable": true,
       "opsSales": 8185740,
       "accountingSales": 8706286,
-      "costEstimate": 8254893,
-      "confirmedCost": 6857387,
-      "costDiff": 1397506,
-      "costDiffPct": 20.4,
-      "opsProfit": -69153,
-      "confirmedProfit": 1848899,
-      "profitDiff": -1918052
+      "costEstimate": 8243201,
+      "confirmedCost": 6818969,
+      "costDiff": 1424232,
+      "costDiffPct": 20.9,
+      "opsProfit": -57461,
+      "confirmedProfit": 1887317,
+      "profitDiff": -1944778
     }
   ],
   "summary": {
@@ -121,10 +121,10 @@
       "2月",
       "3月"
     ],
-    "costAvgAbsPct": 19.4,
-    "costMaxAbsPct": 42.5,
+    "costAvgAbsPct": 19.1,
+    "costMaxAbsPct": 40.0,
     "profitDiffMin": -4126457,
-    "profitDiffMax": 2949041,
+    "profitDiffMax": 3079166,
     "note": "コスト見込は確定コストと近い一方、損益は催事売上の会計上の計上時期でずれます。催事の運営データが会計上の売上の半分に満たない月（2〜3月）は比較から除いています。"
   }
 }

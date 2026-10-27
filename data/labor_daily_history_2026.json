@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "保存済みAirシフト給与計算表・タイミー・Airレジ（読み取り専用）",
-  "updatedAt": "2026-10-15",
+  "updatedAt": "2026-10-28",
   "scopeNote": "日別シフト人件費はAirシフト給与計算表とタイミー、店舗売上はAirレジ。催事販売外注は含めない。",
   "months": [
     {
@@ -2306,9 +2306,9 @@
       "month": "9月",
       "period": "2026年9月",
       "status": "日別シフト実績",
-      "dailyLaborTotal": 1513142,
+      "dailyLaborTotal": 1531256,
       "storeSalesTotal": 2068655,
-      "workHours": 1008.75,
+      "workHours": 1022.66,
       "daily": [
         {
           "day": 1,
@@ -2553,13 +2553,13 @@
         {
           "day": 21,
           "date": "2026-09-21",
-          "labor": 35334,
-          "workHours": 21.77,
-          "headcount": 3,
+          "labor": 45843,
+          "workHours": 29.83,
+          "headcount": 4,
           "storeSales": 13785,
           "eventSales": 154782,
           "combinedSales": 168567,
-          "laborRate": 21.0,
+          "laborRate": 27.2,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -2577,13 +2577,13 @@
         {
           "day": 23,
           "date": "2026-09-23",
-          "labor": 51095,
-          "workHours": 35.03,
-          "headcount": 5,
+          "labor": 58700,
+          "workHours": 40.88,
+          "headcount": 6,
           "storeSales": 55105,
           "eventSales": 213468,
           "combinedSales": 268573,
-          "laborRate": 19.0,
+          "laborRate": 21.9,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -2673,9 +2673,9 @@
       ],
       "eventSalesTotal": 6036540,
       "combinedSalesTotal": 8105195,
-      "laborRate": 18.7,
-      "greenDays": 19,
-      "redDays": 11,
+      "laborRate": 18.9,
+      "greenDays": 18,
+      "redDays": 12,
       "eventSalesPendingDates": [],
       "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
     },
@@ -2684,9 +2684,9 @@
       "month": "10月",
       "period": "2026年10月",
       "status": "日別シフト実績",
-      "dailyLaborTotal": 870712,
-      "storeSalesTotal": 968644,
-      "workHours": 558.47,
+      "dailyLaborTotal": 1340362,
+      "storeSalesTotal": 1862059,
+      "workHours": 853.74,
       "daily": [
         {
           "day": 1,
@@ -2739,13 +2739,13 @@
         {
           "day": 5,
           "date": "2026-10-05",
-          "labor": 48266,
-          "workHours": 32.27,
-          "headcount": 5,
+          "labor": 56196,
+          "workHours": 38.37,
+          "headcount": 6,
           "storeSales": 43063,
           "eventSales": 320118,
           "combinedSales": 363181,
-          "laborRate": 13.3,
+          "laborRate": 15.5,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -2839,9 +2839,9 @@
           "workHours": 25.65,
           "headcount": 3,
           "storeSales": 57758,
-          "eventSales": 0,
-          "combinedSales": 57758,
-          "laborRate": 72.8,
+          "eventSales": 157123,
+          "combinedSales": 214881,
+          "laborRate": 19.6,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -2851,32 +2851,175 @@
           "workHours": 30.72,
           "headcount": 5,
           "storeSales": 35534,
-          "eventSales": 0,
-          "combinedSales": 35534,
-          "laborRate": 130.3,
-          "eventSalesStatus": "未取得"
+          "eventSales": 117605,
+          "combinedSales": 153139,
+          "laborRate": 30.2,
+          "eventSalesStatus": "取得済み"
         },
         {
           "day": 15,
           "date": "2026-10-15",
-          "labor": 0,
-          "workHours": 0.0,
-          "headcount": 2,
-          "storeSales": 0,
+          "labor": 40391,
+          "workHours": 23.12,
+          "headcount": 3,
+          "storeSales": 59496,
+          "eventSales": 119502,
+          "combinedSales": 178998,
+          "laborRate": 22.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 16,
+          "date": "2026-10-16",
+          "labor": 35675,
+          "workHours": 25.88,
+          "headcount": 4,
+          "storeSales": 59169,
+          "eventSales": 155934,
+          "combinedSales": 215103,
+          "laborRate": 16.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 17,
+          "date": "2026-10-17",
+          "labor": 50768,
+          "workHours": 30.17,
+          "headcount": 4,
+          "storeSales": 106514,
+          "eventSales": 139505,
+          "combinedSales": 246019,
+          "laborRate": 20.6,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 18,
+          "date": "2026-10-18",
+          "labor": 36433,
+          "workHours": 23.17,
+          "headcount": 3,
+          "storeSales": 90086,
+          "eventSales": 125347,
+          "combinedSales": 215433,
+          "laborRate": 16.9,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 19,
+          "date": "2026-10-19",
+          "labor": 31967,
+          "workHours": 21.73,
+          "headcount": 4,
+          "storeSales": 56898,
           "eventSales": 0,
-          "combinedSales": 0,
-          "laborRate": null,
+          "combinedSales": 56898,
+          "laborRate": 56.2,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 20,
+          "date": "2026-10-20",
+          "labor": 26548,
+          "workHours": 16.22,
+          "headcount": 2,
+          "storeSales": 46504,
+          "eventSales": 82804,
+          "combinedSales": 129308,
+          "laborRate": 20.5,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 21,
+          "date": "2026-10-21",
+          "labor": 29897,
+          "workHours": 18.9,
+          "headcount": 3,
+          "storeSales": 51015,
+          "eventSales": 91323,
+          "combinedSales": 142338,
+          "laborRate": 21.0,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 22,
+          "date": "2026-10-22",
+          "labor": 33538,
+          "workHours": 19.22,
+          "headcount": 2,
+          "storeSales": 73675,
+          "eventSales": 102498,
+          "combinedSales": 176173,
+          "laborRate": 19.0,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 23,
+          "date": "2026-10-23",
+          "labor": 33640,
+          "workHours": 21.73,
+          "headcount": 3,
+          "storeSales": 83789,
+          "eventSales": 144631,
+          "combinedSales": 228420,
+          "laborRate": 14.7,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 24,
+          "date": "2026-10-24",
+          "labor": 43108,
+          "workHours": 28.47,
+          "headcount": 5,
+          "storeSales": 88732,
+          "eventSales": 145428,
+          "combinedSales": 234160,
+          "laborRate": 18.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 25,
+          "date": "2026-10-25",
+          "labor": 43439,
+          "workHours": 25.88,
+          "headcount": 4,
+          "storeSales": 76622,
+          "eventSales": 136403,
+          "combinedSales": 213025,
+          "laborRate": 20.4,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 26,
+          "date": "2026-10-26",
+          "labor": 31383,
+          "workHours": 20.08,
+          "headcount": 3,
+          "storeSales": 40885,
+          "eventSales": 0,
+          "combinedSales": 40885,
+          "laborRate": 76.8,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 27,
+          "date": "2026-10-27",
+          "labor": 24933,
+          "workHours": 14.6,
+          "headcount": 2,
+          "storeSales": 60030,
+          "eventSales": 0,
+          "combinedSales": 60030,
+          "laborRate": 41.5,
           "eventSalesStatus": "未取得"
         }
       ],
-      "eventSalesTotal": 4240931,
-      "combinedSalesTotal": 5209575,
-      "laborRate": 16.7,
-      "greenDays": 12,
-      "redDays": 2,
+      "eventSalesTotal": 5759034,
+      "combinedSalesTotal": 7621093,
+      "laborRate": 17.6,
+      "greenDays": 23,
+      "redDays": 4,
       "eventSalesPendingDates": [
-        "2026-10-14",
-        "2026-10-15"
+        "2026-10-27"
       ],
       "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
     }
