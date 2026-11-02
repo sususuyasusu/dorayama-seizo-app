@@ -305,12 +305,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/shift-plan":
             # 当日の時間割アプリ（GitHub Pages）から読むので、その出どころだけ許可する
             import shift_plan_layer
-            if self.headers.get("Origin") == "https://sususuyasusu.github.io":
-                self._cors_origin = "https://sususuyasusu.github.io"
-            ok, msg, code = shift_plan_layer.check_access(data.get("accessCode"))
-            if not ok:
-                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+            if self.headers.get("Origin") != "https://sususuyasusu.github.io":
+                self._send(403, json.dumps({"error": "時間割アプリから開いてください。"}, ensure_ascii=False))
                 return
+            self._cors_origin = "https://sususuyasusu.github.io"
             self._send(200, json.dumps(shift_plan_layer.get_day(data.get("date")), ensure_ascii=False))
         elif path == "/api/manager-labor-hr":
             # 人別の給与が出るので、店長用の合言葉（非公開シート 設定!B2）が合わないと返さない
