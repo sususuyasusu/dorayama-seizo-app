@@ -310,6 +310,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._cors_origin = "https://sususuyasusu.github.io"
             self._send(200, json.dumps(shift_plan_layer.get_day(data.get("date")), ensure_ascii=False))
+        elif path == "/api/print-request":
+            # 時間割の「A3で印刷」。Mac mini が拾って PDF 保存と複合機への送信を行う
+            import shift_plan_layer
+            if self.headers.get("Origin") != "https://sususuyasusu.github.io":
+                self._send(403, json.dumps({"error": "時間割アプリから開いてください。"}, ensure_ascii=False))
+                return
+            self._cors_origin = "https://sususuyasusu.github.io"
+            if data.get("id"):
+                self._send(200, json.dumps(shift_plan_layer.print_status(data.get("id")), ensure_ascii=False))
+            else:
+                self._send(200, json.dumps({"id": shift_plan_layer.add_print(data.get("date"), data.get("body"))}, ensure_ascii=False))
         elif path == "/api/manager-labor-hr":
             # 人別の給与が出るので、店長用の合言葉（非公開シート 設定!B2）が合わないと返さない
             import manager_hr_layer
