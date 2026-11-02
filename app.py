@@ -79,6 +79,8 @@ class Handler(BaseHTTPRequestHandler):
                 enc = None
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        if getattr(self, "_cors_origin", None):
+            self.send_header("Access-Control-Allow-Origin", self._cors_origin)
         if enc:
             self.send_header("Content-Encoding", enc)
         self.send_header("Content-Length", str(len(b)))
@@ -300,6 +302,16 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/management/targets":
             result = target_settings_layer.save_target_settings(data)
             self._send(200, json.dumps(result, ensure_ascii=False))
+        elif path == "/api/shift-plan":
+            # 当日の時間割アプリ（GitHub Pages）から読むので、その出どころだけ許可する
+            import shift_plan_layer
+            if self.headers.get("Origin") == "https://sususuyasusu.github.io":
+                self._cors_origin = "https://sususuyasusu.github.io"
+            ok, msg, code = shift_plan_layer.check_access(data.get("accessCode"))
+            if not ok:
+                self._send(code, json.dumps({"error": msg}, ensure_ascii=False))
+                return
+            self._send(200, json.dumps(shift_plan_layer.get_day(data.get("date")), ensure_ascii=False))
         elif path == "/api/manager-labor-hr":
             # 人別の給与が出るので、店長用の合言葉（非公開シート 設定!B2）が合わないと返さない
             import manager_hr_layer
