@@ -335,6 +335,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:  # noqa: BLE001  実績が取れなくても人の読み取りは止めない
                 day["actualError"] = type(e).__name__
             self._send(200, json.dumps(day, ensure_ascii=False))
+        elif path == "/api/labor-cost":
+            # 時間割の人件費（1人ずつの実際の単価で合計。返すのは合計だけ）
+            import shift_plan_layer
+            if self.headers.get("Origin") != "https://sususuyasusu.github.io":
+                self._send(403, json.dumps({"error": "時間割アプリから開いてください。"}, ensure_ascii=False))
+                return
+            self._cors_origin = "https://sususuyasusu.github.io"
+            self._send(200, json.dumps(shift_plan_layer.labor_cost(data.get("date"), data.get("staff")), ensure_ascii=False))
         elif path == "/api/print-request":
             # 時間割の「A3で印刷」。Mac mini が拾って PDF 保存と複合機への送信を行う
             import shift_plan_layer

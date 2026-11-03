@@ -63,6 +63,49 @@ def _employee_daily(day):
     return {"employees": names, "employeeDaily": round(pay / days) if days else None, "employeeBasis": f"{last}の総支給÷勤務日数（月給の社員の平均）"}
 
 
+TIMEE_HOURLY = 1226  # タイミー本店の時給（直近実績どおり）
+TIMEE_COMMUTE = 500  # タイミーの交通費（1日）
+
+
+def labor_cost(day, staff):
+    """時間割に並んだ人の人件費を、1人ずつの実際の単価で合計する（2026-11-03 本人指示）。
+    月給の社員＝直近の月の総支給÷勤務日数（勤務時間によらず一律）、アルバイト等＝直近の月の時給換算×勤務時間、
+    名簿に無い人（タイミーなど）＝タイミーの時給×勤務時間＋交通費。返すのは合計と内訳の人数・時間だけ（個人の単価は返さない）。"""
+    norm = lambda s: str(s or "").replace(" ", "").replace("　", "")
+    emp = set()
+    for r in hr._values("設定"):
+        if len(r) >= 2 and r[0].strip() == "時間割の月給社員":
+            emp = {norm(x) for x in re.split(r"[、,，]", r[1]) if x.strip()}
+    month = str(day)[:7]
+    latest = {}
+    for r in hr._values("人別月次")[1:]:
+        if len(r) < 9 or r[0] >= month or not r[1]:
+            continue
+        k = norm(r[1])
+        if hr._f(r[3]) <= 0 or hr._f(r[6]) <= 0:
+            continue
+        if k not in latest or r[0] > latest[k][0]:
+            latest[k] = (r[0], hr._f(r[6]), hr._f(r[3]), hr._f(r[8]))
+    total, n_emp, part_min, n_unknown, unknown_min = 0.0, 0, 0, 0, 0
+    for s in staff or []:
+        k, mins = norm(s.get("name")), max(0, int(s.get("mins") or 0))
+        if not k or mins <= 0:
+            continue
+        rec = latest.get(k)
+        if k in emp and rec:
+            total += rec[1] / rec[2]
+            n_emp += 1
+        elif rec and rec[3] > 0:
+            total += rec[3] * mins / 60
+            part_min += mins
+        else:
+            total += TIMEE_HOURLY * mins / 60 + TIMEE_COMMUTE
+            n_unknown += 1
+            unknown_min += mins
+    return {"total": round(total), "employees": n_emp, "partMinutes": part_min,
+            "unknown": n_unknown, "unknownMinutes": unknown_min}
+
+
 _LABOR_CACHE = {}
 
 
