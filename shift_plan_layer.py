@@ -39,7 +39,28 @@ def labor_basis(day):
         "storeSalesBasis": f"同じ曜日の直近{len(same)}回の平均",
         "rateProduction": caps["production"], "rateStoreSales": caps["storeSales"],
         "hourlyWage": mll.HOURLY_WAGE_ESTIMATE,
+        **_employee_daily(day),
     }
+
+
+def _employee_daily(day):
+    """月給の社員（非公開シート 設定「時間割の月給社員」）は勤務時間によらず一律の日額（2026-11-03 本人指示）。
+    日額＝前月までで直近の1か月の総支給÷勤務日数を、月給の社員みんなで平均した額（1人ずつの額は返さない）。"""
+    names = []
+    for r in hr._values("設定"):
+        if len(r) >= 2 and r[0].strip() == "時間割の月給社員":
+            names = [x.strip() for x in re.split(r"[、,，]", r[1]) if x.strip()]
+    if not names:
+        return {}
+    key = {n.replace(" ", "").replace("　", "") for n in names}
+    month = day[:7]
+    rows = [r for r in hr._values("人別月次")[1:] if len(r) >= 7 and r[0] < month and r[1].replace(" ", "") in key]
+    if not rows:
+        return {"employees": names}
+    last = max(r[0] for r in rows)
+    pay = sum(hr._f(r[6]) for r in rows if r[0] == last)
+    days = sum(hr._f(r[3]) for r in rows if r[0] == last)
+    return {"employees": names, "employeeDaily": round(pay / days) if days else None, "employeeBasis": f"{last}の総支給÷勤務日数（月給の社員の平均）"}
 
 
 _LABOR_CACHE = {}
