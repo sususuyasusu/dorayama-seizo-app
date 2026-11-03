@@ -309,7 +309,29 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(403, json.dumps({"error": "時間割アプリから開いてください。"}, ensure_ascii=False))
                 return
             self._cors_origin = "https://sususuyasusu.github.io"
-            self._send(200, json.dumps(shift_plan_layer.get_day(data.get("date")), ensure_ascii=False))
+            day = shift_plan_layer.get_day(data.get("date"))
+            # 過去の日は、製造アプリと同じ実績（作った数＝実売・手入力）と回転数を添える（2026-11-03 本人指示）
+            try:
+                from datetime import date as _d, timedelta as _td, datetime as _dt
+                from zoneinfo import ZoneInfo as _Z
+                dd = _d.fromisoformat(str(data.get("date")))
+                if dd < _dt.now(_Z("Asia/Tokyo")).date():
+                    mon = dd - _td(days=dd.weekday())
+                    wp = week_payload(f"{mon:%m%d}")
+                    i = dd.weekday()
+                    blocks = []
+                    for b in wp["blocks"]:
+                        items = []
+                        for p in b["products"]:
+                            v = p["made"][i] if p["made"][i] not in (None, "") else p["sold"][i]
+                            if v not in (None, "") and float(v) > 0:
+                                items.append({"n": p["name"], "q": float(v), "skin": "皮" in p["name"]})
+                        if items:
+                            blocks.append({"name": b["name"], "items": items})
+                    day["actual"] = {"blocks": blocks, "kaiten": (wp.get("kaiten") or [None] * 7)[i]}
+            except Exception as e:  # noqa: BLE001  実績が取れなくても人の読み取りは止めない
+                day["actualError"] = type(e).__name__
+            self._send(200, json.dumps(day, ensure_ascii=False))
         elif path == "/api/print-request":
             # 時間割の「A3で印刷」。Mac mini が拾って PDF 保存と複合機への送信を行う
             import shift_plan_layer
