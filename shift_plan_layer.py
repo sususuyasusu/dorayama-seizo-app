@@ -28,8 +28,11 @@ def labor_basis(day):
     unit = sum(r["value"] for r in prod) / pieces if pieces else None
     target = _d.fromisoformat(day)
     today = _d.today().isoformat()
-    same = [float(r.get("storeSales") or 0) for r in sorted(a.get("daily") or [], key=lambda r: r.get("date", ""))
-            if r.get("date", "") < today and (r.get("storeSales") or 0) > 0 and _d.fromisoformat(r["date"]).weekday() == target.weekday()][-8:]
+    # 日別の店舗売上（保存済みAirメイト日次＋今月の同期分。同じ日付は今月の同期分を優先）
+    hist = {r["date"]: r for r in ((a.get("weekdayTimeHistory") or {}).get("daily") or []) if r.get("date")}
+    hist.update({r["date"]: r for r in (a.get("daily") or []) if r.get("date")})
+    same = [float(hist[k].get("storeSales") or 0) for k in sorted(hist)
+            if k < today and (hist[k].get("storeSales") or 0) > 0 and _d.fromisoformat(k).weekday() == target.weekday()][-8:]
     return {
         "unitValue": round(unit, 1) if unit else None,
         "storeSalesForecast": round(sum(same) / len(same)) if same else None,
