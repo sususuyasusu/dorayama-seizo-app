@@ -13,12 +13,50 @@ import data_layer
 import manager_hr_layer as hr
 
 
+def labor_basis(day):
+    """時間割の人件費の過不足に使う材料（2026-11-03 本人指示）。
+    枠は経営管理と同じ「製造額×11%＋店舗売上×14%」（manager_labor_layer と同じ式）。
+    予定日はまだ実績が無いので、製造額は直近の製造1個あたりの額×その日の個数（画面側で掛ける）、
+    店舗売上は同じ曜日の直近8回の平均で見込む。時給は個人ではなく平均の目安。"""
+    import management_analysis_layer as mal
+    import manager_labor_layer as mll
+    from datetime import date as _d
+    a = mal.get_management_analysis()
+    caps = (a.get("todayBoard") or {}).get("laborCaps") or mal.LABOR_CAPS
+    prod = [r for r in ((a.get("production") or {}).get("daily") or []) if (r.get("pieces") or 0) > 0 and (r.get("value") or 0) > 0]
+    pieces = sum(r["pieces"] for r in prod)
+    unit = sum(r["value"] for r in prod) / pieces if pieces else None
+    target = _d.fromisoformat(day)
+    today = _d.today().isoformat()
+    same = [float(r.get("storeSales") or 0) for r in sorted(a.get("daily") or [], key=lambda r: r.get("date", ""))
+            if r.get("date", "") < today and (r.get("storeSales") or 0) > 0 and _d.fromisoformat(r["date"]).weekday() == target.weekday()][-8:]
+    return {
+        "unitValue": round(unit, 1) if unit else None,
+        "storeSalesForecast": round(sum(same) / len(same)) if same else None,
+        "storeSalesBasis": f"同じ曜日の直近{len(same)}回の平均",
+        "rateProduction": caps["production"], "rateStoreSales": caps["storeSales"],
+        "hourlyWage": mll.HOURLY_WAGE_ESTIMATE,
+    }
+
+
+_LABOR_CACHE = {}
+
+
 def get_day(date):
     rows = hr._values("シフト予定")
     updated = rows[0][6] if rows and len(rows[0]) > 6 else ""
     people = [{"name": r[1], "start": r[2], "end": r[3], "status": r[4] if len(r) > 4 else ""}
               for r in rows[1:] if len(r) >= 4 and r[0] == date]
-    return {"date": date, "updated": updated, "people": people}
+    hit = _LABOR_CACHE.get(date)
+    if hit and time.time() - hit[0] < 3600:
+        labor = hit[1]
+    else:
+        try:
+            labor = labor_basis(date)
+            _LABOR_CACHE[date] = (time.time(), labor)
+        except Exception as e:  # noqa: BLE001  人件費が出せなくても人の読み取りは止めない
+            labor = {"error": type(e).__name__}
+    return {"date": date, "updated": updated, "people": people, "labor": labor}
 
 
 PRINT_TAB = "印刷依頼"
