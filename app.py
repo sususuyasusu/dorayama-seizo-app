@@ -315,20 +315,23 @@ class Handler(BaseHTTPRequestHandler):
                 from datetime import date as _d, timedelta as _td, datetime as _dt
                 from zoneinfo import ZoneInfo as _Z
                 dd = _d.fromisoformat(str(data.get("date")))
-                if dd < _dt.now(_Z("Asia/Tokyo")).date():
-                    mon = dd - _td(days=dd.weekday())
-                    wp = week_payload(f"{mon:%m%d}")
-                    i = dd.weekday()
-                    blocks = []
-                    for b in wp["blocks"]:
-                        items = []
-                        for p in b["products"]:
-                            v = p["made"][i] if p["made"][i] not in (None, "") else p["sold"][i]
-                            if v not in (None, "") and float(v) > 0:
-                                items.append({"n": p["name"], "q": float(v), "skin": "皮" in p["name"]})
-                        if items:
-                            blocks.append({"name": b["name"], "items": items})
-                    day["actual"] = {"blocks": blocks, "kaiten": (wp.get("kaiten") or [None] * 7)[i]}
+                # すべての日で製造アプリと同じ数を使う（本人指示）。製造アプリの「作った数」と同じ選び方：
+                # 昨日以前＝実売→手入力→予定、今日以降＝手入力→実売→予定
+                past = dd < _dt.now(_Z("Asia/Tokyo")).date()
+                mon = dd - _td(days=dd.weekday())
+                wp = week_payload(f"{mon:%m%d}")
+                i = dd.weekday()
+                blocks = []
+                for b in wp["blocks"]:
+                    items = []
+                    for p in b["products"]:
+                        order = (p["sold"][i], p["made"][i], p["plan"][i]) if past else (p["made"][i], p["sold"][i], p["plan"][i])
+                        v = next((x for x in order if x not in (None, "")), None)
+                        if v not in (None, "") and float(v) > 0:
+                            items.append({"n": p["name"], "q": float(v), "skin": "皮" in p["name"]})
+                    if items:
+                        blocks.append({"name": b["name"], "items": items})
+                day["actual"] = {"blocks": blocks, "kaiten": (wp.get("kaiten") or [None] * 7)[i], "past": past}
             except Exception as e:  # noqa: BLE001  実績が取れなくても人の読み取りは止めない
                 day["actualError"] = type(e).__name__
             self._send(200, json.dumps(day, ensure_ascii=False))
