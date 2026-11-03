@@ -107,7 +107,11 @@ def labor_cost(day, staff):
         if not k or mins <= 0:
             continue
         rec, fr = latest.get(k), freee.get(k)
-        if fr and fr[0] == "月給":
+        # 月給の社員は経常利益と同じ数字（人別月次＝月給ベースに直した前月の総支給÷勤務日数・1人ずつ）を優先
+        if k in emp and rec:
+            total += rec[1] / rec[2]
+            n_emp += 1
+        elif fr and fr[0] == "月給":
             total += fr[1] / avg_days
             n_emp += 1
         elif fr and fr[0] == "時給":
