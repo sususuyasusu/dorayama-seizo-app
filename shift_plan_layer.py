@@ -86,13 +86,34 @@ def labor_cost(day, staff):
             continue
         if k not in latest or r[0] > latest[k][0]:
             latest[k] = (r[0], hr._f(r[6]), hr._f(r[3]), hr._f(r[8]))
+    # 単価は freee人事労務の基本給（非公開シート「単価（freee）」）を正とする（2026-11-03 本人指示：
+    # 最低賃金の改定があり、Airシフトの時給換算は古い可能性がある）。通勤手当はAirシフトの前月分を1日あたりにして足す
+    freee = {}
+    try:
+        for r in hr._values("単価（freee）")[1:]:
+            if len(r) >= 3 and r[0] and hr._f(r[2]) > 0:
+                freee[norm(r[0])] = (r[1].strip(), hr._f(r[2]))
+    except Exception:  # noqa: BLE001
+        freee = {}
+    commute = {}
+    for r in hr._values("人別月次")[1:]:
+        if len(r) >= 8 and r[1] and norm(r[1]) in latest and r[0] == latest[norm(r[1])][0] and hr._f(r[3]) > 0:
+            commute[norm(r[1])] = hr._f(r[7]) / hr._f(r[3])
+    emp_days = [latest[k][2] for k in emp if k in latest]
+    avg_days = sum(emp_days) / len(emp_days) if emp_days else 21
     total, n_emp, part_min, n_unknown, unknown_min = 0.0, 0, 0, 0, 0
     for s in staff or []:
         k, mins = norm(s.get("name")), max(0, int(s.get("mins") or 0))
         if not k or mins <= 0:
             continue
-        rec = latest.get(k)
-        if k in emp and rec:
+        rec, fr = latest.get(k), freee.get(k)
+        if fr and fr[0] == "月給":
+            total += fr[1] / avg_days
+            n_emp += 1
+        elif fr and fr[0] == "時給":
+            total += fr[1] * mins / 60 + commute.get(k, 0)
+            part_min += mins
+        elif k in emp and rec:
             total += rec[1] / rec[2]
             n_emp += 1
         elif rec and rec[3] > 0:
