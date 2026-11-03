@@ -59,7 +59,15 @@ def get_day(date):
             _LABOR_CACHE[date] = (time.time(), labor)
         except Exception as e:  # noqa: BLE001  人件費が出せなくても人の読み取りは止めない
             labor = {"error": type(e).__name__}
-    return {"date": date, "updated": updated, "people": people, "labor": labor}
+    # 責任者の優先順（非公開シート 設定「時間割の責任者順」。その日いる中で先頭の人が責任者）
+    leaders = []
+    try:
+        for r in hr._values("設定"):
+            if len(r) >= 2 and r[0].strip() == "時間割の責任者順":
+                leaders = [x.strip() for x in re.split(r"[、,，]", r[1]) if x.strip()]
+    except Exception:  # noqa: BLE001
+        pass
+    return {"date": date, "updated": updated, "people": people, "labor": labor, "leaders": leaders}
 
 
 PRINT_TAB = "印刷依頼"
