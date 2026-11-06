@@ -660,24 +660,45 @@ function renderMake(){
     const made=madeVal(p,sel),plan=p.plan[sel]??0,sold=p.sold[sel];tot+=made;
     const r=document.createElement('div');r.className='row';
     r.innerHTML='<div class="nm"><div class="t">'+p.name+'</div><div class="s">予算<span class="planedit" contenteditable="true" inputmode="numeric">'+plan+'</span>　実績 '+(sold==null?'–':sold)+'</div></div>'+
-      '<div class="stpwrap"><div class="stplbl">'+madeLbl+'</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div></div>';
-    const v=r.querySelector('.val'),bs=r.querySelectorAll('button'),pe=r.querySelector('.planedit');
-    bs[0].onclick=()=>chg(p,-1,v);bs[1].onclick=()=>chg(p,1,v);
+      '<div class="stpwrap"><div class="stplbl">'+madeLbl+'</div><div class="stp"><button>−</button><input class="val" type="text" inputmode="numeric" value="'+made+'"><button>＋</button></div><div class="savest"></div></div>';
+    const v=r.querySelector('.val'),bs=r.querySelectorAll('button'),pe=r.querySelector('.planedit'),st=r.querySelector('.savest');
+    bs[0].onclick=()=>chg(p,-1,v,st);bs[1].onclick=()=>chg(p,1,v,st);
     pe.addEventListener('focus',()=>{pe.dataset.b=pe.textContent;});
     pe.addEventListener('blur',()=>{if(pe.textContent!==(pe.dataset.b||''))savePlan(p,pe.textContent);});
     pe.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pe.blur();}});
     v.addEventListener('focus',()=>v.select());
-    v.addEventListener('change',()=>setMade(p,v.value,v));
+    v.addEventListener('change',()=>setMade(p,v.value,v,st));
     v.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.blur();}});
     box.appendChild(r);
   });
   document.getElementById('tot').textContent=Math.round(tot);
   const k=W.kaiten[sel];document.getElementById('kai').textContent=(k==null?'–':k);
 }
-function setMade(p,raw,v){let cur=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(cur))cur=0;p.made[sel]=cur;v.value=cur;
+// 作る数の保存状態の見た目（CSSに触れず、その場で色だけ付ける）
+function _stSet(st,txt,kind){if(!st)return;st.textContent=txt;st.style.fontSize='11px';st.style.marginTop='2px';st.style.textAlign='center';st.style.minHeight='14px';st.style.lineHeight='14px';st.style.color=(kind==='saved'?'#2a8a3e':kind==='failed'?'#c0392b':'#999');st.style.fontWeight=(kind==='failed'?'700':'400');st.style.cursor=(kind==='failed'?'pointer':'default');st.onclick=(kind==='failed'?function(){_flushMade(st._key);}:null);}
+const _MADE_PEND={};
+function _madeKey(p){return W.tab+'|'+W.blocks[selBlk].name+'|'+p.name+'|'+sel;}
+// 作る数を変更：画面は即反映し、保存は「確実に保存＋保存済み表示＋失敗なら自動やり直し」で行う
+function setMade(p,raw,v,st){let cur=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(cur))cur=0;p.made[sel]=cur;v.value=cur;
   let tot=0;W.blocks[selBlk].products.forEach(x=>tot+=(x===p?cur:madeVal(x,sel)));document.getElementById('tot').textContent=Math.round(tot);
-  fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:cur})});}
-function chg(p,d,v){const cur=madeVal(p,sel)+d;setMade(p,cur<0?0:cur,v);}
+  _queueMade(p,cur,st);}
+function chg(p,d,v,st){const cur=madeVal(p,sel)+d;setMade(p,cur<0?0:cur,v,st);}
+function _queueMade(p,val,st){const key=_madeKey(p);const e=_MADE_PEND[key]||(_MADE_PEND[key]={});
+  e.body={tab:W.tab,block:W.blocks[selBlk].name,product:p.name,dayIndex:sel,value:val};e.st=st;if(st)st._key=key;
+  _stSet(st,'保存中…','saving');
+  if(e.timer)clearTimeout(e.timer);e.timer=setTimeout(function(){_flushMade(key);},500);}
+async function _flushMade(key){const e=_MADE_PEND[key];if(!e)return;const body=e.body,st=e.st;e.timer=null;
+  for(let i=0;i<6;i++){
+    try{const ac=new AbortController();const to=setTimeout(function(){ac.abort();},25000);
+      const r=await fetch('/api/made',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
+      clearTimeout(to);
+      if(!r.ok)throw new Error('status '+r.status);
+      await r.text();
+      if(_MADE_PEND[key]===e&&JSON.stringify(e.body)===JSON.stringify(body)){_stSet(st,'✓ 保存済み','saved');delete _MADE_PEND[key];setTimeout(function(){if(st&&st.textContent==='✓ 保存済み')_stSet(st,'','saving');},2500);}
+      return;
+    }catch(err){_stSet(st,'再保存中…('+(i+1)+')','saving');await new Promise(function(s){setTimeout(s,800*(i+1));});}
+  }
+  _stSet(st,'⚠保存できていません・タップでやり直し','failed');}
 async function savePlan(p,raw){let val=parseInt(String(raw).replace(/[^0-9]/g,''),10);if(isNaN(val))val=0;p.plan[sel]=val;
   renderMake();
   if(!p.row)return;
