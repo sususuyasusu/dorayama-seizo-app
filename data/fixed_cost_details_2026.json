@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-28T06:35+09:00",
+  "generatedAt": "2026-11-08T14:08+09:00",
   "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
   "privacy": "取引ID・口座番号・認証情報は保存しない",
   "months": [
@@ -1305,8 +1305,8 @@
     },
     {
       "month": "2026-10",
-      "count": 11,
-      "total": 640777,
+      "count": 14,
+      "total": 655170,
       "transactions": [
         {
           "date": "2026-10-05",
@@ -1386,6 +1386,17 @@
           "source": "freee取引明細"
         },
         {
+          "date": "2026-10-20",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "上下水道料金（過去2件と同形） / 上下水道料金 09月~10月[FY10自動]",
+          "amount": 4386,
+          "payment": "セゾンカード",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
           "date": "2026-10-23",
           "category": "賃借料",
           "vendor": "取引先未設定",
@@ -1420,11 +1431,33 @@
         },
         {
           "date": "2026-10-27",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "ニチガス（過去9件と同形） / ニチガスグループ利用料金[FY10自動]",
+          "amount": 3407,
+          "payment": "セゾンカード",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-10-27",
           "category": "通信費",
           "vendor": "日本郵便株式会社",
           "description": "レターパックライト 東武池袋 契約書送付",
           "amount": 430,
           "payment": "現金",
+          "department": "900 会社共通",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-10-29",
+          "category": "通信費",
+          "vendor": "取引先未設定",
+          "description": "さくらインターネット（業者ルール） / さくらインターネット[FY10自動]",
+          "amount": 6600,
+          "payment": "セゾンカード",
           "department": "900 会社共通",
           "evidence": "証憑未確認",
           "source": "freee取引明細"
