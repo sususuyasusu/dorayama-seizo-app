@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "保存済みAirシフト給与計算表・タイミー・Airレジ（読み取り専用）",
-  "updatedAt": "2026-11-12",
+  "updatedAt": "2026-11-13",
   "scopeNote": "日別シフト人件費はAirシフト給与計算表とタイミー、店舗売上はAirレジ。催事販売外注は含めない。",
   "months": [
     {
@@ -3074,9 +3074,9 @@
       "month": "11月",
       "period": "2026年11月",
       "status": "日別シフト実績",
-      "dailyLaborTotal": 452496,
-      "storeSalesTotal": 729665,
-      "workHours": 281.24,
+      "dailyLaborTotal": 498938,
+      "storeSalesTotal": 817349,
+      "workHours": 308.96,
       "daily": [
         {
           "day": 1,
@@ -3193,9 +3193,9 @@
           "workHours": 23.92,
           "headcount": 3,
           "storeSales": 27672,
-          "eventSales": 0,
-          "combinedSales": 27672,
-          "laborRate": 146.8,
+          "eventSales": 85882,
+          "combinedSales": 113554,
+          "laborRate": 35.8,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -3208,28 +3208,27 @@
           "eventSales": 0,
           "combinedSales": 60465,
           "laborRate": 70.5,
-          "eventSalesStatus": "未取得"
+          "eventSalesStatus": "取得済み"
         },
         {
           "day": 12,
           "date": "2026-11-12",
-          "labor": 0,
-          "workHours": 0.0,
-          "headcount": 1,
-          "storeSales": 0,
+          "labor": 46442,
+          "workHours": 27.72,
+          "headcount": 3,
+          "storeSales": 87684,
           "eventSales": 0,
-          "combinedSales": 0,
-          "laborRate": null,
+          "combinedSales": 87684,
+          "laborRate": 53.0,
           "eventSalesStatus": "未取得"
         }
       ],
-      "eventSalesTotal": 1179708,
-      "combinedSalesTotal": 1909373,
-      "laborRate": 23.7,
+      "eventSalesTotal": 1265590,
+      "combinedSalesTotal": 2082939,
+      "laborRate": 24.0,
       "greenDays": 8,
-      "redDays": 3,
+      "redDays": 4,
       "eventSalesPendingDates": [
-        "2026-11-11",
         "2026-11-12"
       ],
       "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
