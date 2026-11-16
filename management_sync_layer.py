@@ -29,6 +29,23 @@ TABS = {
 }
 FLASH_TAB = "_flash_daily"  # クラウドが書く昨日の売上・人件費（Mac停止日の代役）
 EVENT_STAFF_DAILY_ESTIMATE = 37000  # ディースパーク日額（税抜）。management_analysis_layer.EVENT_STAFF_DAILY_RATE と同額
+EVENT_INTERNAL_TAB = "_催事の社員人件費"  # 催事会場に回った社員の日別人件費（予実自動化が氏名なしで書く・2026-11-16〜）
+
+
+def _event_internal_rows(values):
+    """「_催事の社員人件費」タブ → [{date, venue, cost, reduction}]。reduction はディースパーク減額（円）。"""
+    out = []
+    for row in _records(values or [], "日付"):
+        day_iso = normalize_date(row.get("日付"), date.today().year)
+        if not day_iso:
+            continue
+        out.append({
+            "date": day_iso,
+            "venue": str(row.get("会場") or ""),
+            "cost": _number(row.get("社員人件費")) or 0,
+            "reduction": _number(row.get("ディースパーク減額")) or 0,
+        })
+    return out
 _STORE_LIKE_EVENT_VENUES = ("富岡八幡宮",)  # target_settings_layer.STORE_LIKE_VENUES と同じ
 FORM_SHEET_ID = "1v0w_oAmbTmw3t9oOhCFVWv87ysm2gpOnNQbGAlALpIc"  # 催事日報フォームの回答シート
 FORM_GID = 816782526
@@ -401,9 +418,32 @@ def parse_management_values(values_by_tab, today=None):
         if not amount:
             continue
         item["eventStaff"] = amount
+        item["eventStaffEstimated"] = True
         if day_details:
             day_details[0]["staffCost"] = amount
             day_details[0]["profitBeforeFixed"] -= amount
+
+    # 社員を催事会場に回した日（2026-11-16〜 田母神さんがエキュート上野の早番）:
+    # ディースパークを人数分（1人18,500円）減らし、その社員の日額を催事の人件費に足す。
+    # 金額は予実自動化が「_催事の社員人件費」タブに氏名なしで書く。店舗の人件費からは向こうで外し済み。
+    for adj in _event_internal_rows(values_by_tab.get(EVENT_INTERNAL_TAB, [])):
+        day_iso = adj["date"]
+        parsed = date.fromisoformat(day_iso)
+        if (parsed.year, parsed.month) != target_month or parsed > today:
+            continue
+        item = daily_row(day_iso)
+        item["eventStaffInternal"] = item.get("eventStaffInternal", 0) + adj["cost"]
+        item["eventStaffReduction"] = item.get("eventStaffReduction", 0) + adj["reduction"]
+        if not item["eventRows"]:
+            continue  # 催事の日報がまだ無い日は、日報が入ってから付け替える
+        delta = adj["cost"] - (adj["reduction"] if item.get("eventStaffEstimated") else 0)
+        item["eventStaff"] = max(0, item["eventStaff"] + delta)
+        day_details = [d for d in event_details if d["date"] == day_iso]
+        hit = next((d for d in day_details if adj["venue"] and adj["venue"][:3] in (d["name"] + d["venue"])),
+                   day_details[0] if day_details else None)
+        if hit:
+            hit["staffCost"] = (hit.get("staffCost") or 0) + delta
+            hit["profitBeforeFixed"] -= delta
 
     # テイクイーツのネット決済分を日次行に添える（店舗売上＝Airレジ＋これ、の検算用）
     te_rows = values_by_tab.get("_takeeats_daily") or []
@@ -857,7 +897,7 @@ _RAW_LOCK = None
 
 
 def _known_titles():
-    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB, "日報台帳", "_takeeats_daily"]
+    return list(TABS.values()) + [FLASH_TAB, CALENDAR_TAB, MANUAL_REPORT_TAB, "日報台帳", "_takeeats_daily", EVENT_INTERNAL_TAB]
 
 
 def _pad_rows(rows):

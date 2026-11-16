@@ -5,6 +5,7 @@ CSV列: 0氏名 1日付 ... 12通勤手当 14合計。月別ファイルが同�
 import csv
 import glob
 import data_layer
+import event_assignment_bridge
 
 CSV_GLOB = "/Users/suzuki3/Library/CloudStorage/Dropbox-Detale/D& W/どら山/過去/dw_budget_profit_sheets_automation/data/input/airshift_worksheets/airshift_worksheet_*.csv"
 TAB = "_app_labor"
@@ -30,6 +31,9 @@ def collect():
             nm = r[0].strip()
             d = r[1].strip()
             if not nm or "/" not in d:
+                continue
+            # 催事会場に回った社員の日は店舗（工房）の人件費に入れない（2026-11-16 本人指示）
+            if event_assignment_bridge.match(nm, d):
                 continue
             ppd[(nm, d)] = (_num(r[14]), _num(r[12]))
     daily = {}

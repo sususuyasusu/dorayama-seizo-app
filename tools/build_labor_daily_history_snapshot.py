@@ -9,6 +9,10 @@ import json
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import event_assignment_bridge  # noqa: E402
 
 
 BASE = Path(__file__).resolve().parents[1]
@@ -56,6 +60,9 @@ def load_worksheet(month_key: str, daily: dict[str, dict]) -> None:
         for row in csv.DictReader(stream):
             day = str(row.get("日付") or "").replace("/", "-")
             if not day:
+                continue
+            # 催事会場に回った社員の日は店舗の人件費に入れない（2026-11-16 本人指示）
+            if event_assignment_bridge.match(row.get("氏名"), day):
                 continue
             bucket = daily[day]
             bucket["labor"] += round(number(row.get("合計")))

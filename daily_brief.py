@@ -170,6 +170,10 @@ def build_brief(analysis, target=None):
     # 実際のタイミー費用は既に店舗の人件費(storeLabor)に含まれているため、
     # ここで固定の日割り費用を上乗せしない）。
     event_labor = staffed_venues * staff_daily
+    # 社員を催事会場に回した日（2026-11-16〜 田母神さんが上野の早番）は、ディースパークを1人分減らし
+    # その社員の日額を足す（店舗の人件費からは外し済み）。
+    if staffed_venues and (row.get("eventStaffInternal") or row.get("eventStaffReduction")):
+        event_labor = max(0, event_labor - (row.get("eventStaffReduction") or 0) + (row.get("eventStaffInternal") or 0))
     labor = store_labor + event_labor
     prod = prod_by_date.get(target)
     caps = board.get("laborCaps") or {"production": 11.0, "storeSales": 14.0, "eventSales": 13.0, "eventSalesLoss": 18.0, "total": rate}
