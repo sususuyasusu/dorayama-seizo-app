@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-10T06:36+09:00",
+  "generatedAt": "2026-11-17T06:36+09:00",
   "source": "freee会計のどら山・会社共通取引明細＋確定済み月次調整（読み取り専用）",
   "privacy": "取引ID・口座番号・認証情報は保存しない",
   "months": [
@@ -1466,8 +1466,8 @@
     },
     {
       "month": "2026-11",
-      "count": 1,
-      "total": 20680,
+      "count": 2,
+      "total": 112109,
       "transactions": [
         {
           "date": "2026-11-04",
@@ -1476,6 +1476,17 @@
           "description": "セゾン)リ−ス",
           "amount": 20680,
           "payment": "PayPay銀行（法人）",
+          "department": "210 どら山 本店",
+          "evidence": "証憑未確認",
+          "source": "freee取引明細"
+        },
+        {
+          "date": "2026-11-09",
+          "category": "水道光熱費",
+          "vendor": "取引先未設定",
+          "description": "カ)ハルエネ提供サ-ビス利用料",
+          "amount": 91429,
+          "payment": "セゾンカード",
           "department": "210 どら山 本店",
           "evidence": "証憑未確認",
           "source": "freee取引明細"
