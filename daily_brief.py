@@ -102,6 +102,16 @@ def missing_venues(calendar_names, form_names):
     return missing
 
 
+def _event_day_cost(row, goal_day, staff_daily):
+    """その日の催事販売員費＝予定の催事数×ディースパーク日額。社員を会場に回した日（2026-11-16〜）は
+    ディースパーク減額を引き、社員の日額を足す（月の集計用。日々の行と同じ付け替え・2026-11-18）。"""
+    cost = int((goal_day or {}).get("eventCount") or 0) * staff_daily
+    row = row or {}
+    if cost and (row.get("eventStaffInternal") or row.get("eventStaffReduction")):
+        cost = max(0, cost - (row.get("eventStaffReduction") or 0) + (row.get("eventStaffInternal") or 0))
+    return cost
+
+
 def build_brief(analysis, target=None):
     """target（日付）の速報を作る。返り値: {"text": 文章, "date": 日付, "complete": 数字がそろっているか}"""
     updated = str(analysis.get("updatedAt") or "")[:10]
@@ -305,7 +315,7 @@ def build_brief(analysis, target=None):
     if month_dates:
         sales_total = sum((rows[d].get("storeSales") or 0) + (rows[d].get("eventSales") or 0) for d in month_dates)
         target_total = sum(sum(targets.get(d, (0, 0))) for d in month_dates)
-        month_labor = sum((rows[d].get("storeLabor") or 0) + int((goal_days.get(d) or {}).get("eventCount") or 0) * staff_daily
+        month_labor = sum((rows[d].get("storeLabor") or 0) + _event_day_cost(rows[d], goal_days.get(d), staff_daily)
                           for d in month_dates)
         month_line = f"{day.month}月ここまで"
         if target_total:
@@ -372,7 +382,7 @@ def build_brief(analysis, target=None):
         if value:  # 製造実績が入っている日だけ数える（入力待ちの日で率が跳ねないように）
             r_day = rows.get(key) or {}
             store_day = r_day.get("storeLabor") or 0
-            event_day = int((goal_days.get(key) or {}).get("eventCount") or 0) * staff_daily
+            event_day = _event_day_cost(r_day, goal_days.get(key), staff_daily)
             store_run += store_day
             total_run += store_day + event_day
             # 上限の目安＝製造額×11%＋店舗売上×14%＋催事売上×13%（4つのものさしの足し算）

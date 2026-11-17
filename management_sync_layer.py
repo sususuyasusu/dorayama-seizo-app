@@ -1141,6 +1141,10 @@ def get_management_sync(force=False, today=None):
         values[MANUAL_REPORT_TAB] = _tab_values(MANUAL_REPORT_TAB)
     except Exception:
         values[MANUAL_REPORT_TAB] = []
+    try:  # 催事会場に回った社員の日別人件費（予実自動化が書く）。2026-11-18: ここで渡していなかったため付け替えが一度も効いていなかった
+        values[EVENT_INTERNAL_TAB] = _tab_values(EVENT_INTERNAL_TAB)
+    except Exception:
+        values[EVENT_INTERNAL_TAB] = []
     parsed = parse_management_values(values, target)
     fallback = None
     if not parsed["records"] and not parsed["counts"]["expenseRows"] and errors:
