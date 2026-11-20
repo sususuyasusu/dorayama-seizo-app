@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "保存済みAirシフト給与計算表・タイミー・Airレジ（読み取り専用）",
-  "updatedAt": "2026-11-20",
+  "updatedAt": "2026-11-21",
   "scopeNote": "日別シフト人件費はAirシフト給与計算表とタイミー、店舗売上はAirレジ。催事販売外注は含めない。",
   "months": [
     {
@@ -3074,9 +3074,9 @@
       "month": "11月",
       "period": "2026年11月",
       "status": "日別シフト実績",
-      "dailyLaborTotal": 623138,
-      "storeSalesTotal": 1268938,
-      "workHours": 472.58,
+      "dailyLaborTotal": 671254,
+      "storeSalesTotal": 1327769,
+      "workHours": 498.63,
       "daily": [
         {
           "day": 1,
@@ -3289,9 +3289,9 @@
           "workHours": 22.1,
           "headcount": 3,
           "storeSales": 77117,
-          "eventSales": 0,
-          "combinedSales": 77117,
-          "laborRate": 37.5,
+          "eventSales": 104389,
+          "combinedSales": 181506,
+          "laborRate": 15.9,
           "eventSalesStatus": "取得済み"
         },
         {
@@ -3304,16 +3304,41 @@
           "eventSales": 0,
           "combinedSales": 73077,
           "laborRate": 39.7,
+          "eventSalesStatus": "取得済み"
+        },
+        {
+          "day": 20,
+          "date": "2026-11-20",
+          "labor": 34776,
+          "workHours": 26.05,
+          "headcount": 4,
+          "storeSales": 58831,
+          "eventSales": 0,
+          "combinedSales": 58831,
+          "laborRate": 59.1,
+          "eventSalesStatus": "未取得"
+        },
+        {
+          "day": 21,
+          "date": "2026-11-21",
+          "labor": 13340,
+          "workHours": 0.0,
+          "headcount": 1,
+          "storeSales": 0,
+          "eventSales": 0,
+          "combinedSales": 0,
+          "laborRate": null,
           "eventSalesStatus": "未取得"
         }
       ],
-      "eventSalesTotal": 2183739,
-      "combinedSalesTotal": 3452677,
-      "laborRate": 18.0,
-      "greenDays": 15,
+      "eventSalesTotal": 2288128,
+      "combinedSalesTotal": 3615897,
+      "laborRate": 18.6,
+      "greenDays": 16,
       "redDays": 4,
       "eventSalesPendingDates": [
-        "2026-11-19"
+        "2026-11-20",
+        "2026-11-21"
       ],
       "combinedSalesSource": "店舗はAirレジ、催事はAirメイト日次実績"
     }
