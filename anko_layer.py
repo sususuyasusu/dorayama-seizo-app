@@ -56,11 +56,7 @@ def _daily_counts(tab):
 
 def _tab_after(cur, days):
     try:
-        mm, dd = int(cur[:2]), int(cur[2:])
-        base = datetime.date(datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date().year, mm, dd)
-        nd = base + datetime.timedelta(days=days)
-        name = "%02d%02d" % (nd.month, nd.day)
-        return name if name in data_layer.list_tabs() else None
+        return data_layer.tab_after(cur, days)   # 年はタブの並び順で決める（去年の同名タブを拾わない）
     except Exception:
         return None
 
@@ -85,6 +81,9 @@ def _demand(counts, jun_rate, matcha_rate=MATCHA_DEFAULT_G_PER_100):
 
 def _tab_monday(tab):
     """MMDDタブを、そのタブが表す月曜日の日付に直す（年またぎ対応）。"""
+    d = data_layer.tab_monday(tab)   # 年はタブの並び順で決める（半年以上先の週を去年と取り違えない）
+    if d is not None:
+        return d
     mm, dd = int(tab[:2]), int(tab[2:])
     today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).date()
     candidates = [datetime.date(today.year + y, mm, dd) for y in (-1, 0, 1)]

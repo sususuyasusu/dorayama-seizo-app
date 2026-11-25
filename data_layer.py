@@ -167,6 +167,36 @@ def list_gids():
     return [[t, w.id] for t, w in worksheets().items() if not t.startswith("_")]
 
 
+def tab_dates():
+    """週タブ名 → その週の月曜日（年つき）。タブ名に年が無いので、ブックの並び順から決める。
+    去年の同じ時期のタブ（0105 と 0104 など）を取り違えないための正本。"""
+    import week_tabs
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+    return week_tabs.assign_dates(list(worksheets().keys()), today)
+
+
+def tab_monday(tab):
+    """週タブ名 → 月曜日の日付。並び順で決められないときだけ「今日に近い年」で補う。"""
+    import week_tabs
+    d = tab_dates().get(str(tab))
+    if d is None:
+        d = week_tabs.nearest(tab, datetime.now(timezone(timedelta(hours=9))).date())
+    return d
+
+
+def tab_after(tab, days):
+    """週タブの days 日後の週タブ名。その日付のタブが実在するときだけ返す（去年の同名は拾わない）。"""
+    base = tab_monday(tab)
+    if base is None:
+        return None
+    target = base + timedelta(days=days)
+    dates = tab_dates()
+    for name, d in dates.items():
+        if d == target:
+            return name
+    return None
+
+
 def get_raw(tab=None):
     """指定週タブの全セル（行×列）をそのまま返す＝もれなく全表示用。"""
     ws = open_ws(tab)

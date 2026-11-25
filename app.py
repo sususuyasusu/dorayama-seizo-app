@@ -51,7 +51,9 @@ def week_payload(tab=None):
                 "made": made.get(b["name"], {}).get(p["name"], [None] * 7),
             })
         blocks.append({"name": b["name"], "category": b["category"], "products": prods})
+    mon = data_layer.tab_monday(tab)      # その週の月曜日（年つき）。タブ名に年が無いので並び順から決める
     return {"tab": tab, "gid": d.get("gid"), "sheetId": data_layer.SHEET_ID,
+            "monday": mon.isoformat() if mon else None,
             "days": d["days"], "blocks": blocks, "kaiten": d["kaiten"],
             "weather": weather_layer.week_weather(d["days"])}
 
@@ -137,6 +139,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(manual_layer.get_manual(), ensure_ascii=False))
         elif path == "/api/tabs":
             self._send(200, json.dumps(data_layer.list_tabs(), ensure_ascii=False))
+        elif path == "/api/tab_dates":
+            # 週タブ名 → 月曜日（年つき）。去年の同じ時期のタブと見分けるために画面で使う
+            self._send(200, json.dumps({t: d.isoformat() for t, d in data_layer.tab_dates().items()},
+                                       ensure_ascii=False))
         elif path == "/api/gids":
             self._send(200, json.dumps(data_layer.list_gids(), ensure_ascii=False))
         elif path == "/api/week":

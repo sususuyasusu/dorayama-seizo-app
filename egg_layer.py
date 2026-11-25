@@ -41,18 +41,21 @@ def _next_week_kaiten(cur_tab):
         return None, None, None
     mon_month, mon_day = int(m.group(1)), int(m.group(2))
     today = _today_jst()
-    for year in [today.year, today.year - 1]:
-        try:
-            cur_monday = date(year, mon_month, mon_day)
-            break
-        except ValueError:
-            continue
-    else:
-        return None, None, None
+    cur_monday = data_layer.tab_monday(str(cur_tab))   # 年はタブの並び順で決める（去年の同名タブと取り違えない）
+    if cur_monday is None:
+        for year in [today.year, today.year - 1]:
+            try:
+                cur_monday = date(year, mon_month, mon_day)
+                break
+            except ValueError:
+                continue
+        else:
+            return None, None, None
     next_mon = cur_monday + timedelta(days=7)
     cands = [f"{next_mon.month:02d}{next_mon.day:02d}", f"{next_mon.month}{next_mon.day:02d}"]
     tab_map = data_layer.worksheets()      # タブ一覧はキャッシュを使う（毎回取り直さない）
-    next_ws = next((tab_map[c] for c in cands if c in tab_map), None)
+    dates = data_layer.tab_dates()
+    next_ws = next((tab_map[c] for c in cands if c in tab_map and dates.get(c, next_mon) == next_mon), None)
     if not next_ws:
         return None, None, None
     vals = data_layer.cached_values(next_ws)

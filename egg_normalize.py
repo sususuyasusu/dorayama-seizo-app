@@ -180,22 +180,31 @@ def _fix_week_total(ws):
     return "週間合計を実績基準に修正"
 
 
+# 週タブ名→月曜日（年つき）。自己修復が取り直したタブ一覧を set_tab_order() で渡す。無ければ data_layer から。
+_ORDER = {"titles": None}
+
+
+def set_tab_order(titles):
+    _ORDER["titles"] = list(titles)
+
+
+def _tab_date(tab, today):
+    """タブ名に年が無いので、ブックの並び順から月曜日を決める（半年以上先の週を去年と取り違えない）。"""
+    import week_tabs
+    try:
+        titles = _ORDER["titles"] or list(data_layer.worksheets().keys())
+        d = week_tabs.assign_dates(titles, today).get(str(tab))
+    except Exception:
+        d = None
+    return d or week_tabs.nearest(tab, today)
+
+
 def _weeks_ahead(tab):
     """タブ(MMDD)が当週の何週先かを返す。当週=0, 翌週=1, ... 過去なら負。"""
-    try:
-        mm, dd = int(tab[:2]), int(tab[2:])
-    except ValueError:
-        return None
     today = datetime.date.today()
-    cands = []
-    for y in (today.year - 1, today.year, today.year + 1):
-        try:
-            cands.append(datetime.date(y, mm, dd))
-        except ValueError:
-            continue
-    if not cands:
+    tab_monday = _tab_date(tab, today)
+    if tab_monday is None:
         return None
-    tab_monday = min(cands, key=lambda d: abs((d - today).days))
     cur_monday = today - datetime.timedelta(days=today.weekday())
     return (tab_monday - cur_monday).days // 7
 
@@ -243,23 +252,17 @@ def _bin_rows_by_label(ws):
 
 def _tab_after(tab, days, tabset):
     """MMDDタブの days 日後のタブ名（存在するものだけ返す）。年またぎは近い方を採用。"""
-    try:
-        mm, dd = int(tab[:2]), int(tab[2:])
-    except ValueError:
-        return None
     today = datetime.date.today()
-    cands = []
-    for y in (today.year - 1, today.year, today.year + 1):
-        try:
-            cands.append(datetime.date(y, mm, dd))
-        except ValueError:
-            continue
-    if not cands:
+    base = _tab_date(tab, today)
+    if base is None:
         return None
-    base = min(cands, key=lambda d: abs((d - today).days))
     nd = base + datetime.timedelta(days=days)
     name = f"{nd.month:02d}{nd.day:02d}"
-    return name if name in tabset else None
+    if name not in tabset:
+        return None
+    # 同じ名前でも去年のタブなら採らない（年はタブの並び順で決める）
+    other = _tab_date(name, today)
+    return name if (other is None or other == nd) else None
 
 
 def _fix_batches(ws, tab, tabset):

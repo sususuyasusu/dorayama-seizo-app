@@ -57,6 +57,10 @@ def run_once(max_weeks=6):
         if w.title == monday.strftime("%m%d") or w.title == "%d%02d" % (monday.month, monday.day):
             cur_idx = i
             break
+    import week_tabs
+    titles = [w.title for w in sheets]
+    dates = week_tabs.assign_dates(titles, today)
+    egg_normalize.set_tab_order(titles)
     targets = []
     for i, w in enumerate(sheets):
         if cur_idx is not None and i < cur_idx:
@@ -64,16 +68,11 @@ def run_once(max_weeks=6):
         t = w.title
         if len(t) != 4 or not t.isdigit():
             continue
-        mm, dd = int(t[:2]), int(t[2:])
-        cands = []
-        for y in (today.year - 1, today.year, today.year + 1):
-            try:
-                cands.append(datetime.date(y, mm, dd))
-            except ValueError:
-                continue
-        if not cands:
+        d = dates.get(t)                    # 年はタブの並び順で決める（半年以上先の週を去年と取り違えない）
+        if d is None:
+            d = week_tabs.nearest(t, today)
+        if d is None:
             continue
-        d = min(cands, key=lambda x: abs((x - today).days))
         if d >= monday:                     # 過去週は触らない（履歴を変えない）
             targets.append((d, w))
     targets.sort(key=lambda x: x[0])
