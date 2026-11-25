@@ -4,8 +4,8 @@
 例（来年5月末まで）:
   python3 tools/build_week_tabs.py --start 2026-12-21 --end 2027-05-31 --source 1214 \
       --fix-from 1123 --event "上野=2026-10-01:2027-03-31" \
-      --place "伊勢丹新宿=2027-01-20:2027-01-26"
-  RUN=1 を付けると実行。
+      --place "伊勢丹新宿=2027-01-20:2027-01-26" --place "阪神本店=2027-04-07:2027-04-13@2"
+  RUN=1 を付けると実行。製造は販売の前日が既定。@2 を付けた催事は前々日（阪神本店＝大阪は前々日・本人指示 2026-11-25）。
 
 やること
  1) --source のタブを複製して新しい週タブ(MMDD)を作り、時系列の位置に置く
@@ -60,13 +60,20 @@ ap.add_argument("--adopt", default="", help="手作りタブを使う '古い名
 ap.add_argument("--event", action="append", default=[],
                 help="既存の枠の販売期間 '名前=YYYY-MM-DD:YYYY-MM-DD'（製造は前日・期間外は0）。複数可")
 ap.add_argument("--place", action="append", default=[],
-                help="空き枠に入れる催事 '名前=YYYY-MM-DD:YYYY-MM-DD'（仮の数量つき）。複数可")
+                help="空き枠に入れる催事 '名前=YYYY-MM-DD:YYYY-MM-DD'（仮の数量つき）。"
+                     "末尾に @2 で製造を前々日に（遠方の催事。例: 阪神本店）。複数可")
 ap.add_argument("--skip-normalize", action="store_true")
 args = ap.parse_args()
 
 
+LEAD = {}      # 催事名 → 製造は販売の何日前か（既定1＝前日。遠方は2＝前々日。例: 阪神本店＝大阪）
+
+
 def span(text):
     name, sp = text.split("=", 1)
+    if "@" in sp:
+        sp, lead = sp.rsplit("@", 1)
+        LEAD[name] = int(lead)
     s, t = sp.split(":", 1)
     return name, (datetime.date.fromisoformat(s), datetime.date.fromisoformat(t))
 
@@ -102,10 +109,10 @@ def retry(fn):
             raise
 
 
-def prod_days(d0, s, t):
-    """その週(月曜d0)のうち、製造日(販売日の前日)にあたる曜日の番号。"""
+def prod_days(d0, s, t, lead=1):
+    """その週(月曜d0)のうち、製造日(販売日の lead 日前)にあたる曜日の番号。"""
     return [i for i in range(7)
-            if s - datetime.timedelta(days=1) <= d0 + datetime.timedelta(days=i) <= t - datetime.timedelta(days=1)]
+            if s - datetime.timedelta(days=lead) <= d0 + datetime.timedelta(days=i) <= t - datetime.timedelta(days=lead)]
 
 
 def label_row(grid, label):
@@ -169,7 +176,7 @@ for d0 in mondays:
     if not made:
         # 下見: 催事の入り方だけ表示
         for name, (s, t) in list(events.items()) + list(places.items()):
-            pd = prod_days(d0, s, t)
+            pd = prod_days(d0, s, t, LEAD.get(name, 1))
             if name in places and pd:
                 print(f"     ・{name}: 製造 {[ (d0 + datetime.timedelta(days=i)).strftime('%m/%d') for i in pd ]}")
             if name in events and len(pd) < 7:
@@ -203,7 +210,7 @@ for d0 in mondays:
         if cur not in events:
             continue
         s, t = events[cur]
-        pd = prod_days(d0, s, t)
+        pd = prod_days(d0, s, t, LEAD.get(cur, 1))
         n = 0
         for r in range(h + 1, h + 10):
             if c(r, 18) == "カテゴリー" or c(r, 10) == "日別合計金額":
@@ -217,7 +224,8 @@ for d0 in mondays:
         if n:
             print(f"     ・{cur}: 期間外 {n}マスを0に（製造日 {len(pd)}日）")
     # 空き枠: 催事を入れる
-    todo = [(name, prod_days(d0, s, t)) for name, (s, t) in places.items() if prod_days(d0, s, t)]
+    todo = [(name, prod_days(d0, s, t, LEAD.get(name, 1))) for name, (s, t) in places.items()
+            if prod_days(d0, s, t, LEAD.get(name, 1))]
     free = [h for h in heads if not c(h, 0)]
     if todo:
         if len(todo) > len(free):
@@ -231,8 +239,9 @@ for d0 in mondays:
                 if prod == "抹茶":
                     ups += [{"range": f"J{r}", "values": [[450]]}, {"range": f"AD{r}", "values": [[450]]}]
                 for i in range(7):
-                    wd = (d0 + datetime.timedelta(days=i)).weekday()
-                    v = (PEAK if wd in (3, 4) else BASE)[prod] if i in pd else (0 if prod != "抹茶" else "")
+                    # 金・土に売る分を多めにする（前日製造なら木金、前々日製造なら水木に作る）
+                    wd = (d0 + datetime.timedelta(days=i + LEAD.get(name, 1))).weekday()
+                    v = (PEAK if wd in (4, 5) else BASE)[prod] if i in pd else (0 if prod != "抹茶" else "")
                     ups += [{"range": rowcol_to_a1(r, 2 + i), "values": [[v]]},
                             {"range": rowcol_to_a1(r, 22 + i), "values": [[v]]}]
             print(f"     ・{name}: 行{h}の空き枠に入れた（製造 {len(pd)}日・数量は仮）")
