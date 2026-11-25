@@ -548,7 +548,7 @@ async function init(){
     W=await J('/api/week');           // tab未指定＝今週
     curTab=W.tab;
     const wk=document.getElementById('wk');wk.innerHTML='';
-    tabs.slice().reverse().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=wkLabel(t)+(t===curTab?'（今週）':'');if(t===curTab)o.selected=true;wk.appendChild(o);});
+    tabs.slice().reverse().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=(t===curTab?t+'（今週）':wkLabel(t));if(t===curTab)o.selected=true;wk.appendChild(o);});
     wk.onchange=()=>{curTab=wk.value;loadWeek();};
     paintMake();
     J('/api/eggs').then(renderEgg);
